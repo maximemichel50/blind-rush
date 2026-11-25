@@ -1,0 +1,51 @@
+name: Publier Blind Rush
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reconstruire:
+        description: "Reconstruire la base de musiques depuis Deezer (5 à 10 min)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construire la base de musiques (si absente ou demandée)
+        if: ${{ hashFiles('db.json') == '' || inputs.reconstruire }}
+        run: |
+          pip3 install requests
+          cd tools
+          python3 construire_base.py
+          python3 agrandir_base.py
+          python3 empaqueter_base.py
+          cd ..
+          git config user.name "blind-rush-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add db.json
+          git commit -m "Met à jour la base de musiques" || echo "Rien de nouveau"
+          git push
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deploy
+        uses: actions/deploy-pages@v4
