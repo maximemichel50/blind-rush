@@ -28,7 +28,7 @@ def work(a):
     cand=(exact or d[:1])
     if not cand: return a,None
     art=max(cand,key=lambda x:x.get('nb_fan',0))
-    top=get(f"https://api.deezer.com/artist/{art['id']}/top",{'limit':25}).get('data',[])
+    top=get(f"https://api.deezer.com/artist/{art['id']}/top",{'limit':50}).get('data',[])
     res=[];seen=set()
     for t in top:
         if not t.get('readable',True) or BAD.search(t['title']): continue
@@ -38,7 +38,7 @@ def work(a):
         contrib=[c['name'] for c in t.get('contributors',[])] or [t['artist']['name']]
         disp=' & '.join(dict.fromkeys(contrib)) if len(contrib)>1 else t['artist']['name']
         res.append({'t':title,'a':disp,'id':t['id'],'c':t['album'].get('md5_image',''),'al':t['album'].get('title','')})
-        if len(res)>=12: break
+        if len(res)>=20: break
     return a,{'name':art['name'],'id':art['id'],'tracks':res}
 out={}
 with ThreadPoolExecutor(4) as ex:
