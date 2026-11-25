@@ -12,9 +12,17 @@ Blind test musical : 10 manches, 4 réponses, plus tu réponds vite plus tu marq
 | `db.json` | La base de musiques : artistes, styles, morceaux. Générée par les scripts de `tools/`, ne pas la modifier à la main. |
 | `tools/` | Scripts Python qui construisent `db.json` à partir de l'API publique de Deezer. |
 
+## Modes de jeu
+
+- **Solo** : 10 manches contre le chrono, record par difficulté.
+- **Duel** : deux joueurs sur le même écran (touches 1-4 pour le rouge, 7 8 9 0 pour le bleu). Bonne réponse 300 à 1000 pts selon la vitesse × difficulté, +150 au premier qui trouve, −150 × difficulté en cas d'erreur.
+- **Babinski** (« Là pour se détruire ») : mode soirée de 2 à 8 joueurs, chacun son tour, le perdant boit. Cartes spéciales : Réflexe éclair, Tournée générale, Duel au comptoir, Quitte ou double, Le roi du comptoir, Karaoké. Plafond de 5 gorgées d'un coup, un joker eau par joueur, version sans alcool (pompes).
+
 ## Repères dans `index.html`
 
-- **Ambiances par style** : objet `THEMES` (couleurs `bg`, `ink`, `card`, `acc`, motif de fond `pat`, mot en filigrane `w`).
+- **Modes** : objets `GAMES` et `CARDS`, fonctions `round()`, `reveal()` et `partyOutcome()` (règles du mode Babinski).
+
+- **Ambiances** : objet `THEMES` (un thème par style, plus `duel` et `party` pour les modes) (couleurs `bg`, `ink`, `card`, `acc`, motif de fond `pat`, mot en filigrane `w`).
 - **Difficultés** : objet `DIFF` (durée de l'extrait `clip`, temps pour répondre `limit`, multiplicateur `mult`, point de départ de l'extrait `off`).
 - **Points** : fonction `answer()` — 300 à 1000 pts selon la vitesse × multiplicateur, + bonus de série.
 - **Tirage des manches** : `buildRounds()` et `makeChoices()`.
