@@ -43,7 +43,7 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 - **En ligne (hôte)** : bouton `#createOpen` de l'accueil, objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
 - **En ligne (téléphone)** : dernier `<script>` du fichier, objet `C`, fonctions `joinScreen()`, `connect()`, `question()`, `result()`, `end()`.
 
-- **Modes** : barre d'onglets en bas de l'accueil (`<nav id="games">`, icônes dans `GICON`, styles `.tabbar` / `.tb`), objets `GAMES`, `INT` (intensités Babinski) et `CARDS`, fonctions `round()`, `reveal()` et `partyRound()` (classement et peines du mode Babinski), `playFx()` (animation de fin de manche).
+- **Modes** : barre d'onglets en bas de l'accueil (`<nav id="games">`, icônes dans `GICON`, styles `.tabbar` / `.tb`), objets `GAMES`, `INT` (intensités Babinski) et `CARDS`, fonctions `round()`, `reveal()` et `partyRound()` (classement et peines du mode Babinski), `playFx()` (animation de fin de manche), `clubFx()` (animation boîte de nuit quand on choisit Babinski).
 
 - **Ambiances** : objet `THEMES` (un thème par style, plus `duel` et `party` pour les modes) (couleurs `bg`, `ink`, `card`, `acc`, motif de fond `pat`, mot en filigrane `w`).
 - **Difficultés** : objet `DIFF` (durée de l'extrait `clip`, temps pour répondre `limit`, multiplicateur `mult`, point de départ de l'extrait `off`).

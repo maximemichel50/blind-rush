@@ -350,6 +350,18 @@ h2:not(.step){font-family:var(--mono);text-transform:uppercase;letter-spacing:.1
 .go:active{transform:scale(.98);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 50%,transparent)}
 .tabs{background:transparent}.tab{color:var(--ink);font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
 .tab[aria-selected=true]{background:var(--grad);color:#fff}
+/* animation boîte de nuit au passage en mode Babinski */
+.clubfx{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;visibility:hidden;background:radial-gradient(ellipse at 50% 30%,rgba(40,10,60,.55),rgba(6,3,14,.72))}
+.clubfx.on{visibility:visible;animation:clubIn 3.2s ease forwards}
+.clubfx canvas{position:absolute;inset:0;width:100%;height:100%}
+.clubfx::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 40%,#fff,#ff2fb0 45%,#7a3cff);mix-blend-mode:screen;opacity:0}
+.clubfx.on::before{animation:strobe .9s steps(1) 2}
+.clubtxt{position:absolute;left:0;right:0;top:42%;text-align:center;font:400 clamp(34px,9vw,96px)/1.25 Anton,sans-serif;padding:.1em 0;text-transform:uppercase;background:linear-gradient(100deg,#ff2fb0,#ffd23f 40%,#27e0ff 70%,#7a3cff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 24px rgba(255,47,176,.8));opacity:0;transform:scale(.6)}
+.clubfx.on .clubtxt{animation:clubTxt 2.6s cubic-bezier(.2,1.4,.4,1) .15s forwards}
+@keyframes clubIn{0%{opacity:0}6%{opacity:1}82%{opacity:1}100%{opacity:0}}
+@keyframes strobe{0%{opacity:.55}12%{opacity:0}24%{opacity:.35}36%{opacity:0}100%{opacity:0}}
+@keyframes clubTxt{0%{opacity:0;transform:scale(.6) rotate(-4deg)}18%{opacity:1;transform:scale(1.08) rotate(2deg)}30%{transform:scale(1) rotate(0)}80%{opacity:1}100%{opacity:0;transform:scale(1.15)}}
+@media(prefers-reduced-motion:reduce){.clubfx{display:none}}
 /* barre des modes de jeu (en bas de l'écran, façon appli) */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;background:#0a0a0b;border-top:1px solid #2a2a2e;padding:0 0 env(safe-area-inset-bottom)}
 .tabbar:empty,body[data-screen]:not([data-screen=home]) .tabbar{display:none}
@@ -834,6 +846,46 @@ const GICON={
   duel:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 2.5 14 3.4 6.6 10.8l-1.5-1.5-1.4 1.4 2.4 2.4-3.2 3.2a1.5 1.5 0 0 0 0 2.1l.7.7a1.5 1.5 0 0 0 2.1 0l3.2-3.2 2.4 2.4 1.4-1.4-1.5-1.5L20.6 10z"/></svg>',
   party:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16l-7 9v6h4v3H7v-3h4v-6zm3.2 2 2 2.5h5.6l2-2.5z"/></svg>'
 };
+/* animation boîte de nuit : feux d'artifice néon, lasers, boule à facettes et strobe (≈3 s, ne bloque rien) */
+function clubFx(){
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const box=$('#clubfx'),cv=box.querySelector('canvas'),x=cv.getContext('2d');
+  const dpr=Math.min(devicePixelRatio||1,2),W=innerWidth,H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+  box.classList.remove('on');void box.offsetWidth;box.classList.add('on');
+  cancelAnimationFrame(clubFx.raf);
+  const COL=['#ff2fb0','#ffd23f','#27e0ff','#7a3cff','#39ff88','#ff6a3d'],R=Math.random,t0=performance.now(),DUR=3000;
+  const parts=[],rockets=[];
+  const boom=(bx,by)=>{const c=COL[R()*COL.length|0],c2=COL[R()*COL.length|0],n=70+(R()*40|0);for(let i=0;i<n;i++){const a=Math.PI*2*i/n+R()*.2,v=2.2+R()*3.6;parts.push({x:bx,y:by,vx:Math.cos(a)*v,vy:Math.sin(a)*v,l:1,c:R()<.75?c:c2,s:1.6+R()*1.8})}};
+  const launch=()=>rockets.push({x:W*(.15+R()*.7),y:H+10,vy:-(H/75+R()*H/160),ty:H*(.15+R()*.35),c:COL[R()*COL.length|0]});
+  boom(W*.3,H*.3);boom(W*.72,H*.24);
+  let next=t0;
+  const frame=now=>{
+    const t=now-t0;
+    x.globalCompositeOperation='source-over';x.clearRect(0,0,W,H);
+    x.globalCompositeOperation='lighter';
+    /* lasers qui balayent depuis le bas */
+    if(t<DUR*.85)for(let i=0;i<4;i++){const ox=i<2?0:W,oy=H,ang=(i<2?-1:-1)*Math.PI/2+(i%2?.6:-.6)*Math.sin(t/260+i)+(i<2?.5:-.5);const len=Math.hypot(W,H);x.strokeStyle=COL[(i+(t/400|0))%COL.length];x.globalAlpha=.55;x.lineWidth=3;x.shadowBlur=18;x.shadowColor=x.strokeStyle;x.beginPath();x.moveTo(ox,oy);x.lineTo(ox+Math.cos(ang)*len,oy+Math.sin(ang)*len);x.stroke()}
+    x.shadowBlur=0;x.globalAlpha=1;
+    /* boule à facettes qui descend */
+    const by=Math.min(1,t/500)*H*.12,br=Math.min(W,H)*.06;
+    if(t<DUR*.85){
+      x.globalCompositeOperation='source-over';
+      x.strokeStyle='rgba(220,220,240,.6)';x.lineWidth=1.5;x.beginPath();x.moveTo(W/2,0);x.lineTo(W/2,by-br);x.stroke();
+      const g=x.createRadialGradient(W/2-br*.35,by-br*.35,br*.1,W/2,by,br);g.addColorStop(0,'#ffffff');g.addColorStop(.5,'#9a9ab8');g.addColorStop(1,'#3a3550');
+      x.save();x.beginPath();x.arc(W/2,by,br,0,7);x.fillStyle=g;x.fill();x.clip();
+      const f=Math.max(6,br/5);for(let fy=by-br;fy<by+br;fy+=f)for(let fx=W/2-br;fx<W/2+br;fx+=f){const sh=Math.sin(fx*.9+fy*1.3+t/90);if(sh>.55){x.fillStyle=sh>.85?'#ffffff':COL[(fx+fy|0)%COL.length];x.globalAlpha=(sh-.5)*1.6;x.fillRect(fx+1,fy+1,f-2,f-2)}}
+      x.globalAlpha=.35;x.strokeStyle='#1a1726';x.lineWidth=1;for(let fy=by-br;fy<by+br;fy+=f){x.beginPath();x.moveTo(W/2-br,fy);x.lineTo(W/2+br,fy);x.stroke()}for(let fx=W/2-br;fx<W/2+br;fx+=f){x.beginPath();x.moveTo(fx,by-br);x.lineTo(fx,by+br);x.stroke()}
+      x.restore();x.globalAlpha=1;x.globalCompositeOperation='lighter';
+      for(let k=0;k<12;k++){const a=t/700+k*.53;x.fillStyle=COL[k%COL.length];x.globalAlpha=.45;x.beginPath();x.arc(W/2+Math.cos(a)*W*.45,H*.5+Math.sin(a*1.3)*H*.38,4+(k%3)*2,0,7);x.fill()}x.globalAlpha=1}
+    /* fusées et explosions */
+    if(t<DUR*.7&&now>next){launch();next=now+260+R()*260}
+    for(let i=rockets.length-1;i>=0;i--){const r=rockets[i];r.y+=r.vy;x.fillStyle=r.c;x.fillRect(r.x-1.5,r.y,3,10);if(r.y<=r.ty){boom(r.x,r.y);rockets.splice(i,1)}}
+    for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vx*=.975;p.vy=p.vy*.975+.045;p.l-=.013;if(p.l<=0){parts.splice(i,1);continue}x.globalAlpha=p.l;x.fillStyle=p.c;x.beginPath();x.arc(p.x,p.y,p.s,0,7);x.fill()}
+    x.globalAlpha=1;
+    if(t<DUR+200)clubFx.raf=requestAnimationFrame(frame);else{x.clearRect(0,0,W,H);box.classList.remove('on')}
+  };
+  x.clearRect(0,0,W,H);clubFx.raf=requestAnimationFrame(frame);
+}
 const ROUNDS_OPT={solo:[5,10,15,20],duel:[5,10,15,20],party:[10,15,20]};
 const INT={
   soft:{n:'Tranquille',d:'Mauvaise réponse ou pas de réponse : 1 gorgée.',wrong:1},
@@ -901,7 +953,7 @@ function renderGames(){
     :S.game==='party'?(net?'Chaque manche, tout le monde répond en même temps sur son téléphone.':'Chaque manche, tout le monde répond en même temps sur sa ligne de boutons.')+(S.gm?' Bonne réponse : 1 point. À la fin, classement par points (égalité : le plus rapide au total passe devant). Le 1er n\'a rien, les autres ont un gage de plus en plus fort selon leur place.':' Bonne réponse : rien. Mauvaise réponse ou pas de réponse : tu bois. À la fin, classement par bonnes réponses (égalité : le plus rapide au total passe devant). Le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.')
     :'Bonne réponse : entre 300 et 1000 points selon ta vitesse, multipliés par la difficulté (×1, ×1,5, ×2). Série : 3 bonnes réponses d\'affilée = points ×2, 5 d\'affilée = points ×3 (une erreur remet à zéro). La musique tourne pendant tout le chrono. Clavier : 1 à 4.';
 }
-$('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
+$('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;if(b.dataset.g==='party'&&S.game!=='party')clubFx();S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
 function saveOpt(){store.set('opt',S.opt)}
 $('#setup').addEventListener('click',e=>{
   const nr=e.target.closest('[data-nr]');if(nr){opt().n=+nr.dataset.nr;saveOpt();renderGames();summary();return}
@@ -1676,6 +1728,7 @@ if(j){C.code=j.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);joinScreen();if(C.
 })();
 </script>
 <!-- barre des modes de jeu, fixée en bas de l'écran (accueil seulement) -->
+<div class="clubfx" id="clubfx" aria-hidden="true"><canvas></canvas><div class="clubtxt">Là pour se détruire</div></div>
 <nav class="tabbar" id="games" aria-label="Mode de jeu"></nav>
 </body>
 </html>
