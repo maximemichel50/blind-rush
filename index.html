@@ -326,6 +326,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <p class="dbinfo" id="dbinfo">Chargement de la base de musiques…</p>
     <p class="mood" id="mood"></p>
 
+    <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Crée-la ici, et tes amis la rejoignent depuis leur téléphone avec le code.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
     <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
 
     <h2>1. Mode de jeu</h2>
@@ -1105,6 +1106,12 @@ function results(){
 $('#againBtn').addEventListener('click',start);
 $('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home')});
 $('#goBtn').addEventListener('click',start);
+/* « Créer une partie » sur l'accueil : passe en mode en ligne (Duel si on était en Solo) et descend aux réglages */
+$('#createOpen').addEventListener('click',()=>{
+  if(S.game==='solo'){S.game='duel';store.set('game',S.game)}
+  opt().where='online';saveOpt();hideErr();renderGames();summary();
+  $('#games').scrollIntoView({behavior:'smooth',block:'start'});
+});
 renderGames();
 
 renderCats();renderDiffs();renderList();renderSel();setMode(S.mode);
