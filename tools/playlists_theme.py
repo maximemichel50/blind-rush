@@ -16,13 +16,13 @@ PLAYLISTS = [
   ('Pokémon', 'Jean-Marc Anthony Kabeya'), ('Goldorak', 'Noam'), ('Albator', 'Eric Charden'),
   ('Capitaine Flam', 'Jean-Jacques Debout'), ('Les Mystérieuses Cités d\'Or', 'Noam'), ('Ulysse 31', 'Lionel Leroy'),
   ('Il était une fois la vie', 'générique'), ('Inspecteur Gadget', 'générique'), ('Olive et Tom', 'générique'),
-  ('Sailor Moon', 'générique'), ('Code Lyoko', 'Un monde sans danger'), ('Les Razmoket', 'générique'),
+  ('Sailor Moon', 'générique'), ('Code Lyoko', 'générique'), ('Les Razmoket', 'générique'),
   ('Totally Spies', 'générique'), ('Bob l\'éponge', 'générique'), ('Les Simpson', 'Danny Elfman'),
   ('Bioman', 'Bernard Minet'), ('Nicky Larson', 'Jean-Paul Césari'), ('Ken le survivant', 'générique'),
   ('Princesse Sarah', 'générique'), ('Rémi sans famille', 'générique'), ('Heidi', 'générique'),
   ('Les Tortues Ninja', 'générique'), ('Digimon', 'générique'), ('Yu-Gi-Oh', 'générique'),
   ('Jayce et les conquérants de la lumière', 'générique'), ('Candy', 'Dorothée'), ('Les Schtroumpfs', 'générique'),
-  ('Lucky Luke', 'I\'m a Poor Lonesome Cowboy'), ('Scooby-Doo', 'générique'), ('Les Bisounours', 'générique'),
+  ('Scooby-Doo', 'générique'), ('Les Bisounours', 'générique'),
   ('Denver le dernier dinosaure', 'générique'), ('Cat\'s Eyes', 'générique'), ('Tom-Tom et Nana', 'générique'),
   ('Barbapapa', 'générique'), ('Winx Club', 'générique'), ('Kid Paddle', 'générique'), ('Titeuf', 'générique'),
   ('Wakfu', 'générique'), ('Naruto', 'générique'), ('One Piece', 'générique'), ('Spider-Man', 'générique'),
@@ -118,7 +118,7 @@ PLAYLISTS = [
 ]
 
 API = 'https://api.deezer.com'
-BAD = re.compile(r'karaok|instrumental|made famous|in the style|originally performed|tribute|reprise de|cover|8-bit|lullaby|berceuse|piano version', re.I)
+BAD = re.compile(r'karaok|instrumental|remix|8 ?-?bit|lofi|lo-fi|\brap\b|parod|made famous|in the style|originally performed|tribute|reprise de|cover|8-bit|lullaby|berceuse|piano version', re.I)
 def norm(s):
     s = unicodedata.normalize('NFD', str(s).lower())
     return re.sub(r'[^a-z0-9]', '', ''.join(c for c in s if unicodedata.category(c) != 'Mn'))
@@ -133,9 +133,12 @@ def get(url, params):
         except Exception: time.sleep(1 + i)
     return {}
 
+# chanteurs de génériques connus (pour accepter un générique sans le mot « générique »)
+GEN_OK = re.compile(r'bernardminet|noam|dorothee|jacquescardona|jeanpaulcesari|ariane|lionelleroy|ericcharden|michellegrand|henriseroka|toptv80|generiques|clubdorothee|chantalgoya|jeanjacquesdebout|claudelombard|isabelleguillard|alexandra|romariclaurence|henrymancini|hiroshikitadani|ouioui|winx', re.I)
 def find(title, hint):
     want = base(title)
-    queries = [f'artist:"{hint}" track:"{title}"', f'{title} {hint}', title]
+    gen = hint == 'générique'
+    queries = [f'{title} générique', f'{title} générique dessin animé'] if gen else [f'artist:"{hint}" track:"{title}"', f'{title} {hint}']
     for q in queries:
         time.sleep(0.15)
         res = get(API + '/search', {'q': q, 'limit': 15}).get('data', [])
@@ -146,6 +149,10 @@ def find(title, hint):
             if BAD.search(full): continue
             tt = base(t['title']) + norm(t.get('album', {}).get('title', ''))
             if want[:14] not in tt and base(t['title'])[:14] not in want: continue
+            if gen:
+                if not (re.search(r'g.n.rique|theme|opening|dessin|serie|tv', norm(full)) or GEN_OK.search(norm(t['artist']['name']))): continue
+            elif norm(hint)[:6] not in norm(t['artist']['name'] + ' ' + t.get('album', {}).get('title', '')) and not (len(norm(hint)) < 6 and norm(hint) in norm(full)):
+                if not GEN_OK.search(norm(t['artist']['name'])): continue
             score = (norm(hint)[:8] in norm(full)) * 2 + (base(t['title']) == want)
             if best is None or score > best[0]: best = (score, t)
         if best: return best[1]
