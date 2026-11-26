@@ -27,7 +27,7 @@ La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont d
 
 ## Jouer en ligne (façon Kahoot / WhoLiked)
 
-Sur l'accueil, toucher **Créer une partie** (en haut de la page). La partie est créée tout de suite avec le mode, la playlist et la difficulté réglés sur la page (Duel si on était en Solo). Le bouton « Lancer la partie » du bas sert aux parties sur un seul écran.
+Sur l'accueil, toucher **Jouer**, choisir Duel ou Babinski puis « Chacun son téléphone », choisir la playlist et la difficulté, puis **Créer la partie** :
 
 1. L'écran de l'hôte affiche un **code de 4 lettres**, un lien et un QR code. La musique sort de cet appareil.
 2. Les joueurs ouvrent le lien ou scannent le QR code (ou touchent « Rejoindre une partie » sur l'accueil et tapent le code), puis choisissent un prénom. Jusqu'à 12 joueurs. L'hôte peut jouer aussi depuis son écran.
@@ -40,7 +40,8 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 ## Repères dans `index.html`
 
 - **Logo** : un clic ramène à l'accueil depuis n'importe quel écran (`goHome()`).
-- **En ligne (hôte)** : bouton `#createOpen` de l'accueil, objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
+- **Accueil en étapes** : fonction `wz(n)` (0 accueil, 1 mode, 2 playlist, 3 difficulté et lancement), `wzCheck()` vérifie chaque étape avant la suivante.
+- **En ligne (hôte)** : objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
 - **En ligne (téléphone)** : dernier `<script>` du fichier, objet `C`, fonctions `joinScreen()`, `connect()`, `question()`, `result()`, `end()`.
 
 - **Modes** : barre d'onglets en bas de l'accueil (`<nav id="games">`, icônes dans `GICON`, styles `.tabbar` / `.tb`), objets `GAMES`, `INT` (intensités Babinski) et `CARDS`, fonctions `round()`, `reveal()` et `partyRound()` (classement et peines du mode Babinski), `playFx()` (animation de fin de manche), `clubFx()` (animation boîte de nuit quand on choisit Babinski).

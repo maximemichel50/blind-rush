@@ -350,6 +350,23 @@ h2:not(.step){font-family:var(--mono);text-transform:uppercase;letter-spacing:.1
 .go:active{transform:scale(.98);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 50%,transparent)}
 .tabs{background:transparent}.tab{color:var(--ink);font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
 .tab[aria-selected=true]{background:var(--grad);color:#fff}
+/* parcours en étapes de l'accueil */
+.wz{display:none}body[data-wz="0"] .wz[data-wz="0"],body[data-wz="1"] .wz[data-wz="1"],body[data-wz="2"] .wz[data-wz="2"],body[data-wz="3"] .wz[data-wz="3"]{display:block}
+.wzbar{display:none;align-items:center;gap:14px;margin:6px 0 4px}body[data-wz]:not([data-wz="0"]) .wzbar{display:flex}
+.wzback{background:none;color:var(--ink);font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:10px 14px;border-radius:999px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 30%,transparent)}
+.wzstep{font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.1em;color:var(--acc);flex:1}
+.wzdots{display:flex;gap:6px}.wzdots i{width:26px;height:5px;border-radius:3px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
+body[data-wz="1"] .wzdots i:nth-child(-n+1),body[data-wz="2"] .wzdots i:nth-child(-n+2),body[data-wz="3"] .wzdots i:nth-child(-n+3){background:var(--grad,var(--acc))}
+.wz h2.step{margin-top:18px}
+.wznext{margin:26px 0 10px}.wznext .go{min-width:260px}
+.wz[data-wz="2"] .wznext{position:sticky;bottom:14px;z-index:5} /* la liste des playlists est longue : « Suivant » reste visible */
+.homecta{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin:34px 0 10px}
+.homecta .go{min-width:300px}.hjoin{min-width:300px;padding:16px 22px}
+.hjoinhint{margin:0;font-size:14px;opacity:.7}
+@media(max-width:600px){.homecta{align-items:stretch}.homecta .go,.hjoin,.wznext .go{min-width:0;width:100%}.wzdots i{width:16px}}
+body[data-wz]:not([data-wz="1"]) .tabbar{display:none}
+body:not([data-wz="1"]) #home{padding-bottom:20px}
+body:not([data-wz="3"]) #rules{display:none}
 /* animation boîte de nuit au passage en mode Babinski */
 .clubfx{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:0;visibility:hidden;background:radial-gradient(ellipse at 50% 30%,rgba(40,10,60,.55),rgba(6,3,14,.72))}
 .clubfx.on{visibility:visible;animation:clubIn 3.2s ease forwards}
@@ -439,7 +456,7 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
 .lbbox .lbmsg{margin:8px 0 0;font-size:14px}
 </style>
 </head>
-<body>
+<body data-wz="0">
 <div class="orb" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div>
 <div class="bgword" id="bgword" aria-hidden="true">WORLD</div>
 <div class="wrap">
@@ -450,19 +467,30 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
 
   <!-- ACCUEIL -->
   <section id="home">
+    <!-- accueil : deux gros choix -->
+    <div class="wz" data-wz="0">
     <h1 id="hero">Devine le son. Avant les autres.</h1>
     <p class="lead" id="lead">10 manches, 4 réponses. Plus tu réponds vite, plus tu marques.</p>
     <p class="dbinfo" id="dbinfo">Chargement de la base de musiques…</p>
     <p class="mood" id="mood"></p>
     <div class="sndtest"><button class="btn sm" id="sndBtn" type="button">🔊 Tester le son</button><div id="sndOut" class="hide"><p id="sndMsg"></p><pre id="sndLog"></pre></div></div>
 
-    <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Tu obtiens un code, tes amis la rejoignent depuis leur téléphone. Mode, playlist et difficulté : ceux réglés plus bas.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
-    <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
-
+      <div class="homecta">
+        <button class="go" id="playOpen" disabled>JOUER</button>
+        <button class="btn alt hjoin" id="joinOpen">Rejoindre une partie</button>
+        <p class="hjoinhint">Un ami a créé une partie ? Rejoins-la avec son code.</p>
+      </div>
+    </div>
+    <!-- étapes : 1 mode, 2 playlist, 3 difficulté et lancement -->
+    <div class="wzbar" id="wzbar"><button class="wzback" id="wzBack" type="button">← Retour</button><span class="wzstep" id="wzStep"></span><span class="wzdots" aria-hidden="true"><i></i><i></i><i></i></span></div>
+    <div class="wz" data-wz="1">
     <h2 class="step s1"><i>01</i>Mode de jeu</h2>
     <p class="gdesc" id="gameDesc"></p>
     <div class="setup" id="setup"></div>
 
+      <div class="wznext"><button class="go" data-next="2">SUIVANT →</button></div>
+    </div>
+    <div class="wz" data-wz="2">
     <h2 class="step s2"><i>02</i>Ta playlist</h2>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tabStyle" aria-selected="true">Par style</button>
@@ -483,6 +511,9 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
       </div>
     </div>
 
+      <div class="wznext"><button class="go" data-next="3">SUIVANT →</button></div>
+    </div>
+    <div class="wz" data-wz="3">
     <h2 class="step s3"><i>03</i>Difficulté</h2>
     <div class="diffs" id="diffs"></div>
 
@@ -491,6 +522,7 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
       <p class="summary" id="summary"></p>
       <button class="btn alt lbbtn" id="lbBtn">🏆 Classement mondial de cette playlist</button>
       <div class="lbbox hide" id="lbHome"></div>
+    </div>
     </div>
     <div class="err hide" id="err" role="alert"></div>
     <p class="rules" id="rules"></p>
@@ -937,7 +969,7 @@ function renderGames(){
   document.body.dataset.game=S.game;
   let h=`<div class="prow"><span class="lbl">Manches</span>${segHtml('nr',ROUNDS_OPT[S.game],o.n)}</div>`;
   const net=online();
-  const where=''; /* le jeu en ligne se lance avec « Créer une partie » en haut de l'accueil */
+  const where=S.game==='solo'?'':`<div class="prow"><span class="lbl">Comment vous jouez ?</span>${segHtml('where',['local','online'],net?'online':'local',['Sur cet écran','Chacun son téléphone'])}</div>`;
   const netHint=`<p class="hint">Tu crées la partie et tu obtiens un code. Tes amis la rejoignent depuis leur téléphone (jusqu'à ${MAXP} joueurs) et répondent dessus, façon Kahoot. Le son sort de cet appareil.</p>`;
   if(S.game==='duel')h=where+(net?netHint:`<div class="duo"><label class="red">Joueur rouge<input id="p1" maxlength="18" placeholder="Rouge" autocomplete="off" value="${esc(S.duel[0])}"></label><span class="vs">VS</span><label class="blue">Joueur bleu<input id="p2" maxlength="18" placeholder="Bleu" autocomplete="off" value="${esc(S.duel[1])}"></label></div>`)+h+`<label class="tog"><input type="checkbox" id="malus" ${o.malus?'checked':''}><span>Malus en cas d'erreur (−150 points × difficulté)</span></label>`;
   if(S.game==='party')h=where+(net?netHint:`<div class="prow"><input id="pName" maxlength="18" placeholder="Prénom d'un joueur" autocomplete="off" aria-label="Prénom d'un joueur"><button class="btn" id="pAdd">Ajouter</button><span class="pcount" id="pCount"></span></div><div class="tags" id="pTags"></div>`)+h+
@@ -956,6 +988,7 @@ function renderGames(){
 $('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;if(b.dataset.g==='party'&&S.game!=='party')clubFx();S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
 function saveOpt(){store.set('opt',S.opt)}
 $('#setup').addEventListener('click',e=>{
+  const wh=e.target.closest('[data-where]');if(wh){opt().where=wh.dataset.where;saveOpt();hideErr();renderGames();summary();return}
   const nr=e.target.closest('[data-nr]');if(nr){opt().n=+nr.dataset.nr;saveOpt();renderGames();summary();return}
   const it=e.target.closest('[data-int]');if(it){opt().int=it.dataset.int;saveOpt();renderGames();return}
   const dk=e.target.closest('[data-drink]');if(dk){S.drink=dk.dataset.drink;S.soft=S.drink==='pompes';S.gm=S.drink==='gages';store.set('drink',S.drink);renderGames();return}
@@ -979,7 +1012,7 @@ function show(id){for(const s of ['home','lobby','game','results','ctl'])$('#'+s
 function start(){
   hideErr();
   const p=playlist();
-  if(!p){setMode('pick');return showErr('Choisis tes artistes puis clique sur « Valider la sélection » (ou passe sur « Par style »).')}
+  if(!p){setMode('pick');wz(2);return showErr('Choisis tes artistes puis clique sur « Valider la sélection » (ou passe sur « Par style »).')}
   if(online())return openLobby();
   let names=['Toi'];
   if(S.game==='duel')names=[S.duel[0]||'Rouge',S.duel[1]||'Bleu'];
@@ -1259,7 +1292,7 @@ $('#quitBtn').addEventListener('click',()=>{if(S.online)return openLobby();S.pha
    Messages vers les téléphones : welcome, lobby, wait, q (question), r (résultat), end, bye, err.
    Messages des téléphones : hello {name,rid}, a {i,c,e} (réponse, e = secondes), joker, leave. */
 const NET=window.NET={peer:null,code:'',lobby:[],started:false};
-function online(){return S.game!=='solo'&&!!S.wantNet}
+function online(){return S.game!=='solo'&&opt().where==='online'}
 const CODE_L='BCDFGHJKLMNPQRSTVWXZ';
 function joinUrl(){const u=new URL(location.pathname,location.origin);u.searchParams.set('join',NET.code);const q=new URLSearchParams(location.search).get('peer');if(q)u.searchParams.set('peer',q);return u.href}
 function nsend(e,m){if(!e||!e.conn||!e.conn.open)return;try{e.conn.send(m)}catch(err){}}
@@ -1510,18 +1543,27 @@ function renderGages(){
   $('#gagebox').innerHTML=list.length?`<h2>🎭 ${list.length>1?'Les gages':'Le gage du dernier'}</h2>${list.map(([k,p])=>`<div class="gage"><b>${esc(p.name)}</b><p>${esc(p.gage)}</p><button class="btn ghost sm" data-regage="${k}">🎲 Autre gage</button></div>`).join('')}`:'';
 }
 $('#gagebox').addEventListener('click',e=>{const b=e.target.closest('[data-regage]');if(!b)return;const p=S.pl[+b.dataset.regage],lv=GAGES.findIndex(l=>l.includes(p.gage));p.gage=drawGage(lv<0?1:lv,[p.gage]);renderGages();if(S.online)sendEnd($('#final').textContent)});
-$('#againBtn').addEventListener('click',()=>{S.wantNet=!!NET.peer;start();S.wantNet=false}); /* en ligne : retour à la salle d'attente */
-$('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home')});
-$('#goBtn').addEventListener('click',()=>{S.wantNet=false;start()});
-/* « Créer une partie » sur l'accueil : crée la partie en ligne tout de suite (Duel si on était en Solo) avec la playlist et la difficulté de la page */
-$('#createOpen').addEventListener('click',()=>{
-  if(S.game==='solo'){S.game='duel';store.set('game',S.game);renderGames();summary()}
-  S.wantNet=true;start();S.wantNet=false;
-});
+$('#againBtn').addEventListener('click',start);
+$('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home');wz(1)});
+$('#goBtn').addEventListener('click',start);
+/* ---------- parcours en étapes : 0 accueil, 1 mode, 2 playlist, 3 difficulté ---------- */
+const WZ_T=['','Étape 1 sur 3','Étape 2 sur 3','Étape 3 sur 3'];
+function wz(n){S.wz=n;document.body.dataset.wz=n;$('#wzStep').textContent=WZ_T[n]||'';hideErr();window.scrollTo(0,0)}
+window.brWz=wz;
+/* vérifie l'étape avant de passer à la suivante */
+function wzCheck(n){
+  if(n===1&&S.game==='party'&&!online()&&S.party.length<2)return 'Ajoute au moins 2 joueurs pour le mode Babinski.';
+  if(n===2&&!playlist())return S.mode==='pick'?'Choisis tes artistes puis clique sur « Valider la sélection » (ou passe sur « Par style »).':'Choisis une playlist.';
+  return '';
+}
+$('#home').addEventListener('click',e=>{const b=e.target.closest('[data-next]');if(!b)return;const to=+b.dataset.next,er=wzCheck(to-1);if(er)return showErr(er);wz(to)});
+$('#playOpen').addEventListener('click',()=>wz(1));
+$('#wzBack').addEventListener('click',()=>wz(Math.max(0,(S.wz||1)-1)));
+wz(0);
 renderGames();
 
 renderCats();renderDiffs();renderList();renderSel();setMode(S.mode);
-$('#goBtn').disabled=false;
+$('#goBtn').disabled=false;$('#playOpen').disabled=false;
 })();
 </script>
 <script>
@@ -1715,7 +1757,7 @@ $('#ctlBody').addEventListener('input',e=>{if(e.target.id==='cCode'){const v=e.t
 $('#joinOpen').addEventListener('click',()=>{C.code='';joinScreen()});
 function goHome(){
   const sc=document.body.dataset.screen||'home';
-  if(sc==='home'){window.scrollTo({top:0,behavior:'smooth'});return}
+  if(sc==='home'){if(window.brWz)window.brWz(0);return}
   if(C.joined){C.left=true;try{C.conn&&C.conn.send({t:'leave'})}catch(x){}}
   ls.set('ccode','');
   const q=new URLSearchParams(location.search).get('peer');
