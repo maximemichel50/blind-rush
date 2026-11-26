@@ -901,8 +901,10 @@ function buildRounds(ids,n){
       for(const q of queues){if(answers.length>=n)break;while(q.length){const t=q.shift();if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id)))continue;used.add(t.id);used.add(t.b);answers.push(t);break}}
     }
     return answers};
-  let answers=pickPass(true,TOPN);
-  if(answers.length<n)answers=pickPass(false,TOPN);
+  // peu d'artistes (mode artiste) : on pioche dans toute leur discographie, sinon ce sont toujours les mêmes sons
+  const cap=arts.length<8?1e9:TOPN;
+  let answers=pickPass(true,cap);
+  if(answers.length<n)answers=pickPass(false,cap);
   if(answers.length<n)answers=pickPass(false,1e9);
   answers=spread(answers);
   return {pool,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,pool)}))};
