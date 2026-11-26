@@ -721,7 +721,7 @@ for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedm
 
 /* ---------- ambiances par style ---------- */
 const THEMES=window.BR_THEMES;
-for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
+for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['series','rock','Ambiance série télé','SÉRIES'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
 function applyTheme(k){
   const t=THEMES[k]||THEMES.mix,r=document.documentElement.style;
   for(const v of ['bg','ink','card','cardInk','acc','acc2','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);

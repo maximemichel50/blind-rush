@@ -82,7 +82,50 @@ PLAYLISTS = [
   ('Lady Marmalade', 'Christina Aguilera'), ('Up Where We Belong', 'Joe Cocker'), ('Writing\'s on the Wall', 'Sam Smith'),
   ('Shape of My Heart', 'Sting'), ('Little Green Bag', 'George Baker Selection'), ('Old Time Rock & Roll', 'Bob Seger'),
   ('A Thousand Years', 'Christina Perri'), ('Spirit in the Sky', 'Norman Greenbaum'), ('City of Stars', 'Ryan Gosling'),
-  ('Le Temps des cerises', 'Yves Montand'), ('La Valse d\'Amélie', 'Yann Tiersen'), ('Danse avec les loups', 'John Barry')]),
+  ('Le Temps des cerises', 'Yves Montand'), ('La Valse d\'Amélie', 'Yann Tiersen'), ('Danse avec les loups', 'John Barry'),
+  ('Star Wars (Main Title)', 'John Williams'), ('The Imperial March', 'John Williams'), ('Raiders March', 'John Williams'),
+  ('Theme From Jurassic Park', 'John Williams'), ('Hedwig\'s Theme', 'John Williams'), ('Flying Theme', 'John Williams'),
+  ('Theme From Schindler\'s List', 'John Williams'), ('He\'s a Pirate', 'Klaus Badelt'), ('Time', 'Hans Zimmer'),
+  ('Now We Are Free', 'Hans Zimmer'), ('Cornfield Chase', 'Hans Zimmer'), ('The Godfather Waltz', 'Nino Rota'),
+  ('The Good, the Bad and the Ugly', 'Ennio Morricone'), ('Chi Mai', 'Ennio Morricone'), ('Gabriel\'s Oboe', 'Ennio Morricone'),
+  ('Once Upon a Time in the West', 'Ennio Morricone'), ('Gonna Fly Now', 'Bill Conti'), ('Back to the Future', 'Alan Silvestri'),
+  ('Concerning Hobbits', 'Howard Shore'), ('The Pink Panther Theme', 'Henry Mancini'), ('James Bond Theme', 'Monty Norman'),
+  ('Hymn to the Sea', 'James Horner'), ('Axel F', 'Harold Faltermeyer'), ('Top Gun Anthem', 'Harold Faltermeyer'),
+  ('Lux Aeterna', 'Clint Mansell'), ('The Batman Theme', 'Danny Elfman'), ('Married Life', 'Michael Giacchino'),
+  ('Jai Ho', 'A.R. Rahman'), ('All Star', 'Smash Mouth'), ('Accidentally in Love', 'Counting Crows'), ('Happy', 'Pharrell Williams'),
+  ('You\'re the One That I Want', 'John Travolta'), ('Summer Nights', 'John Travolta'), ('Hungry Eyes', 'Eric Carmen'),
+  ('Son of a Preacher Man', 'Dusty Springfield'), ('Another Day of Sun', 'La La Land'), ('This Is Me', 'Keala Settle'),
+  ('Rewrite the Stars', 'Zac Efron'), ('Vois sur ton chemin', 'Les Choristes'), ('Reality', 'Richard Sanderson'),
+  ('Mission: Impossible Theme', 'Lalo Schifrin'), ('My Name Is Lincoln', 'Steve Jablonsky'), ('Duel of the Fates', 'John Williams'),
+  ('Oogway Ascends', 'Hans Zimmer'), ('Main Theme (Pirates of the Caribbean)', 'Hans Zimmer'), ('Kung Fu Fighting', 'Carl Douglas'),
+  ('What a Wonderful World', 'Louis Armstrong'), ('Holding Out for a Hero', 'Bonnie Tyler'), ('Try Everything', 'Shakira'),
+  ('Ghostbusters', 'Ray Parker'), ('Old Town Road', 'Lil Nas X'), ('Bad to the Bone', 'George Thorogood'), ('Oh Yeah', 'Yello'),
+  ('Ce n\'est qu\'un au revoir', 'Les Bronzés'), ('Le Grand Bleu', 'Eric Serra'), ('Il était une fois dans l\'Ouest', 'Ennio Morricone')]),
+
+ ('series', 'Génériques de séries', '📺', [
+  ('I\'ll Be There for You', 'The Rembrandts'), ('Main Title', 'Ramin Djawadi'), ('Stranger Things', 'Kyle Dixon'),
+  ('The X-Files', 'Mark Snow'), ('Twin Peaks Theme', 'Angelo Badalamenti'), ('Woke Up This Morning', 'Alabama 3'),
+  ('Bella Ciao', 'Manu Pilas'), ('Breaking Bad Main Title Theme', 'Dave Porter'), ('The Simpsons Theme', 'Danny Elfman'),
+  ('Red Right Hand', 'Nick Cave'), ('Tuyo', 'Rodrigo Amarante'), ('The Game Is On', 'David Arnold'), ('Doctor Who Theme', 'Murray Gold'),
+  ('Downton Abbey', 'John Lunn'), ('Westworld Main Title', 'Ramin Djawadi'), ('The Crown Main Title', 'Hans Zimmer'),
+  ('Succession', 'Nicholas Britell'), ('Save Me', 'Remy Zero'), ('Teardrop', 'Massive Attack'), ('Bad Things', 'Jace Everett'),
+  ('Far From Any Road', 'The Handsome Family'), ('Hawaii Five-O', 'The Ventures'), ('Magnum P.I.', 'Mike Post'),
+  ('The A-Team', 'Mike Post'), ('Miami Vice Theme', 'Jan Hammer'), ('I\'m Always Here', 'Jimi Jamison'),
+  ('How Soon Is Now?', 'Love Spit Love'), ('Sex and the City', 'Douglas J. Cuomo'), ('Desperate Housewives', 'Danny Elfman'),
+  ('Cosy in the Rocket', 'Psapp'), ('California', 'Phantom Planet'), ('I Don\'t Want to Be', 'Gavin DeGraw'), ('Superman', 'Lazlo Bane'),
+  ('Boss of Me', 'They Might Be Giants'), ('Hey Beautiful', 'The Solids'), ('History of Everything', 'Barenaked Ladies'),
+  ('The Fresh Prince of Bel-Air', 'DJ Jazzy Jeff'), ('Happy Days', 'Pratt & McClain'), ('The Twilight Zone', 'Marius Constant'),
+  ('The Walking Dead Main Title', 'Bear McCreary'), ('If I Had a Heart', 'Fever Ray'), ('Way Back Then', 'Jung Jae Il'),
+  ('Goo Goo Muck', 'The Cramps'), ('Dexter Main Title', 'Rolfe Kent'), ('Lost Main Title', 'Michael Giacchino'),
+  ('Prison Break Main Title', 'Ramin Djawadi'), ('Searchin\' My Soul', 'Vonda Shepard'), ('Buffy the Vampire Slayer Theme', 'Nerf Herder'),
+  ('All for Us', 'Labrinth'), ('The Office', 'The Scrantones'), ('Seinfeld', 'Jonathan Wolff'), ('Better Call Saul', 'Little Barrie'),
+  ('The Mandalorian', 'Ludwig Göransson'), ('House of the Dragon', 'Ramin Djawadi'), ('Enemy', 'Imagine Dragons'),
+  ('A Beautiful Mine', 'RJD2'), ('Running Up That Hill', 'Kate Bush'), ('Gotham', 'générique'), ('Friends', 'générique'),
+  ('Plus belle la vie', 'générique'), ('Kaamelott', 'générique'), ('Les Brigades du Tigre', 'Claude Bolling'),
+  ('Pour l\'amour d\'un garçon', 'Hélène Rollès'), ('Navarro', 'générique'), ('Joséphine ange gardien', 'générique'),
+  ('Dallas', 'générique'), ('Mission: Impossible', 'Lalo Schifrin'), ('MacGyver', 'générique'), ('Charmed', 'générique'),
+  ('Le Bureau des légendes', 'générique'), ('Lupin', 'générique'), ('Narcos', 'générique'), ('Peaky Blinders', 'générique'),
+  ('Squid Game', 'générique'), ('Mercredi', 'générique'), ('Vikings', 'générique'), ('La Casa de Papel', 'générique')]),
 
  ('disney', 'Chansons Disney', '✨', [
   ('Libérée, délivrée', 'Anaïs Delva'), ('Hakuna Matata', 'Le Roi Lion'), ('Je voudrais déjà être roi', 'Le Roi Lion'),
@@ -98,7 +141,22 @@ PLAYLISTS = [
   ('Belle', 'La Belle et la Bête'), ('Je suis ton meilleur ami', 'Aladdin'),
   ('Il suffit d\'un peu de sucre', 'Mary Poppins'), ('Etre un homme comme vous', 'Le Livre de la jungle'),
   ('Au-delà de l\'horizon', 'Vaiana'), ('L\'Amour est un pays sans fin', 'Pocahontas'),
-  ('Je veux savoir', 'Tarzan'), ('Toujours dans mon cœur', 'Tarzan'), ('Remember Me', 'Coco'), ('La Bella Notte', 'La Belle et le Clochard'),]),
+  ('Je veux savoir', 'Tarzan'), ('Toujours dans mon cœur', 'Tarzan'), ('Remember Me', 'Coco'), ('La Bella Notte', 'La Belle et le Clochard'),
+  ('Hakuna Matata', 'The Lion King'), ('Circle of Life', 'The Lion King'), ('I Just Can\'t Wait to Be King', 'The Lion King'),
+  ('Be Prepared', 'The Lion King'), ('Can You Feel the Love Tonight', 'Elton John'), ('Let It Go', 'Frozen'),
+  ('Do You Want to Build a Snowman?', 'Frozen'), ('Into the Unknown', 'Frozen'), ('Show Yourself', 'Frozen'),
+  ('A Whole New World', 'Aladdin'), ('Friend Like Me', 'Aladdin'), ('Prince Ali', 'Aladdin'), ('Under the Sea', 'Little Mermaid'),
+  ('Part of Your World', 'Little Mermaid'), ('Kiss the Girl', 'Little Mermaid'), ('Be Our Guest', 'Beauty and the Beast'),
+  ('Beauty and the Beast', 'Beauty and the Beast'), ('Gaston', 'Beauty and the Beast'), ('Go the Distance', 'Hercules'),
+  ('Zero to Hero', 'Hercules'), ('Colors of the Wind', 'Pocahontas'), ('Reflection', 'Mulan'), ('I\'ll Make a Man Out of You', 'Mulan'),
+  ('The Bare Necessities', 'Jungle Book'), ('I Wan\'na Be Like You', 'Jungle Book'), ('Supercalifragilisticexpialidocious', 'Mary Poppins'),
+  ('Chim Chim Cher-ee', 'Mary Poppins'), ('A Spoonful of Sugar', 'Mary Poppins'), ('Bibbidi-Bobbidi-Boo', 'Cinderella'),
+  ('When You Wish Upon a Star', 'Pinocchio'), ('Heigh-Ho', 'Snow White'), ('Everybody Wants to Be a Cat', 'Aristocats'),
+  ('We Don\'t Talk About Bruno', 'Encanto'), ('Surface Pressure', 'Encanto'), ('How Far I\'ll Go', 'Moana'), ('You\'re Welcome', 'Moana'),
+  ('Shiny', 'Moana'), ('I See the Light', 'Tangled'), ('When Will My Life Begin', 'Tangled'), ('Un Poco Loco', 'Coco'),
+  ('You\'ve Got a Friend in Me', 'Randy Newman'), ('Strangers Like Me', 'Phil Collins'), ('You\'ll Be in My Heart', 'Phil Collins'),
+  ('Two Worlds', 'Phil Collins'), ('Almost There', 'Princess and the Frog'), ('Cruella De Vil', '101'), ('Once Upon a Dream', 'Sleeping Beauty'),
+  ('Cups', 'Anna Kendrick')]),
 
  ('club', 'Boîte de nuit', '🕺', [
   ('Mwaki', 'Zerb'), ('Houdini', 'Dua Lipa'), ('Training Season', 'Dua Lipa'), ('Espresso', 'Sabrina Carpenter'),
@@ -181,8 +239,10 @@ EXTRA = {
  'soiree': ['tubes soirée', 'soirée années 80', 'hits années 2000', 'tubes de mariage'],
  'top50': ['top france', 'hits du moment', 'top 50 france'],
  'ete2010': ['tubes été 2010', 'hits 2010', 'hits 2011', 'hits 2012'],
- 'disney': ['disney chansons françaises', 'disney en français'],
- 'films': ['musiques de films cultes', 'bandes originales films'],
+ 'disney': ['disney chansons françaises', 'disney en français', 'disney hits', 'chansons disney', 'disney classiques', 'pixar'],
+ 'dessins': ['génériques dessins animés', 'génériques dessins animés années 80', 'génériques dessins animés années 90', 'club dorothée', 'génériques mangas', 'génériques enfance'],
+ 'series': ['génériques séries', 'séries tv', 'tv themes', 'génériques séries culte', 'series soundtrack', 'génériques séries années 80'],
+ 'films': ['musiques de films cultes', 'bandes originales films', 'movie themes', 'film soundtrack', 'musique de film', 'cinéma'],
 }
 CAP = int(os.environ.get('CAP_PLAYLIST', '200'))
 # une playlist Deezer n'est prise que si son nom colle au thème
@@ -191,7 +251,9 @@ KW = {
  'soiree': r'soiree|fete|mariage|party|annees80|annees2000|80s|tubes',
  'top50': r'top50|topfrance|top100|hitsdumoment|top',
  'ete2010': r'201[0-4]',
- 'disney': r'disney',
+ 'disney': r'disney|pixar',
+ 'dessins': r'generique|dessin|cartoon|dorothee|manga|anime',
+ 'series': r'serie|tv|generique|show',
  'films': r'film|movie|cinema|bandeoriginale|bandesoriginales|soundtrack',
 }
 def from_playlists(key, got, seen, seenb):
@@ -210,7 +272,7 @@ def from_playlists(key, got, seen, seenb):
             if not t.get('preview') or not t.get('readable', True) or t['id'] in seen: continue
             full = t['title'] + ' ' + t['artist']['name'] + ' ' + t.get('album', {}).get('title', '')
             if BAD.search(full): continue
-            if norm(t['artist']['name']) not in KNOWN: continue  # seulement des artistes connus de la grande base
+            if key in POPLIKE and norm(t['artist']['name']) not in KNOWN: continue  # seulement des artistes connus de la grande base
             b = base(t['title']) + '|' + norm(t['artist']['name'])
             if b in seenb: continue
             seen.add(t['id']); seenb.add(b)
@@ -218,6 +280,7 @@ def from_playlists(key, got, seen, seenb):
 
 db = json.load(open('../db.json'))
 KNOWN = {norm(a) for a in db['a']}
+POPLIKE = {'club', 'soiree', 'top50', 'ete2010'}
 out = []
 for key, name, emo, items in PLAYLISTS:
     got, seen, seenb = [], set(), set()
