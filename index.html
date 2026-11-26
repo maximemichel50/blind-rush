@@ -222,7 +222,6 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 /* ---------- en ligne : lobby de l'hôte et manette téléphone ---------- */
 .joinbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--vin);color:var(--vinInk);border-radius:16px;padding:12px 14px 12px 18px;margin:0 0 8px}
 .joinbar b{display:block;font-size:17px}.joinbar span{font-size:14px;color:var(--vmuted)}
-.jbtns{display:flex;gap:8px;flex-wrap:wrap}
 .kicker{margin:18px 0 0;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:14px;color:var(--muted)}
 .lbgrid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:stretch;margin-top:8px}
 .lbcode{background:var(--vin);color:var(--vinInk);border-radius:20px;padding:18px 22px;display:grid;gap:6px;align-content:center}
@@ -278,7 +277,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 .ctl .lbplayers{justify-content:center}
 .ctl .warn{text-align:center;color:var(--muted)}
 .cs-t{color:#ff3d9a}
-@media(max-width:600px){.lbgrid{grid-template-columns:minmax(0,1fr)}.lbqr{justify-self:center}.jbtns{width:100%}.jbtns .btn{flex:1 1 100%}}
+@media(max-width:600px){.lbgrid{grid-template-columns:minmax(0,1fr)}.lbqr{justify-self:center}.joinbar .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -296,7 +295,8 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <p class="dbinfo" id="dbinfo">Chargement de la base de musiques…</p>
     <p class="mood" id="mood"></p>
 
-    <div class="joinbar"><div><b>Jouer à plusieurs, chacun son téléphone ?</b><span>Crée une partie et partage le code, ou rejoins celle d'un ami.</span></div><div class="jbtns"><button class="btn y" id="createOpen">Créer une partie</button><button class="btn ghost" id="joinOpen">Rejoindre une partie</button></div></div>
+    <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Crée-la ici, et tes amis la rejoignent depuis leur téléphone avec le code.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
+    <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
 
     <h2>1. Mode de jeu</h2>
     <div class="modes" id="games"></div>
