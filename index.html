@@ -399,6 +399,20 @@ body[data-game=party]::after{content:"";position:fixed;inset:0;pointer-events:no
 /* Duel : ring rouge contre bleu */
 body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba(47,107,255,.7) 57%,rgba(255,59,48,.85) 64%,transparent 72%)}
 @media(prefers-reduced-motion:reduce){.orb,body[data-game=party] h1,body[data-game=party] .go{animation:none!important}}
+
+/* classement mondial (Solo) */
+.lbbtn{margin-top:14px}body:not([data-game=solo]) .lbbtn,body:not([data-game=solo]) #lbHome{display:none}
+.lbbox{margin:22px 0 0;padding:16px;border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);border-radius:18px;background:color-mix(in srgb,var(--acc) 7%,#0d0b10)}
+.lbbox h3{margin:0 0 4px;font:400 26px Anton,sans-serif;letter-spacing:.02em;text-transform:uppercase}
+.lbbox .lbsub{margin:0 0 12px;font:400 12px 'Space Mono',monospace;color:var(--cmuted,#b9aeb5);text-transform:uppercase;letter-spacing:.06em}
+.lbbox ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.lbbox li{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.04)}
+.lbbox li .rk{font:400 22px Anton,sans-serif;color:var(--cmuted,#b9aeb5)}.lbbox li:nth-child(1) .rk{color:#ffd23f}.lbbox li:nth-child(2) .rk{color:#d9dde3}.lbbox li:nth-child(3) .rk{color:#e3955b}
+.lbbox li b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbbox li small{display:block;font:400 11px 'Space Mono',monospace;color:var(--cmuted,#b9aeb5)}
+.lbbox li .sc{font:400 22px Anton,sans-serif}
+.lbbox li.me{background:color-mix(in srgb,var(--acc) 26%,transparent);outline:1px solid var(--acc)}
+.lbbox .lbform{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}.lbbox .lbform input{flex:1 1 160px;min-width:0;font:600 16px Archivo,sans-serif;padding:10px 14px;border-radius:999px;border:1px solid var(--acc);background:transparent;color:inherit}
+.lbbox .lbmsg{margin:8px 0 0;font-size:14px}
 </style>
 </head>
 <body>
@@ -451,6 +465,8 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
     <div class="launch">
       <button class="go" id="goBtn" disabled>CHARGEMENT…</button>
       <p class="summary" id="summary"></p>
+      <button class="btn alt lbbtn" id="lbBtn">🏆 Classement mondial de cette playlist</button>
+      <div class="lbbox hide" id="lbHome"></div>
     </div>
     <div class="err hide" id="err" role="alert"></div>
     <p class="rules" id="rules"></p>
@@ -500,6 +516,7 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
     <p class="big" id="final">0</p>
     <p class="lead" id="verdict"></p>
     <ol class="board" id="board"></ol>
+    <div class="lbbox hide" id="lbbox"></div>
     <div class="wheelbox" id="wheelbox"></div>
     <div class="gagebox" id="gagebox"></div>
     <div class="row" style="justify-content:flex-start"><button class="btn y" id="againBtn">Rejouer</button><button class="btn alt" id="menuBtn">Changer de mode ou de playlist</button></div>
@@ -592,6 +609,28 @@ function link(R,out,silence){
   L.close=()=>{if(!L.open)return;L.open=false;clearInterval(L.hb);L.emit('close')};
   return L;
 }
+/* classement mondial (mode Solo) : chaque classement est un message « gardé » (retained) sur les 3 relais publics.
+   On lit les 3, on fusionne avec la copie gardée sur l'appareil, on ajoute le score, puis on renvoie la liste fusionnée.
+   Si un relais perd ses données, la prochaine personne qui joue les remet. */
+const lbClean=e=>e&&typeof e==='object'&&typeof e.id==='string'&&Number.isFinite(e.s)&&e.s>=0&&e.s<1e6?{id:e.id.slice(0,16),u:String(e.u||'').slice(0,16),n:String(e.n||'?').slice(0,16),s:Math.round(e.s),g:+e.g|0,r:+e.r|0,d:String(e.d||'').slice(0,10),at:+e.at||0}:null;
+const lbMerge=list=>{const by=new Map();for(const x of list){const e=lbClean(x);if(e&&!by.has(e.id))by.set(e.id,e)}
+  const all=[...by.values()].sort((a,b)=>b.s-a.s||a.at-b.at),per={},out=[];
+  for(const e of all){per[e.u]=(per[e.u]||0)+1;if(per[e.u]<=3&&out.length<60)out.push(e)}return out};
+window.brLB=async(key,add)=>{
+  const t=NS+'lb/'+key,ck='br-lb-'+key;let mine=[];try{mine=JSON.parse(localStorage.getItem(ck)||'[]')}catch(e){}
+  if(add)mine.push(add);
+  let remote=[],answers=0;
+  try{await brLoad('mqtt')}catch(e){return {list:lbMerge(mine),off:true}}
+  const R=relay();
+  await new Promise(res=>{let done=false;const end=()=>{if(!done){done=true;res()}};
+    R.on('open',()=>{R.sub(t);setTimeout(end,2600)});setTimeout(end,7000);
+    R.on('msg',(tt,d)=>{if(tt!==t||!Array.isArray(d.e))return;remote.push(...d.e);if(++answers>=R.clients.length)setTimeout(end,150)})});
+  const off=!R.connected(),list=lbMerge([...remote,...mine]),rid=new Set(remote.map(e=>e&&e.id));
+  try{localStorage.setItem(ck,JSON.stringify(list))}catch(e){}
+  if(!off&&(answers<R.clients.length||list.some(e=>!rid.has(e.id)))){const s=JSON.stringify({v:1,e:list});for(const c of R.clients)if(c.connected)c.publish(t,s,{qos:1,retain:true})}
+  setTimeout(()=>R.destroy(),off?0:2500);
+  return {list,off};
+};
 /* l'hôte : écoute les messages des téléphones de la partie <code> */
 window.brHost=(code,onConn)=>{
   const R=relay(),links={},up=NS+code+'/u/';
@@ -635,6 +674,7 @@ const TRACKS=DB.t.map(([ai,title,disp,id,md5,album])=>{
   const t={ai,title,artist:disp||DB.a[ai],id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0};
   ARTISTS[ai].tracks.push(t);return t;
 });
+const ARTIDX=new Map();ARTISTS.forEach(a=>{if(!ARTIDX.has(a.k)||a.tracks.length>ARTIDX.get(a.k).tracks.length)ARTIDX.set(a.k,a)});
 const CATS=[['mix','Mix monde',ARTISTS.map(a=>a.i)],...DB.c];
 /* playlists à thème (clé "l" de db.json, faite par tools/playlists_theme.py) : une liste de morceaux, pas d'artistes */
 const PLS=(DB.l||[]).map(([k,n,e,ts])=>({k:'pl:'+k,n,e,tracks:ts.map(([an,title,id,md5,album])=>({ai:-1,an,pl:true,title,artist:an,id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0}))}));
@@ -718,7 +758,7 @@ function playlist(){
   const c=CATS.find(c=>c[0]===S.cat)||CATS[0];return {ids:c[2],name:c[1]};
 }
 function summary(){
-  applyTheme(themeKey());
+  applyTheme(themeKey());const lh=document.getElementById("lbHome");if(lh)lh.classList.add("hide");
   const p=playlist(),el=$('#summary');
   if(!p){el.innerHTML='Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
   el.innerHTML=`${esc(GAMES[S.game].n)}${online()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
@@ -753,7 +793,9 @@ function makeChoices(ans,pool){
   const pick=[],ok=t=>t.b!==ans.b&&!pick.some(p=>p.b===t.b);
   if(ans.pl){ // playlist à thème : à partir de Moyen, d'abord les titres du même artiste dans la playlist
     const an=norm(ans.an),same=shuffle(pool.filter(t=>norm(t.an)===an)),other=shuffle(pool.filter(t=>norm(t.an)!==an));
-    for(const t of S.diff!=='facile'?[...same,...other]:[...other,...same])if(pick.length<3&&ok(t))pick.push(t);
+    // Moyen et Difficile : on complète avec la discographie de l'artiste dans la grande base (4 titres du même artiste)
+    const da=ARTIDX.get(an),disc=da?(S.diff==='difficile'?shuffle(da.tracks.slice()):[...shuffle(da.tracks.slice(0,15)),...shuffle(da.tracks.slice(15))]):[];
+    for(const t of S.diff!=='facile'?[...same,...disc,...other]:[...other,...same])if(pick.length<3&&ok(t))pick.push(t);
     return shuffle([ans,...pick]);
   }
   if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,top=shuffle(mine.slice(0,12)),rest=shuffle(mine.slice(12));for(const t of [...top,...rest])if(pick.length<3&&ok(t))pick.push(t)}
@@ -1280,16 +1322,57 @@ function closeNet(){
 }
 addEventListener('pagehide',()=>{if(NET.peer)closeNet()});
 
+/* ---------- classement mondial (Solo uniquement) ---------- */
+const UID=(()=>{let u=store.get('uid','');if(!u){u=Math.random().toString(36).slice(2,12);store.set('uid',u)}return u})();
+function lbKey(){ // un classement par playlist / style ou par artiste choisi, et par nombre de manches
+  const n=opt().n,cl=x=>String(x).replace(/[^a-z0-9]/gi,'_').slice(0,40);
+  if(S.mode==='pick'){if(!S.valid.length||S.valid.length>3)return null;return {k:'a-'+S.valid.map(i=>cl(ARTISTS[i].k)).sort().join('_')+'-'+n,name:S.valid.map(i=>ARTISTS[i].n).join(', '),n}}
+  const p=playlist();return p?{k:'c-'+cl(S.cat)+'-'+n,name:p.name,n}:null;
+}
+function lbRender(el,b,res,mineId){
+  const pseudo=store.get('pseudo','');
+  const best=[],seen=new Set();for(const e of res?res.list:[]){if(seen.has(e.u))continue;seen.add(e.u);best.push(e)} // meilleur score de chaque joueur
+  const rk=best.findIndex(e=>e.u===UID);
+  el.innerHTML=`<h3>🏆 Classement mondial</h3><p class="lbsub">${esc(b.name)} · ${b.n} manches · ${best.length} joueur${best.length>1?'s':''}</p>`+
+   (pseudo?'':`<div class="lbform"><input id="lbPseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname"><button class="btn y" id="lbSave">Enregistrer mon score</button></div>`)+
+   (!res?'<p class="lbmsg">Chargement du classement…</p>':best.length?`<ol>${best.slice(0,10).map((e,i)=>`<li class="${e.u===UID?'me':''}"><span class="rk">${i+1}</span><span><b>${esc(e.n)}</b><small>${e.g}/${e.r} · ${esc((DIFF[e.d]||{n:e.d}).n)}</small></span><span class="sc">${fmt(e.s)}</span></li>`).join('')}</ol>`+
+     (rk>=10?`<p class="lbmsg">Toi : <b>${rk+1}e</b> avec ${fmt(best[rk].s)} pts.</p>`:'')
+    :'<p class="lbmsg">Personne encore. Fais le premier score !</p>')+
+   (res&&res.off?'<p class="lbmsg">Pas de connexion : ton score est gardé sur ton appareil et sera envoyé plus tard.</p>':'')+
+   (pseudo&&mineId?`<p class="lbmsg">Score enregistré sous le pseudo <b>${esc(pseudo)}</b>. <a href="#" id="lbRen">Changer</a></p>`:'');
+  const sv=el.querySelector('#lbSave');
+  if(sv)sv.onclick=()=>{const v=el.querySelector('#lbPseudo').value.trim().slice(0,16);if(!v)return el.querySelector('#lbPseudo').focus();store.set('pseudo',v);
+    const pend=store.get('lbpend',null);store.set('lbpend',null);
+    if(pend){pend.e.n=v;lbRender(el,pend.b,null,pend.e.id);brLB(pend.b.k,pend.e).then(r=>lbRender(el,pend.b,r,pend.e.id))}else lbShow(el,b)};
+  const rn=el.querySelector('#lbRen');if(rn)rn.onclick=ev=>{ev.preventDefault();store.set('pseudo','');lbRender(el,b,res,null)};
+}
+function lbShow(el,b,add){
+  el.classList.remove('hide');lbRender(el,b,null,add&&add.id);
+  brLB(b.k,add).then(r=>lbRender(el,b,r,add&&add.id)).catch(()=>lbRender(el,b,{list:[],off:true}));
+}
+function lbAfterSolo(){
+  const el=$('#lbbox'),b=lbKey();if(!b||S.game!=='solo'||S.online){el.classList.add('hide');return}
+  const pl=S.pl[0],e={id:Math.random().toString(36).slice(2,12),u:UID,n:store.get('pseudo',''),s:Math.round(pl.score),g:pl.good,r:S.n,d:S.diff,at:Date.now()};
+  if(!e.n){store.set('lbpend',{b,e});el.classList.remove('hide');lbRender(el,b,null,null);brLB(b.k).then(r=>lbRender(el,b,r,null)).catch(()=>{});return}
+  lbShow(el,b,e);
+}
+$('#lbBtn').addEventListener('click',()=>{const el=$('#lbHome'),b=lbKey();
+  if(!el.classList.contains('hide')){el.classList.add('hide');return}
+  if(!b){el.classList.remove('hide');el.innerHTML='<p class="lbmsg">Choisis une playlist, un style, ou 1 à 3 artistes pour voir leur classement.</p>';return}
+  lbShow(el,b)});
+
 /* ---------- résultats ---------- */
 function results(){
   S.phase='idle';audio.pause();keepAwake(false);show('results');
   const fin=$('#final'),ver=$('#verdict'),board=$('#board');board.innerHTML='';
+  $('#lbbox').classList.add('hide');
   if(S.game==='solo'){
     const pl=S.pl[0],key=S.diff+'-'+S.n,best=store.get('best',{}),prev=best[key]||0;
     if(pl.score>prev){best[key]=pl.score;store.set('best',best)}
     fin.textContent=fmt(pl.score)+' pts';
     const g=pl.good,ratio=g/S.n,v=ratio===1?'Sans faute. Encyclopédie vivante.':ratio>=.8?'Très grosse oreille.':ratio>=.5?'Pas mal, encore un effort sur la vitesse.':ratio>=.3?'Il y a du potentiel. On remet ça ?':'Les bacs t\'ont eu cette fois. Revanche ?';
     ver.textContent=`${g}/${S.n} en ${DIFF[S.diff].n.toLowerCase()} · ${S.name}. ${v}${pl.score>prev&&prev?' Nouveau record !':prev&&pl.score<=prev?` Record : ${fmt(prev)} pts.`:''}`;
+    lbAfterSolo();
   }
   for(const p of S.pl)p.gage=p.gage&&S.game==='party'?p.gage:'';
   if(S.game==='duel'){const o=[...S.pl].sort((a,b)=>b.score-a.score),l=o[o.length-1];if(l.score<o[0].score)l.gage=drawGage(1)}

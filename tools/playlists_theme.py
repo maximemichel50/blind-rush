@@ -7,7 +7,7 @@ Format ajouté dans db.json :
 Lancé par le workflow "publier" quand le message du commit contient [playlists] (ou [reconstruire]).
 Pour ajouter une playlist : copier un bloc ci-dessous, changer la clé, le nom et les morceaux.
 """
-import json, re, sys, time, unicodedata
+import json, os, re, sys, time, unicodedata
 import requests
 
 PLAYLISTS = [
@@ -175,17 +175,49 @@ def find(title, hint):
         if best: return best[1]
     return None
 
+# En plus de la liste à la main : les titres de grosses playlists Deezer du même thème (éditeurs Deezer d'abord)
+EXTRA = {
+ 'club': ['hits club', 'boite de nuit', 'dancefloor hits', 'club hits 2025', 'afro club', 'reggaeton hits', 'hits dance', 'rap fr club'],
+ 'soiree': ['tubes soirée', 'soirée années 80', 'hits années 2000', 'tubes de mariage'],
+ 'top50': ['top france', 'hits du moment', 'top 50 france'],
+ 'ete2010': ['tubes été 2010', 'hits 2010', 'hits 2011', 'hits 2012'],
+ 'disney': ['disney chansons françaises', 'disney en français'],
+ 'films': ['musiques de films cultes', 'bandes originales films'],
+}
+CAP = int(os.environ.get('CAP_PLAYLIST', '200'))
+def from_playlists(key, got, seen, seenb):
+    pls = []
+    for q in EXTRA.get(key, []):
+        time.sleep(0.15)
+        res = get(API + '/search/playlist', {'q': q, 'limit': 10}).get('data', [])
+        res = [r for r in res if r.get('nb_tracks', 0) >= 25]
+        res.sort(key=lambda r: ('deezer' not in norm(r.get('user', {}).get('name', ''))))
+        pls += [r['id'] for r in res[:2] if r['id'] not in pls]
+    for pid in pls:
+        if len(got) >= CAP: break
+        time.sleep(0.15)
+        for t in get(API + f'/playlist/{pid}/tracks', {'limit': 120}).get('data', []):
+            if len(got) >= CAP: break
+            if not t.get('preview') or not t.get('readable', True) or t['id'] in seen: continue
+            full = t['title'] + ' ' + t['artist']['name'] + ' ' + t.get('album', {}).get('title', '')
+            if BAD.search(full): continue
+            b = base(t['title']) + '|' + norm(t['artist']['name'])
+            if b in seenb: continue
+            seen.add(t['id']); seenb.add(b)
+            got.append([t['artist']['name'], t['title_short'] or t['title'], t['id'], t.get('md5_image', ''), t.get('album', {}).get('title', '')])
+
 db = json.load(open('../db.json'))
 out = []
 for key, name, emo, items in PLAYLISTS:
-    got, seen = [], set()
+    got, seen, seenb = [], set(), set()
     for title, hint in items:
         t = find(title, hint)
         if not t or t['id'] in seen:
             print('  introuvable :', name, '|', title, '|', hint); continue
-        seen.add(t['id'])
+        seen.add(t['id']); seenb.add(base(t['title']) + '|' + norm(t['artist']['name']))
         got.append([t['artist']['name'], t['title_short'] or t['title'], t['id'], t.get('md5_image', ''), t.get('album', {}).get('title', '')])
-    print(f'{name} : {len(got)}/{len(items)} morceaux')
+    n0 = len(got); from_playlists(key, got, seen, seenb)
+    print(f'{name} : {n0}/{len(items)} à la main + {len(got)-n0} des playlists Deezer')
     if len(got) >= 20: out.append([key, name, emo, got])
 if len(out) < len(PLAYLISTS) // 2:
     sys.exit('Deezer a sans doute mal répondu : db.json n\'est pas modifiée.')
