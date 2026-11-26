@@ -449,12 +449,12 @@ const CATS=[['mix','Mix monde',ARTISTS.map(a=>a.i)],...DB.c];
 $('#dbinfo').textContent=`Base intégrée : ${fmt(TRACKS.length)} morceaux de ${fmt(ARTISTS.length)} artistes, du monde entier.`;
 
 const DIFF={
-  facile:{n:'Facile',d:'20 s pour répondre, début du morceau',limit:20,mult:1,off:[0,4]},
-  moyen:{n:'Moyen',d:'14 s pour répondre, extrait dans le morceau',limit:14,mult:1.5,off:[2,12]},
-  difficile:{n:'Difficile',d:'8 s pour répondre, extrait au hasard',limit:8,mult:2,off:[4,20]}
+  facile:{n:'Facile',d:'20 s pour répondre, début du morceau, artistes différents',limit:20,mult:1,off:[0,4]},
+  moyen:{n:'Moyen',d:'14 s pour répondre, 4 titres du même artiste',limit:14,mult:1.5,off:[2,12]},
+  difficile:{n:'Difficile',d:'8 s pour répondre, 4 titres du même artiste, extrait au hasard',limit:8,mult:2,off:[4,20]}
 };
 const store={get(k,d){try{const v=localStorage.getItem('br-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,JSON.stringify(v))}catch(e){}}};
-const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:store.get('diff','moyen'),pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
+const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
 S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.online=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
@@ -562,9 +562,12 @@ function buildRounds(ids,n){
   }
   return {pool,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,pool)}))};
 }
-/* 3 mauvaises réponses : d'autres artistes d'abord, de notoriété proche, jamais un titre qui ressemble à la bonne réponse */
+/* 3 mauvaises réponses, jamais un titre qui ressemble à la bonne réponse.
+   À partir de Moyen : d'autres titres du même artiste (il faut trouver le bon titre).
+   En Facile, ou si l'artiste n'a pas assez de titres : d'autres artistes, de notoriété proche. */
 function makeChoices(ans,pool){
   const pick=[],ok=t=>t.b!==ans.b&&!pick.some(p=>p.b===t.b);
+  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,top=shuffle(mine.slice(0,12)),rest=shuffle(mine.slice(12));for(const t of [...top,...rest])if(pick.length<3&&ok(t))pick.push(t)}
   const wmax=Math.max(...pool.slice(0,400).map(t=>ARTISTS[t.ai].w),1);
   for(let tries=0;pick.length<3&&tries<3000;tries++){
     const t=pool[Math.random()*pool.length|0];

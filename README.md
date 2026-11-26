@@ -16,6 +16,8 @@ Blind test musical : 10 manches, 4 réponses, plus tu réponds vite plus tu marq
 
 La musique tourne pendant tout le chrono, dans tous les modes. La difficulté règle le temps pour répondre (20 s, 14 s, 8 s) et l'endroit du morceau où l'extrait démarre.
 
+La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont des titres du même artiste ; en Facile, ce sont des artistes différents.
+
 - **Solo** : 5 à 20 manches contre le chrono, record par difficulté et par nombre de manches.
 - **Duel** (ambiance ring) : deux joueurs sur le même écran (touches 1-4 pour le rouge, 7 8 9 0 pour le bleu), ou 2 à 12 joueurs en ligne. Bonne réponse 300 à 1000 pts selon la vitesse × difficulté, +150 au premier qui trouve. Option : malus de −150 × difficulté en cas d'erreur.
 - **Babinski** (« Là pour se détruire », ambiance soirée) : 2 à 8 joueurs répondent en même temps, chacun sur sa ligne A B C D (ou jusqu'à 12 en ligne, chacun sur son téléphone). À la fin du chrono, classement de la manche : ceux qui ont trouvé (du plus rapide au plus lent), puis les mauvaises réponses, puis ceux qui n'ont pas répondu. Le 1er ne boit rien, le dernier prend la plus grosse peine (cul sec en intensité « Là pour se détruire », 5 gorgées en « Soirée », 3 en « Tranquille »), ceux du milieu une peine qui monte avec le rang. Mauvaise réponse ou pas de réponse : au moins 2 gorgées ; si personne ne trouve, tout le monde boit 2. Animation de fin de manche pour le premier et pour chaque joueur qui boit. Cartes spéciales (option) : Réflexe éclair, Double ou rien, Tournée générale, Le roi de la soirée, Karaoké. Un joker eau par joueur, version sans alcool (pompes).
