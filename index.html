@@ -419,6 +419,18 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 <audio id="audio" preload="auto" playsinline></audio>
 
 <script>
+/* petit journal du son, affiché par « Tester le son » pour comprendre une panne sur téléphone */
+window.ALOG=[];window.alogT0=Date.now();
+window.alog=function(m){const ALOG=window.ALOG,T0=window.alogT0;ALOG.push(((Date.now()-T0)/1000).toFixed(1)+'s '+m);if(ALOG.length>80)ALOG.shift();const el=document.getElementById('sndLog');if(el&&!el.closest('.hide'))el.textContent=ALOG.join('\n')};
+/* iPhone : le son doit démarrer pendant un toucher, et on demande à jouer même en mode silencieux */
+window.unlockAudio=function(){const audio=document.getElementById('audio');
+  try{if(navigator.audioSession){navigator.audioSession.type='playback';alog('audioSession '+navigator.audioSession.type)}}catch(e){alog('audioSession erreur')}
+  try{const n=800,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
+    w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);b.fill(128,44);
+    audio.muted=false;audio.volume=1;audio.src=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));window.UNLOCK=Promise.race([audio.play().then(()=>alog('déblocage ok'),e=>alog('déblocage refusé '+e.name+' '+e.message)),new Promise(r=>setTimeout(r,1200))]);
+  }catch(e){}
+};
+
 /* ---------- jeu en ligne : relais de messages ----------
    Les appareils ne se connectent plus directement entre eux (ça bloquait souvent en 4G ou entre deux box).
    Chaque appareil se connecte à des serveurs relais publics (MQTT) et les messages passent par eux.
@@ -513,9 +525,6 @@ S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.on
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
 const audio=$('#audio');
-/* petit journal du son, affiché par « Tester le son » pour comprendre une panne sur téléphone */
-const ALOG=window.ALOG=[];const T0=Date.now();
-function alog(m){ALOG.push(((Date.now()-T0)/1000).toFixed(1)+'s '+m);if(ALOG.length>80)ALOG.shift();const el=document.getElementById('sndLog');if(el&&!el.closest('.hide'))el.textContent=ALOG.join('\n')}
 for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedmetadata','ended','error'])audio.addEventListener(ev,()=>alog('audio '+ev+(ev==='error'&&audio.error?' code '+audio.error.code+' '+(audio.error.message||''):'')+' rs'+audio.readyState+' t'+audio.currentTime.toFixed(1)));
 
 
@@ -734,14 +743,6 @@ function begin(p,list){
   keepAwake(true);
   show('game');round();
   return '';
-}
-/* iPhone : le son doit démarrer pendant un toucher, et on demande à jouer même en mode silencieux */
-function unlockAudio(){
-  try{if(navigator.audioSession){navigator.audioSession.type='playback';alog('audioSession '+navigator.audioSession.type)}}catch(e){alog('audioSession erreur')}
-  try{const n=800,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
-    w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);b.fill(128,44);
-    audio.muted=false;audio.volume=1;audio.src=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));window.UNLOCK=Promise.race([audio.play().then(()=>alog('déblocage ok'),e=>alog('déblocage refusé '+e.name+' '+e.message)),new Promise(r=>setTimeout(r,1200))]);
-  }catch(e){}
 }
 /* garde l'écran allumé pendant la partie (sinon le chrono s'arrête quand l'écran se met en veille) */
 let WL=null;
@@ -1101,7 +1102,7 @@ function resync(e){
   if(m.t==='q'){const r=S.rounds[S.i],k=S.pl.findIndex(p=>p.net===e);if(S.phase!=='guess'||!r)return;nsend(e,{...m,lim:Math.max(.5,r.limit-(performance.now()-S.t0)/1000),done:S.pad[k]?S.pad[k].choice:null});return}
   nsend(e,m);
 }
-function sendQ(r){const ch=r.choices.map(c=>[c.title,c.artist]);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,card:r.card?CARDS[r.card].n:''}))}
+function sendQ(r){const ch=r.choices.map(c=>[c.title,c.artist]);const u=r.ans.url||'',off=+(r.off||0).toFixed(2);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,card:r.card?CARDS[r.card].n:'',u,off}))}
 function standing(){
   if(S.game==='duel')return [...S.pl.keys()].sort((a,b)=>S.pl[b].score-S.pl[a].score);
   const w=p=>p.drunk+p.cs*8;return [...S.pl.keys()].sort((a,b)=>w(S.pl[a])-w(S.pl[b])||S.pl[b].wins-S.pl[a].wins);
@@ -1281,14 +1282,28 @@ function lobby(players){
   <button class="btn alt" id="cLeave">Quitter la partie</button>`);
 }
 function wait(m){
-  screen(top(`Manche ${m.i+1}/${m.n}`,esc(C.name))+`<p class="ctl-big">Prépare-toi</p><p class="ctl-sub">Le son arrive sur l'écran de l'hôte.</p>`+(m.card?`<div class="turn"><b>${esc(m.card[0])}</b><span>${esc(m.card[1])}</span></div>`:''));
+  screen(top(`Manche ${m.i+1}/${m.n}`,esc(C.name))+`<p class="ctl-big">Prépare-toi</p><p class="ctl-sub">La musique arrive dans un instant.</p>`+(m.card?`<div class="turn"><b>${esc(m.card[0])}</b><span>${esc(m.card[1])}</span></div>`:''));
 }
+/* la musique joue aussi sur chaque téléphone (on peut la couper) */
+const PA=document.getElementById('audio');
+C.snd=ls.get('csnd','1')!=='0';
+function sndBtn(){const b=$('#cSnd');if(b)b.textContent=C.snd?'🔇 Couper le son de ce téléphone':'🔊 Mettre le son sur ce téléphone'}
+function phonePlay(m,retry){
+  if(!C.snd||!m.u)return;const recv=C.t0;
+  const go=()=>{const at=(m.off||0)+(performance.now()-recv)/1000;if(at>=(m.off||0)+m.lim)return;try{PA.currentTime=at}catch(e){}
+    PA.play().then(()=>{alog('téléphone : lecture ok');const s=$('#cSndHelp');if(s)s.classList.add('hide')},e=>{alog('téléphone : lecture refusée '+e.name);const s=$('#cSndHelp');if(s)s.classList.remove('hide')})};
+  if(!retry){alog('téléphone : charge l\'extrait');PA.pause();PA.src=m.u;PA.load()}
+  if(PA.readyState>=1)go();else PA.addEventListener('loadedmetadata',go,{once:true});
+}
+document.addEventListener('pointerdown',()=>{if(C.joined&&!C.unl&&PA.paused){C.unl=true;if(!C.q||C.pick!=null||!C.snd)unlockAudio();else{PA.play().catch(()=>{})}}},true);
 function question(m){
   C.q=m;C.t0=performance.now();C.pick=m.done??null;
   try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
   screen(top(`Manche ${m.i+1}/${m.n}${m.card?' · '+esc(m.card):''}`,`<b id="cT">${Math.ceil(m.lim)}</b>`)+`<div class="tbar"><i style="animation-duration:${m.lim}s"></i></div>
   <div class="kq">${m.ch.map(([t,a],i)=>`<button class="q${i}" data-c="${i}"><span class="sh" aria-hidden="true">${KQ[i]}</span><b>${esc(t)}</b><span>${esc(a)}</span></button>`).join('')}</div>
-  <p class="ctl-sub" id="cSt">Qui chante ? Quel titre ?<small>Le plus rapide marque le plus.</small></p>`);
+  <p class="ctl-sub" id="cSt">Qui chante ? Quel titre ?<small>Le plus rapide marque le plus.</small></p>
+  <p class="ctl-sub hide" id="cSndHelp"><small>Pas de son ? Touche l'écran une fois, ou le bouton ci-dessous.</small></p><button class="btn alt" id="cSnd"></button>`);
+  sndBtn();phonePlay(m);
   if(C.pick!=null)answered(null);
   C.tick=setInterval(()=>{const el=(performance.now()-C.t0)/1000,t=$('#cT');if(t)t.textContent=Math.max(0,Math.ceil(m.lim-el));if(el>=m.lim){clearInterval(C.tick);if(C.pick==null){document.querySelectorAll('.kq button').forEach(b=>b.disabled=true);const s=$('#cSt');if(s)s.innerHTML='Temps écoulé !<small>On attend le résultat…</small>'}}},200);
 }
@@ -1336,12 +1351,13 @@ function end(m){
 }
 $('#ctlBody').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.id==='cGo')return go();
+  if(b.id==='cGo'){unlockAudio();C.unl=true;return go()}
+  if(b.id==='cSnd'){C.snd=!C.snd;ls.set('csnd',C.snd?'1':'0');unlockAudio();C.unl=true;if(C.snd&&C.q)phonePlay(C.q,true);else PA.pause();return sndBtn()}
   if(b.id==='cBack'){C.left=true;try{C.conn&&C.conn.close()}catch(x){}location.href=location.pathname+(new URLSearchParams(location.search).get('peer')?'?peer='+new URLSearchParams(location.search).get('peer'):'');return}
   if(b.id==='cAgain'){C.code='';return joinScreen()}
   if(b.id==='cLeave'){C.left=true;C.joined=false;ls.set('ccode','');try{C.conn.send({t:'leave'})}catch(x){}setTimeout(()=>{try{C.conn&&C.conn.close()}catch(x){}},300);C.code='';return joinScreen()}
   if(b.id==='cJoker'){try{C.conn.send({t:'joker',i:C.lastR})}catch(x){}b.disabled=true;b.textContent='Joker demandé…';return}
-  if(b.dataset.c!=null)tap(+b.dataset.c);
+  if(b.dataset.c!=null){if(C.snd&&PA.paused&&C.q&&C.q.u)phonePlay(C.q,true);tap(+b.dataset.c)}
 });
 $('#ctlBody').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='cCode'||e.target.id==='cName')){e.preventDefault();if(e.target.id==='cCode'&&!$('#cName').value)$('#cName').focus();else go()}});
 $('#ctlBody').addEventListener('input',e=>{if(e.target.id==='cCode'){const v=e.target.value.toUpperCase().replace(/[^A-Z]/g,'');if(v!==e.target.value)e.target.value=v}});
