@@ -468,6 +468,20 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
 .guniq{margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);font-weight:700;font-size:15px}
 .guniq::before{content:"★ ";color:var(--acc)}
 @media(max-width:600px){.gpts{grid-template-columns:minmax(0,1fr)}.guide{padding:18px}}
+
+/* annonce des manches spéciales */
+.cardfx{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--acc) 35%,#0b0414),rgba(5,3,10,.94) 70%);pointer-events:none}
+.cardfx small{font:700 14px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#fff;opacity:.85}
+.cardfx b{font:400 clamp(48px,13vw,120px)/.95 Anton,sans-serif;text-transform:uppercase;background:linear-gradient(100deg,#ff3d9a,#ffd23f 50%,#27e0ff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 24px rgba(255,61,154,.6))}
+.cardfx span{font-size:20px;max-width:26em;color:#fff}
+.cardfx.on b{animation:cardPop .7s cubic-bezier(.2,1.6,.4,1) both}.cardfx.on{animation:cardIn 2.7s ease both}
+@keyframes cardPop{from{transform:scale(.3) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes cardIn{0%{opacity:0}8%{opacity:1}85%{opacity:1}100%{opacity:0}}
+.ctl-card{margin:14px 0;padding:18px;border-radius:18px;text-align:center;background:radial-gradient(circle at 50% 0,rgba(255,61,154,.35),rgba(20,8,30,.9));box-shadow:inset 0 0 0 2px #ff2fb0,0 0 30px rgba(255,47,176,.4);animation:cardPop .7s cubic-bezier(.2,1.6,.4,1) both}
+.ctl-card small{display:block;font:700 12px/1 var(--mono,monospace);letter-spacing:.18em;text-transform:uppercase;opacity:.85}.ctl-card b{display:block;font:400 40px/1 Anton,sans-serif;text-transform:uppercase;margin:8px 0;color:#ffd23f}.ctl-card span{font-size:16px}
+/* salon en ligne : changer de playlist */
+.lbchg{margin:10px 0 16px;padding:14px;border-radius:18px;background:rgba(255,255,255,.04);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 35%,transparent)}
+#lbChange{margin:6px 0 4px}
 </style>
 </head>
 <body>
@@ -595,6 +609,8 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
   <!-- PARTIE EN LIGNE : salle d'attente de l'hôte -->
   <section id="lobby" class="hide">
     <p class="kicker" id="lbMode">Partie en ligne</p>
+    <button class="btn ghost sm" id="lbChange">🎵 Changer la playlist, la difficulté ou les manches</button>
+    <div class="lbchg hide" id="lbChg"></div>
     <h1>Rejoignez la partie</h1>
     <div class="lbgrid">
       <div class="lbcode"><small>Code de la partie</small><b id="lbCode">····</b><span id="lbLink">Création de la partie…</span><button class="btn sm ghost" id="lbCopy" disabled>Partager le lien</button></div>
@@ -623,6 +639,7 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
   </section>
 </div>
 <div class="fx hide" id="fx" role="dialog" aria-live="assertive"></div>
+<div class="cardfx hide" id="cardfx" aria-live="assertive"></div>
 <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
 <audio id="audio" preload="auto" playsinline></audio>
 
@@ -868,21 +885,37 @@ function hideErr(){$('#err').classList.add('hide')}
 /* ---------- tirage des manches (hors ligne, depuis la base) ---------- */
 /* tirage pondéré : les artistes connus (choisis à la main) sortent bien plus souvent que les autres */
 const wshuffle=(a,w)=>a.map(x=>[Math.random()**(1/w(x)),x]).sort((p,q)=>q[0]-p[0]).map(p=>p[1]);
+/* sons déjà tombés dans les dernières parties (gardés sur l'appareil) : on évite de les reposer tout de suite */
+const HIST=new Set(store.get('hist',[]));
+function histAdd(rounds){const h=[...HIST,...rounds.map(r=>r.ans.id)].slice(-600);HIST.clear();h.forEach(x=>HIST.add(x));store.set('hist',h)}
+/* jamais deux fois le même artiste à la suite */
+function spread(list){const out=[],rest=[...list];while(rest.length){const last=out.length?norm(out[out.length-1].artist):'';let i=rest.findIndex(t=>norm(t.artist)!==last);if(i<0)i=0;out.push(rest.splice(i,1)[0])}return out}
+const TOPN=4; /* les manches viennent des 4 plus gros tubes de chaque artiste ; le reste sert aux mauvaises réponses */
 function buildRounds(ids,n){
-  const groups=wshuffle(ids.map(i=>ARTISTS[i]).filter(a=>a.tracks.length),a=>a.w).map(a=>a.tracks);
+  // les artistes les plus connus sortent beaucoup plus souvent (poids au carré)
+  const arts=wshuffle(ids.map(i=>ARTISTS[i]).filter(a=>a.tracks.length),a=>a.w*a.w),groups=arts.map(a=>a.tracks);
   const pool=groups.flat();
-  // chaque artiste donne d'abord ses titres les plus connus
-  const queues=groups.map(g=>[...shuffle(g.slice(0,6)),...shuffle(g.slice(6))]);
-  const answers=[],used=new Set();
-  while(answers.length<n&&queues.some(q=>q.length)){
-    for(const q of queues){if(answers.length>=n)break;while(q.length){const t=q.shift();if(!used.has(t.id)&&!used.has(t.b)){used.add(t.id);used.add(t.b);answers.push(t);break}}}
-  }
+  const pickPass=(fresh,cap)=>{const answers=[],used=new Set(),per=new Map();
+    const queues=groups.map(g=>shuffle(g.slice(0,cap)));
+    while(answers.length<n&&queues.some(q=>q.length)){
+      for(const q of queues){if(answers.length>=n)break;while(q.length){const t=q.shift();if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id)))continue;used.add(t.id);used.add(t.b);answers.push(t);break}}
+    }
+    return answers};
+  let answers=pickPass(true,TOPN);
+  if(answers.length<n)answers=pickPass(false,TOPN);
+  if(answers.length<n)answers=pickPass(false,1e9);
+  answers=spread(answers);
   return {pool,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,pool)}))};
 }
-/* playlist à thème : les manches et les mauvaises réponses viennent de la playlist */
+/* playlist à thème : les manches et les mauvaises réponses viennent de la playlist ; 2 sons maximum par artiste et par partie */
 function buildList(list,n){
-  const answers=[],used=new Set();
-  for(const t of shuffle(list)){if(answers.length>=n)break;if(used.has(t.id)||used.has(t.b))continue;used.add(t.id);used.add(t.b);answers.push(t)}
+  const pass=(fresh,cap)=>{const answers=[],used=new Set(),per=new Map();
+    for(const t of shuffle(list)){if(answers.length>=n)break;const a=norm(t.artist);if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id))||(per.get(a)||0)>=cap)continue;used.add(t.id);used.add(t.b);per.set(a,(per.get(a)||0)+1);answers.push(t)}
+    return answers};
+  let answers=pass(true,2);
+  if(answers.length<n)answers=pass(false,2);
+  if(answers.length<n)answers=pass(false,1e9);
+  answers=spread(answers);
   return {pool:list,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,list)}))};
 }
 /* 3 mauvaises réponses, jamais un titre qui ressemble à la bonne réponse.
@@ -1095,7 +1128,7 @@ function begin(p,list){
   S.n=opt().n;
   const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
-  S.pool=b.pool;S.rounds=b.rounds;S.name=p.name;S.i=0;S.fails=0;S.lastCard=null;
+  S.pool=b.pool;S.rounds=b.rounds;S.name=p.name;histAdd(b.rounds);S.i=0;S.fails=0;S.lastCard=null;
   S.pl=list.map(({name,net})=>({name,net,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0,tt:0,fin:0,gage:'',x2:S.game==='party'&&!!(S.x2next||[]).includes(norm(name))}));
   S.x2next=[];
   // débloque le son dans Safari : un premier play() pendant le clic
@@ -1138,8 +1171,10 @@ function round(){
   setRing(0);$('#timer').textContent='';
   const nx=S.rounds[S.i+1];if(nx)resolveUrl(nx.ans).then(u=>{if(u){const p=new Audio();p.preload='auto';p.src=u}});
   $('#status').innerHTML='Chargement de l\'extrait…';
-  playClip(r);
+  if(r.card){cardFx(r.card);const i0=S.i;setTimeout(()=>{if(S.i===i0&&S.rounds[S.i]===r)playClip(r)},2800)}else playClip(r);
 }
+/* annonce en grand d'une manche spéciale */
+function cardFx(k){const el=$('#cardfx');el.innerHTML=`<small>🃏 Manche spéciale</small><b>${esc(CARDS[k].n)}</b><span>${esc(CARDS[k].d)}</span>`;el.classList.remove('hide','on');void el.offsetWidth;el.classList.add('on');clearTimeout(cardFx.t);cardFx.t=setTimeout(()=>el.classList.add('hide'),2700)}
 function renderTurn(r){
   const el=$('#turn');
   if(S.game!=='party'||!r.card){el.classList.add('hide');return}
@@ -1375,7 +1410,7 @@ async function openLobby(){
   S.phase='idle';cancelAnimationFrame(S.raf);audio.pause();$('#vinyl').classList.remove('spin');$('#fx').classList.add('hide');
   S.online=false;NET.started=false;NET.lobby=NET.lobby.filter(e=>e.on);
   const p=playlist();
-  $('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n} · ${opt().n} manches`;
+  lbModeText();$('#lbChg').classList.add('hide');
   $('#lbPlay').checked=S.hostPlays;$('#lbName').value=S.hostName;$('#lbErr').classList.add('hide');
   keepAwake(true);show('lobby');renderLobby();
   if(NET.peer&&!NET.peer.destroyed){bcastLobby();return}
@@ -1411,6 +1446,22 @@ $('#lbCopy').addEventListener('click',async()=>{
   setTimeout(()=>b.textContent='Partager le lien',2500);
 });
 $('#lbCancel').addEventListener('click',()=>{closeNet();show('home')});
+/* salon : changer de playlist, de difficulté ou de manches sans quitter la partie */
+function lbModeText(){const p=playlist();$('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n} · ${opt().n} manches`}
+function renderLbChg(){
+  const chip=(k,n,e)=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-lc="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.mode!=='pick'&&S.cat===k}">${e?e+' ':''}${esc(n)}</button>`};
+  $('#lbChg').innerHTML=`<h3 class="plh">Playlists à thème</h3><div class="chips">${PLS.map(p=>chip(p.k,p.n,p.e)).join('')}</div><h3 class="plh">Styles</h3><div class="chips">${CATS.map(([k,n])=>chip(k,n)).join('')}</div>`+
+    `<div class="prow"><span class="lbl">Difficulté</span>${segHtml('ld',Object.keys(DIFF),S.diff,Object.values(DIFF).map(d=>d.n))}</div><div class="prow"><span class="lbl">Manches</span>${segHtml('ln',ROUNDS_OPT[S.game],opt().n)}</div>`;
+}
+$('#lbChange').addEventListener('click',()=>{const el=$('#lbChg');if(el.classList.toggle('hide'))return;renderLbChg()});
+$('#lbChg').addEventListener('click',e=>{
+  const c=e.target.closest('[data-lc]'),d=e.target.closest('[data-ld]'),n=e.target.closest('[data-ln]');
+  if(c){S.cat=c.dataset.lc;setMode('style');renderCats()}
+  else if(d){S.diff=d.dataset.ld;store.set('diff',S.diff);renderDiffs()}
+  else if(n){opt().n=+n.dataset.ln;saveOpt();renderGames()}
+  else return;
+  summary();lbModeText();renderLbChg();
+});
 $('#lbStart').addEventListener('click',()=>{
   $('#lbErr').classList.add('hide');
   const p=playlist();if(!p)return lobbyErr('Choisis d\'abord une playlist sur l\'accueil.');
@@ -1614,7 +1665,7 @@ function renderGages(){
 }
 $('#gagebox').addEventListener('click',e=>{const b=e.target.closest('[data-regage]');if(!b)return;const p=S.pl[+b.dataset.regage],lv=GAGES.findIndex(l=>l.includes(p.gage));p.gage=drawGage(lv<0?1:lv,[p.gage]);renderGages();if(S.online)sendEnd($('#final').textContent)});
 $('#againBtn').addEventListener('click',()=>{S.wantNet=!!NET.peer;start();S.wantNet=false}); /* en ligne : retour à la salle d'attente */
-$('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home');view('setup');wShow(0)});
+$('#menuBtn').addEventListener('click',async()=>{if(NET.peer&&!NET.peer.destroyed){await openLobby();$('#lbChg').classList.remove('hide');renderLbChg();return}show('home');view('setup');wShow(0)}); /* en ligne : on garde le salon et ses joueurs */
 $('#goBtn').addEventListener('click',()=>{S.wantNet=netPref();start();S.wantNet=false});
 /* « Créer une partie » sur l'accueil : crée la partie en ligne tout de suite (Duel si on était en Solo) avec la playlist et la difficulté de la page */
 /* réglages en étapes : Solo = playlist, difficulté, manches + lancer ; Multijoueur = joueurs et options, playlist, difficulté, lancer */
@@ -1762,7 +1813,7 @@ function lobby(players){
   <button class="btn alt" id="cLeave">Quitter la partie</button>`);
 }
 function wait(m){
-  screen(top(`Manche ${m.i+1}/${m.n}`,esc(C.name))+`<p class="ctl-big">Prépare-toi</p><p class="ctl-sub">La musique arrive dans un instant.</p>`+(m.card?`<div class="turn"><b>${esc(m.card[0])}</b><span>${esc(m.card[1])}</span></div>`:''));
+  screen(top(`Manche ${m.i+1}/${m.n}`,esc(C.name))+`<p class="ctl-big">Prépare-toi</p><p class="ctl-sub">La musique arrive dans un instant.</p>`+(m.card?`<div class="ctl-card"><small>🃏 Manche spéciale</small><b>${esc(m.card[0])}</b><span>${esc(m.card[1])}</span></div>`:''));
 }
 /* la musique joue aussi sur chaque téléphone (on peut la couper) */
 const PA=document.getElementById('audio');
