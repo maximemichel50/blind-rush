@@ -20,7 +20,7 @@ button{font:inherit;cursor:pointer;border:0;color:inherit}
 button:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
 .wrap{max-width:880px;margin:0 auto;padding:clamp(16px,3vw,32px) max(4vw,16px) 48px}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.logo{font:400 30px/1 Anton,Impact,sans-serif;display:flex;align-items:center;gap:10px}
+.logo{font:400 30px/1 Anton,Impact,sans-serif;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
 .eq{display:flex;gap:3px;align-items:flex-end;height:24px}.eq i{width:5px;background:var(--ink);border-radius:2px;height:40%;animation:eq 1s ease-in-out infinite alternate}
 .eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}.eq i:nth-child(4){animation-delay:-.15s}
 @keyframes eq{to{height:100%}}
@@ -315,7 +315,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 <div class="bgword" id="bgword" aria-hidden="true">WORLD</div>
 <div class="wrap">
   <header>
-    <div class="logo"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>BLIND RUSH<span class="disco" aria-hidden="true"></span></div>
+    <div class="logo" id="logo" role="link" tabindex="0" title="Retour à l'accueil" aria-label="Blind Rush, retour à l'accueil"><span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>BLIND RUSH<span class="disco" aria-hidden="true"></span></div>
     <div class="hud hide" id="hud"></div>
   </header>
 
@@ -417,11 +417,63 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 <audio id="audio" preload="auto"></audio>
 
 <script>
-/* modules chargés à la demande pour le jeu en ligne (PeerJS : connexion directe entre appareils) */
-window.BR_PFX='blindrush-mm50-';
-window.BR_LIBS={peer:['https://cdn.jsdelivr.net/npm/peerjs@1.5.5/dist/peerjs.min.js','https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js'],qr:['https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js','https://unpkg.com/qrcode-generator@2.0.4/dist/qrcode.js']};
-window.brLoad=async k=>{if(k==='peer'&&window.Peer)return;if(k==='qr'&&window.qrcode)return;for(const src of BR_LIBS[k]){try{await new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>{s.remove();rej()};document.head.appendChild(s)});return}catch(e){}}throw new Error('lib '+k)};
-window.brPeerOpts=()=>new URLSearchParams(location.search).get('peer')==='local'?{host:location.hostname,port:9000,path:'/',secure:false}:{};
+/* ---------- jeu en ligne : relais de messages ----------
+   Les appareils ne se connectent plus directement entre eux (ça bloquait souvent en 4G ou entre deux box).
+   Chaque appareil se connecte à des serveurs relais publics (MQTT) et les messages passent par eux.
+   Tous les relais sont utilisés en même temps : si l'un est en panne, les autres suffisent.
+   Aucun compte, rien n'est stocké : les messages ne font que transiter. */
+window.BR_LIBS={mqtt:['https://cdn.jsdelivr.net/npm/mqtt@5.10.1/dist/mqtt.min.js','https://unpkg.com/mqtt@5.10.1/dist/mqtt.min.js'],qr:['https://cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js','https://unpkg.com/qrcode-generator@2.0.4/dist/qrcode.js']};
+window.brLoad=async k=>{if(k==='mqtt'&&window.mqtt)return;if(k==='qr'&&window.qrcode)return;for(const src of BR_LIBS[k]){try{await new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>{s.remove();rej()};document.head.appendChild(s)});return}catch(e){}}throw new Error('lib '+k)};
+(()=>{
+const LOCAL=new URLSearchParams(location.search).get('peer')==='local'; /* tests : relais locaux */
+const BROKERS=LOCAL?['ws://'+location.hostname+':8883','ws://'+location.hostname+':8884']:['wss://broker.emqx.io:8084/mqtt','wss://broker.hivemq.com:8884/mqtt','wss://test.mosquitto.org:8081/mqtt'];
+const NS='blindrush-mm50/v2/';
+const Ev=()=>{const h={};return {on(k,f){(h[k]=h[k]||[]).push(f)},emit(k,...a){for(const f of h[k]||[])try{f(...a)}catch(e){console.error(e)}}}};
+function relay(){
+  const R=Ev();R.clients=[];R.destroyed=false;R.open=false;R.subs=new Set();R.me=Math.random().toString(36).slice(2,10);
+  BROKERS.forEach((url,i)=>{
+    let c;try{c=mqtt.connect(url,{clientId:'br'+R.me+i,clean:true,keepalive:20,reconnectPeriod:2000,connectTimeout:8000})}catch(e){return}
+    R.clients.push(c);
+    c.on('connect',()=>{for(const t of R.subs)c.subscribe(t,{qos:1});if(!R.open){R.open=true;R.emit('open')}R.emit('up')});
+    c.on('message',(t,buf)=>{let d;try{d=JSON.parse(buf.toString())}catch(e){return}if(d&&typeof d==='object')R.emit('msg',t,d)});
+    c.on('error',()=>{});
+  });
+  R.sub=t=>{R.subs.add(t);for(const c of R.clients)if(c.connected)c.subscribe(t,{qos:1})};
+  R.pub=(t,d)=>{const s=JSON.stringify(d);for(const c of R.clients)if(c.connected)c.publish(t,s,{qos:1})};
+  R.connected=()=>R.clients.some(c=>c.connected);
+  R.destroy=()=>{if(R.destroyed)return;R.destroyed=true;for(const c of R.clients)try{c.end(true)}catch(e){}};
+  return R;
+}
+/* une liaison avec un appareil : chaque message est numéroté (les doublons venus des autres relais sont ignorés),
+   et un petit signal part toutes les 3 s pour savoir si l'autre est toujours là */
+function link(R,out,silence){
+  const L=Ev();L.open=true;let seq=0,last=-1,from='',seen=Date.now(),sent=0;
+  L.send=m=>{if(!L.open)return;R.pub(out,{s:++seq,f:R.me,m});sent=Date.now()};
+  L.recv=d=>{if(!L.open)return;seen=Date.now();if(d.f!==from){from=d.f;last=-1}if(typeof d.s!=='number'||d.s<=last)return;last=d.s;if(!d.m||d.m.t==='ping')return;L.emit('data',d.m)};
+  L.hb=setInterval(()=>{if(!L.open)return;if(Date.now()-sent>3000)L.send({t:'ping'});if(Date.now()-seen>silence)L.close()},1500);
+  L.close=()=>{if(!L.open)return;L.open=false;clearInterval(L.hb);L.emit('close')};
+  return L;
+}
+/* l'hôte : écoute les messages des téléphones de la partie <code> */
+window.brHost=(code,onConn)=>{
+  const R=relay(),links={},up=NS+code+'/u/';
+  R.sub(up+'+');
+  R.on('msg',(t,d)=>{if(!t.startsWith(up))return;const rid=t.slice(up.length);if(!rid)return;
+    let L=links[rid];
+    if(!L||!L.open){L=links[rid]=link(R,NS+code+'/d/'+rid,20000);L.on('close',()=>{if(links[rid]===L)delete links[rid]});onConn(L)}
+    L.recv(d)});
+  const d0=R.destroy;R.destroy=()=>{for(const L of Object.values(links))L.close();d0()};
+  return R;
+};
+/* un téléphone : rejoint la partie <code> */
+window.brJoin=(code,rid)=>{
+  const R=relay();R.sub(NS+code+'/d/'+rid);
+  const L=link(R,NS+code+'/u/'+rid,30000);L.relay=R;
+  R.on('msg',(t,d)=>L.recv(d));
+  const c0=L.close;L.close=()=>{c0();setTimeout(R.destroy,300)};
+  return L;
+};
+})();
 </script>
 <script>
 (async()=>{
@@ -681,7 +733,9 @@ function begin(p,list){
 /* garde l'écran allumé pendant la partie (sinon le chrono s'arrête quand l'écran se met en veille) */
 let WL=null;
 async function keepAwake(on){try{if(on&&!WL&&navigator.wakeLock){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>WL=null)}if(!on&&WL){const w=WL;WL=null;await w.release()}}catch(e){}}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('#game').classList.contains('hide'))keepAwake(true)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')return;
+  if(!$('#game').classList.contains('hide')||!$('#lobby').classList.contains('hide'))keepAwake(true);
+  const p=window.NET&&NET.peer;if(p&&!p.destroyed&&p.disconnected)try{p.reconnect()}catch(e){}});
 function hud(){
   const r=S.rounds[S.i];
   let h=`<span><small>Manche</small>${S.i+1}/${S.n}</span>`;
@@ -919,7 +973,7 @@ $('#quitBtn').addEventListener('click',()=>{if(S.online)return openLobby();S.pha
 
 
 /* ---------- en ligne, façon Kahoot : l'hôte crée la partie, les autres la rejoignent avec un code ----------
-   Connexion directe entre appareils avec PeerJS. L'hôte joue la musique, mesure les temps et fait le classement.
+   Messages passés par des relais publics (voir brHost / brJoin plus haut). L'hôte joue la musique, mesure les temps et fait le classement.
    Messages vers les téléphones : welcome, lobby, wait, q (question), r (résultat), end, bye, err.
    Messages des téléphones : hello {name,rid}, a {i,c,e} (réponse, e = secondes), joker, leave. */
 const NET=window.NET={peer:null,code:'',lobby:[],started:false};
@@ -938,26 +992,17 @@ async function openLobby(){
   const p=playlist();
   $('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n} · ${opt().n} manches`;
   $('#lbPlay').checked=S.hostPlays;$('#lbName').value=S.hostName;$('#lbErr').classList.add('hide');
-  show('lobby');renderLobby();
+  keepAwake(true);show('lobby');renderLobby();
   if(NET.peer&&!NET.peer.destroyed){bcastLobby();return}
   $('#lbCode').textContent='····';$('#lbLink').textContent='Création de la partie…';$('#lbQr').innerHTML='';$('#lbCopy').disabled=true;
-  try{await brLoad('peer')}catch(e){return lobbyErr('Impossible de charger le module en ligne. Vérifie ta connexion internet puis réessaie.')}
-  hostPeer(0);
+  try{await brLoad('mqtt')}catch(e){return lobbyErr('Impossible de charger le module en ligne. Vérifie ta connexion internet puis réessaie.')}
+  hostPeer();
 }
-function hostPeer(n){
+function hostPeer(){
   const code=Array.from({length:4},()=>CODE_L[Math.random()*CODE_L.length|0]).join('');
-  const peer=new Peer(BR_PFX+code,brPeerOpts());
-  const to=setTimeout(()=>{if(NET.peer!==peer){try{peer.destroy()}catch(e){}lobbyErr('Le serveur des parties en ligne ne répond pas. Vérifie ta connexion puis rouvre la partie.')}},15000);
-  peer.on('open',()=>{clearTimeout(to);NET.peer=peer;NET.code=code;lobbyReady()});
-  peer.on('connection',c=>{c.on('data',m=>onMsg(c,m));c.on('close',()=>onClose(c));c.on('error',()=>{})});
-  peer.on('disconnected',()=>{if(NET.peer===peer&&!peer.destroyed)setTimeout(()=>{try{if(!peer.destroyed)peer.reconnect()}catch(e){}},1500)});
-  peer.on('error',e=>{
-    if(NET.peer===peer)return; // erreur passagère : la partie continue
-    clearTimeout(to);
-    if(e.type==='unavailable-id'&&n<6){try{peer.destroy()}catch(x){}return hostPeer(n+1)}
-    try{peer.destroy()}catch(x){}
-    lobbyErr('Le serveur des parties en ligne ne répond pas. Vérifie ta connexion puis réessaie.');
-  });
+  const R=brHost(code,c=>{c.on('data',m=>onMsg(c,m));c.on('close',()=>onClose(c))});
+  const to=setTimeout(()=>{if(NET.peer!==R){R.destroy();lobbyErr('Le serveur des parties en ligne ne répond pas. Vérifie ta connexion internet puis rouvre la partie.')}},15000);
+  R.on('open',()=>{if(R.destroyed||NET.peer===R)return;clearTimeout(to);NET.peer=R;NET.code=code;lobbyReady()});
 }
 async function lobbyReady(){
   $('#lbCode').textContent=NET.code;$('#lbLink').textContent=joinUrl().replace(/^https?:\/\//,'');$('#lbCopy').disabled=false;
@@ -1167,26 +1212,19 @@ async function go(){
   const b=$('#cGo');b.disabled=true;b.textContent='CONNEXION…';
   try{await connect()}catch(e){joinScreen(e.message)}
 }
-const NOTFOUND='Partie introuvable. Vérifie le code, et que l\'écran de l\'hôte est toujours ouvert.';
+const NOTFOUND='Partie introuvable. Vérifie le code, et que l\'écran de l\'hôte est allumé et toujours sur la salle d\'attente.';
 function connect(){
   return new Promise(async(res,rej)=>{
-    try{await brLoad('peer')}catch(e){return rej(new Error('Impossible de charger le module en ligne. Vérifie ta connexion internet.'))}
-    let done=false;const fail=m=>{if(done)return;done=true;clearTimeout(to);rej(new Error(m))};
-    const to=setTimeout(()=>fail(NOTFOUND),13000);
-    const link=()=>{
-      if(C.conn){const o=C.conn;C.conn=null;try{o.close()}catch(e){}}
-      const c=C.peer.connect(BR_PFX+C.code,{reliable:true});C.conn=c;
-      c.on('open',()=>{if(done)return;done=true;clearTimeout(to);c.send({t:'hello',name:C.name,rid});res()});
-      c.on('data',m=>{if(C.conn===c)onData(m)});
-      c.on('close',()=>{if(C.conn===c){C.conn=null;lost()}});
-      c.on('error',()=>{});
-    };
-    if(C.peer&&!C.peer.destroyed&&C.peer.open)return link();
-    if(C.peer)try{C.peer.destroy()}catch(e){}
-    const p=new Peer(brPeerOpts());C.peer=p;
-    p.on('open',link);
-    p.on('error',e=>{if(e.type==='peer-unavailable')fail(NOTFOUND);else if(!C.conn||!C.conn.open)fail('Le serveur des parties en ligne ne répond pas. Réessaie dans un instant.')});
-    p.on('disconnected',()=>{try{if(!p.destroyed)p.reconnect()}catch(e){}});
+    try{await brLoad('mqtt')}catch(e){return rej(new Error('Impossible de charger le module en ligne. Vérifie ta connexion internet.'))}
+    if(C.conn){const o=C.conn;C.conn=null;try{o.close()}catch(e){}}
+    let done=false;const L=brJoin(C.code,rid);C.conn=L;
+    const fail=m=>{if(done)return;done=true;clearInterval(iv);clearTimeout(to);if(C.conn===L)C.conn=null;L.close();rej(new Error(m))};
+    /* on se présente toutes les 1,5 s jusqu'à la réponse de l'hôte ; sans réponse au bout de 12 s, la partie n'existe pas (ou l'écran de l'hôte est éteint) */
+    const to=setTimeout(()=>fail(L.relay.open?NOTFOUND:'Le serveur des parties en ligne ne répond pas. Vérifie ta connexion internet et réessaie.'),12000);
+    const hello=()=>{if(!done&&L.relay.connected())L.send({t:'hello',name:C.name,rid})};
+    const iv=setInterval(hello,1500);L.relay.on('up',hello);
+    L.on('data',m=>{if(!done){done=true;clearInterval(iv);clearTimeout(to);res()}if(C.conn===L)onData(m)});
+    L.on('close',()=>{if(C.conn===L){C.conn=null;lost()}});
   });
 }
 function lost(){
@@ -1282,6 +1320,16 @@ $('#ctlBody').addEventListener('click',e=>{
 $('#ctlBody').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id==='cCode'||e.target.id==='cName')){e.preventDefault();if(e.target.id==='cCode'&&!$('#cName').value)$('#cName').focus();else go()}});
 $('#ctlBody').addEventListener('input',e=>{if(e.target.id==='cCode'){const v=e.target.value.toUpperCase().replace(/[^A-Z]/g,'');if(v!==e.target.value)e.target.value=v}});
 $('#joinOpen').addEventListener('click',()=>{C.code='';joinScreen()});
+function goHome(){
+  const sc=document.body.dataset.screen||'home';
+  if(sc==='home'){window.scrollTo({top:0,behavior:'smooth'});return}
+  if(C.joined){C.left=true;try{C.conn&&C.conn.send({t:'leave'})}catch(x){}}
+  ls.set('ccode','');
+  const q=new URLSearchParams(location.search).get('peer');
+  setTimeout(()=>{location.href=location.pathname+(q?'?peer='+q:'')},150);
+}
+$('#logo').addEventListener('click',goHome);
+$('#logo').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}});
 const j=new URLSearchParams(location.search).get('join');
 if(j){C.code=j.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);joinScreen();if(C.name&&C.code.length===4&&ls.get('ccode','')===C.code)go()}
 })();

@@ -32,10 +32,11 @@ Sur l'accueil, toucher **Créer une partie** (en haut de la page). La partie est
 4. Après chaque manche : classement sur l'écran de l'hôte, et sur chaque téléphone son résultat (points, ou gorgées avec l'animation du verre et le bouton joker eau).
 5. Un joueur qui perd la connexion (écran verrouillé, réseau) est reconnecté automatiquement et retrouve la partie. « Rejouer » ramène tout le monde dans la salle d'attente.
 
-Technique : connexion directe entre appareils avec [PeerJS](https://peerjs.com/) (serveur de mise en relation gratuit de PeerJS, relais TURN si les réseaux bloquent). Aucun compte, aucune donnée stockée. Pour tester sans internet : lancer un serveur PeerJS local (`npx peer --port 9000`) et ouvrir la page avec `?peer=local`.
+Technique : les appareils ne se connectent pas directement entre eux (ça bloquait souvent en 4G ou entre deux box). Les messages passent par trois serveurs relais publics MQTT (EMQX, HiveMQ, Mosquitto), utilisés en même temps : si l'un est en panne, les autres suffisent. Code : `brHost()` et `brJoin()` dans le premier `<script>`. Aucun compte, rien n'est stocké. Pour tester sans internet : lancer deux relais MQTT locaux en WebSocket sur les ports 8883 et 8884, et ouvrir la page avec `?peer=local`.
 
 ## Repères dans `index.html`
 
+- **Logo** : un clic ramène à l'accueil depuis n'importe quel écran (`goHome()`).
 - **En ligne (hôte)** : bouton `#createOpen` de l'accueil, objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
 - **En ligne (téléphone)** : dernier `<script>` du fichier, objet `C`, fonctions `joinScreen()`, `connect()`, `question()`, `result()`, `end()`.
 
