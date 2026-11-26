@@ -177,7 +177,7 @@ def find(title, hint):
 
 # En plus de la liste à la main : les titres de grosses playlists Deezer du même thème (éditeurs Deezer d'abord)
 EXTRA = {
- 'club': ['hits club', 'boite de nuit', 'dancefloor hits', 'club hits 2025', 'afro club', 'reggaeton hits', 'hits dance', 'rap fr club'],
+ 'club': ['hits club', 'boite de nuit', 'dancefloor hits', 'club hits 2025', 'afro club', 'reggaeton hits', 'rap fr club', 'dancefloor 2025'],
  'soiree': ['tubes soirée', 'soirée années 80', 'hits années 2000', 'tubes de mariage'],
  'top50': ['top france', 'hits du moment', 'top 50 france'],
  'ete2010': ['tubes été 2010', 'hits 2010', 'hits 2011', 'hits 2012'],
@@ -185,12 +185,21 @@ EXTRA = {
  'films': ['musiques de films cultes', 'bandes originales films'],
 }
 CAP = int(os.environ.get('CAP_PLAYLIST', '200'))
+# une playlist Deezer n'est prise que si son nom colle au thème
+KW = {
+ 'club': r'club|danc|boite|nightclub|reggaeton|afrobeat|amapiano|banger|clubbing',
+ 'soiree': r'soiree|fete|mariage|party|annees80|annees2000|80s|tubes',
+ 'top50': r'top50|topfrance|top100|hitsdumoment|top',
+ 'ete2010': r'201[0-4]',
+ 'disney': r'disney',
+ 'films': r'film|movie|cinema|bandeoriginale|bandesoriginales|soundtrack|bo',
+}
 def from_playlists(key, got, seen, seenb):
     pls = []
     for q in EXTRA.get(key, []):
         time.sleep(0.15)
         res = get(API + '/search/playlist', {'q': q, 'limit': 10}).get('data', [])
-        res = [r for r in res if r.get('nb_tracks', 0) >= 25]
+        res = [r for r in res if r.get('nb_tracks', 0) >= 25 and re.search(KW.get(key, '.'), norm(r.get('title', '')))]
         res.sort(key=lambda r: ('deezer' not in norm(r.get('user', {}).get('name', ''))))
         pls += [r['id'] for r in res[:2] if r['id'] not in pls]
     for pid in pls:
