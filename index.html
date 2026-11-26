@@ -414,7 +414,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 </div>
 <div class="fx hide" id="fx" role="dialog" aria-live="assertive"></div>
 <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
-<audio id="audio" preload="auto"></audio>
+<audio id="audio" preload="auto" playsinline></audio>
 
 <script>
 /* ---------- jeu en ligne : relais de messages ----------
@@ -724,11 +724,18 @@ function begin(p,list){
   S.pool=b.pool;S.rounds=b.rounds;S.name=p.name;S.i=0;S.fails=0;S.lastCard=null;
   S.pl=list.map(({name,net})=>({name,net,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0}));
   // débloque le son dans Safari : un premier play() pendant le clic
-  audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
-  audio.play().catch(()=>{});
+  unlockAudio();
   keepAwake(true);
   show('game');round();
   return '';
+}
+/* iPhone : le son doit démarrer pendant un toucher, et on demande à jouer même en mode silencieux */
+function unlockAudio(){
+  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+  try{const n=800,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
+    w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);b.fill(128,44);
+    audio.muted=false;audio.volume=1;audio.src=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));audio.play().catch(()=>{});
+  }catch(e){}
 }
 /* garde l'écran allumé pendant la partie (sinon le chrono s'arrête quand l'écran se met en veille) */
 let WL=null;
@@ -832,7 +839,7 @@ async function playClip(r){
   $('#status').innerHTML=S.online?'À vos téléphones !<small>Répondez sur votre écran, le plus vite possible.</small>':S.game==='party'?'Tout le monde répond !<small>Chacun tape sa lettre sur sa ligne.</small>':r.pads.length>1?'Écoutez bien…<small>Chacun répond sur son côté.</small>':'Écoute bien…<small>Qui chante ? Quel titre ?</small>';
   cancelAnimationFrame(S.raf);S.raf=requestAnimationFrame(tick);
 }
-$('#playBtn').addEventListener('click',()=>playClip(S.rounds[S.i]));
+$('#playBtn').addEventListener('click',()=>{try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}audio.play().catch(()=>{});playClip(S.rounds[S.i])});
 function setRing(p){const fg=$('#ringFg');fg.setAttribute('stroke-dashoffset',String(Math.min(100,p*100)));fg.style.stroke=p>.75?'#c81e1e':''}
 function tick(){
   if(S.phase!=='guess')return;
