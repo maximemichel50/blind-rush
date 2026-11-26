@@ -39,6 +39,7 @@ h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .chip{background:var(--cb,var(--card));color:var(--ci,var(--cardInk));padding:10px 16px;border-radius:999px;font-weight:600;min-height:44px;box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--ci,var(--cardInk)) 25%,transparent);transition:transform .1s}
 .chip:hover{transform:translateY(-2px)}
 .chip[aria-pressed=true]{box-shadow:0 0 0 3px var(--bg),0 0 0 6px var(--ink);font-weight:800}
+.plh{margin:4px 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}#pls+.plh{margin-top:18px}
 .chip small{opacity:.7;font-weight:600;margin-left:4px}
 .searchbox{position:relative}
 .searchbox input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border-radius:12px;border:0;background:var(--card);color:var(--cardInk);min-height:50px}
@@ -143,6 +144,9 @@ h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .board li{counter-increment:b;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:4px 12px;align-items:center;background:var(--card);color:var(--cardInk);border-radius:14px;padding:12px 16px}
 .board li::before{content:counter(b);grid-row:span 2;font:400 30px Anton,sans-serif;color:var(--cmuted)}
 .board b{font-size:18px}.board span{grid-column:2;font-size:14px;color:var(--cmuted)}.board em{grid-column:3;grid-row:1/span 2;font:400 26px Anton,sans-serif;font-style:normal;white-space:nowrap}
+.gagebox h2{margin:22px 0 8px}.gage{background:var(--card);color:var(--cardInk);border-radius:14px;padding:12px 16px;margin:0 0 8px;box-shadow:inset 6px 0 0 var(--acc)}.gage b{font-size:18px}.gage p{margin:4px 0 8px;font-size:17px}
+.streak{display:inline-block;background:#ff5a1f;color:#fff;border-radius:999px;padding:1px 8px;font:800 .8em system-ui,sans-serif;vertical-align:middle;letter-spacing:0}.streak.x3{background:#d4145a;animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.12)}}
 .board li.pc0{box-shadow:inset 6px 0 0 #e63946}.board li.pc1{box-shadow:inset 6px 0 0 #2f6bff}
 .recap .p.duo{display:flex;gap:10px}.recap .p.duo i{font-style:normal}.recap .p.duo .pc0{color:#e63946}.recap .p.duo .pc1{color:#2f6bff}
 .recap .p.small{font:600 14px Archivo,sans-serif;max-width:12em;white-space:normal}
@@ -340,7 +344,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
       <button class="tab" role="tab" id="tabStyle" aria-selected="true">Par style</button>
       <button class="tab" role="tab" id="tabPick" aria-selected="false">Je choisis mes artistes</button>
     </div>
-    <div class="panel" id="pStyle"><div class="chips" id="cats"></div></div>
+    <div class="panel" id="pStyle"><div id="plsWrap" class="hide"><h3 class="plh">Playlists à thème</h3><div class="chips" id="pls"></div><h3 class="plh">Styles</h3></div><div class="chips" id="cats"></div></div>
     <div class="panel hide" id="pPick">
       <div class="searchbox"><input id="q" type="search" autocomplete="off" placeholder="Cherche un artiste : Jul, Angèle, Queen…" aria-label="Chercher un artiste"></div>
       <ul class="list" id="list"></ul>
@@ -410,6 +414,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <p class="big" id="final">0</p>
     <p class="lead" id="verdict"></p>
     <ol class="board" id="board"></ol>
+    <div class="gagebox" id="gagebox"></div>
     <div class="row" style="justify-content:flex-start"><button class="btn y" id="againBtn">Rejouer</button><button class="btn alt" id="menuBtn">Changer de mode ou de playlist</button></div>
     <ul class="recap" id="recap"></ul>
   </section>
@@ -512,6 +517,8 @@ const TRACKS=DB.t.map(([ai,title,disp,id,md5,album])=>{
   ARTISTS[ai].tracks.push(t);return t;
 });
 const CATS=[['mix','Mix monde',ARTISTS.map(a=>a.i)],...DB.c];
+/* playlists à thème (clé "l" de db.json, faite par tools/playlists_theme.py) : une liste de morceaux, pas d'artistes */
+const PLS=(DB.l||[]).map(([k,n,e,ts])=>({k:'pl:'+k,n,e,tracks:ts.map(([an,title,id,md5,album])=>({ai:-1,an,pl:true,title,artist:an,id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0}))}));
 $('#dbinfo').textContent=`Base intégrée : ${fmt(TRACKS.length)} morceaux de ${fmt(ARTISTS.length)} artistes, du monde entier.`;
 
 const DIFF={
@@ -521,6 +528,7 @@ const DIFF={
 };
 const store={get(k,d){try{const v=localStorage.getItem('br-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,JSON.stringify(v))}catch(e){}}};
 const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
+S.drink=store.get('drink',S.soft?'pompes':'alcool');S.soft=S.drink==='pompes';S.gm=S.drink==='gages';
 S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.online=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
@@ -551,6 +559,7 @@ const THEMES={
  jazz:{n:'Ambiance club de jazz',bg:'#101a2c',ink:'#f3ead8',card:'#1e2b44',cardInk:'#f3ead8',acc:'#d4a24c',vin:'#060b16',vinInk:'#f3ead8',pat:'radial-gradient(circle at 72% 28%,rgba(212,162,76,.18),transparent 40%)',w:'JAZZ'},
  country:{n:'Ambiance saloon',bg:'#7a4a2c',ink:'#fbf1e2',card:'#fbf1e2',cardInk:'#3d2212',acc:'#f2c14e',vin:'#3d2212',vinInk:'#fbf1e2',pat:'repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 3px,transparent 3px 26px)',w:'COUNTRY'}
 };
+for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
 function applyTheme(k){
   const t=THEMES[k]||THEMES.mix,r=document.documentElement.style;
   for(const v of ['bg','ink','card','cardInk','acc','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
@@ -570,8 +579,11 @@ function themeKey(){
 function setMode(m){S.mode=m;$('#tabStyle').setAttribute('aria-selected',m==='style');$('#tabPick').setAttribute('aria-selected',m==='pick');$('#pStyle').classList.toggle('hide',m!=='style');$('#pPick').classList.toggle('hide',m!=='pick');summary()}
 $('#tabStyle').addEventListener('click',()=>setMode('style'));
 $('#tabPick').addEventListener('click',()=>{setMode('pick');$('#q').focus()});
-function renderCats(){$('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--cb:${t.bg};--ci:${t.ink}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
-$('#cats').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
+function renderCats(){
+  $('#plsWrap').classList.toggle('hide',!PLS.length);
+  $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return `<button class="chip" data-c="${p.k}" style="--cb:${t.bg};--ci:${t.ink}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`}).join('');
+  $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--cb:${t.bg};--ci:${t.ink}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
+$('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
 function renderDiffs(){$('#diffs').innerHTML=Object.entries(DIFF).map(([k,d])=>`<button class="diff" data-d="${k}" aria-pressed="${S.diff===k}"><b>${d.n}</b><span>${d.d}</span></button>`).join('')}
 $('#diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=b.dataset.d;store.set('diff',S.diff);renderDiffs();summary()});
 
@@ -604,13 +616,14 @@ $('#validate').addEventListener('click',()=>{
 });
 function playlist(){
   if(S.mode==='pick')return S.valid.length?{ids:S.valid,name:S.valid.length<=3?S.valid.map(i=>ARTISTS[i].n).join(', '):`Ta sélection (${S.valid.length} artistes)`}:null;
-  const c=CATS.find(c=>c[0]===S.cat);return {ids:c[2],name:c[1]};
+  const l=PLS.find(p=>p.k===S.cat);if(l)return {list:l.tracks,name:l.n};
+  const c=CATS.find(c=>c[0]===S.cat)||CATS[0];return {ids:c[2],name:c[1]};
 }
 function summary(){
   applyTheme(themeKey());
   const p=playlist(),el=$('#summary');
   if(!p){el.innerHTML='Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
-  el.innerHTML=`${esc(GAMES[S.game].n)}${online()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
+  el.innerHTML=`${esc(GAMES[S.game].n)}${online()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
 }
 function showErr(m){const e=$('#err');e.textContent=m;e.classList.remove('hide')}
 function hideErr(){$('#err').classList.add('hide')}
@@ -629,11 +642,22 @@ function buildRounds(ids,n){
   }
   return {pool,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,pool)}))};
 }
+/* playlist à thème : les manches et les mauvaises réponses viennent de la playlist */
+function buildList(list,n){
+  const answers=[],used=new Set();
+  for(const t of shuffle(list)){if(answers.length>=n)break;if(used.has(t.id)||used.has(t.b))continue;used.add(t.id);used.add(t.b);answers.push(t)}
+  return {pool:list,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,list)}))};
+}
 /* 3 mauvaises réponses, jamais un titre qui ressemble à la bonne réponse.
    À partir de Moyen : d'autres titres du même artiste (il faut trouver le bon titre).
    En Facile, ou si l'artiste n'a pas assez de titres : d'autres artistes, de notoriété proche. */
 function makeChoices(ans,pool){
   const pick=[],ok=t=>t.b!==ans.b&&!pick.some(p=>p.b===t.b);
+  if(ans.pl){ // playlist à thème : à partir de Moyen, d'abord les titres du même artiste dans la playlist
+    const an=norm(ans.an),same=shuffle(pool.filter(t=>norm(t.an)===an)),other=shuffle(pool.filter(t=>norm(t.an)!==an));
+    for(const t of S.diff!=='facile'?[...same,...other]:[...other,...same])if(pick.length<3&&ok(t))pick.push(t);
+    return shuffle([ans,...pick]);
+  }
   if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,top=shuffle(mine.slice(0,12)),rest=shuffle(mine.slice(12));for(const t of [...top,...rest])if(pick.length<3&&ok(t))pick.push(t)}
   const wmax=Math.max(...pool.slice(0,400).map(t=>ARTISTS[t.ai].w),1);
   for(let tries=0;pick.length<3&&tries<3000;tries++){
@@ -650,13 +674,13 @@ function makeChoices(ans,pool){
 const GAMES={
   solo:{n:'Solo',d:'Toi contre le chrono. Record à battre.',h:'Devine le son. Avant les autres.',lead:'4 réponses par manche. Plus tu réponds vite, plus tu marques.'},
   duel:{n:'Duel',d:'À deux sur le même écran, ou à plusieurs en ligne. Le plus rapide et le plus juste gagne.',h:'Un contre un. Que le meilleur gagne.',lead:'Rouge contre bleu, sur le même écran. Chaque seconde compte, chaque erreur coûte.'},
-  party:{n:'Babinski',d:'Là pour se détruire. Soirée sur un écran ou chacun son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps : le premier ne boit rien, le dernier boit cul sec.'}
+  party:{n:'Babinski',d:'Là pour se détruire. Soirée sur un écran ou chacun son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps : ceux qui se trompent boivent. À la fin, plus tu es mal classé, plus tu bois.'}
 };
 const ROUNDS_OPT={solo:[5,10,15,20],duel:[5,10,15,20],party:[10,15,20]};
 const INT={
-  soft:{n:'Tranquille',d:'Dernier : 3 gorgées. Entre les deux : 1 à 2.',mid:2,max:3,cs:false},
-  soiree:{n:'Soirée',d:'Dernier : 5 gorgées. Entre les deux : 1 à 3.',mid:3,max:5,cs:false},
-  destroy:{n:'Là pour se détruire',d:'Dernier : cul sec. Entre les deux : 1 à 4 gorgées.',mid:4,max:5,cs:true}
+  soft:{n:'Tranquille',d:'Mauvaise réponse ou pas de réponse : 1 gorgée.',wrong:1},
+  soiree:{n:'Soirée',d:'Mauvaise réponse ou pas de réponse : 2 gorgées.',wrong:2},
+  destroy:{n:'Là pour se détruire',d:'Mauvaise réponse ou pas de réponse : 3 gorgées.',wrong:3}
 };
 const CARDS={
   eclair:{n:'Réflexe éclair',d:'6 secondes seulement pour répondre.'},
@@ -666,13 +690,27 @@ const CARDS={
   karaoke:{n:'Karaoké',d:'Le premier chante le refrain. Réussi : il distribue 2. Raté : il boit 2.'}
 };
 const unit=n=>S.soft?plural(n,'pompe'):plural(n,'gorgée');
-const total=p=>p.drunk||!p.cs?(p.drunk?unit(p.drunk):'rien')+(p.cs?` + ${p.cs} ${S.soft?'× 20':'cul sec'}`:''):`${p.cs} ${S.soft?'× 20 pompes':'cul sec'}`;
+const total=p=>`${p.good} ✓`+(S.gm?'':` · ${p.drunk?unit(p.drunk):'rien bu'}`);
+/* classement Babinski : bonnes réponses, puis temps total de réponse (le plus rapide devant) */
+const pbetter=(a,b)=>b.good-a.good||a.tt-b.tt;
+/* fin de partie : le 1er rien, puis 1 gorgée de plus à chaque place */
+const finSips=rank=>Math.min(rank-1,10);
 const CS=()=>S.soft?'20 pompes':'cul sec';
 const KEYS2=['Digit7','Digit8','Digit9','Digit0'];
 const LET='ABCD';
 const KQ=['▲','◆','●','■'];
 const MAXP=12;
 const opt=()=>S.opt[S.game];
+/* séries : 3 bonnes réponses d'affilée = points ×2, 5 d'affilée = ×3. Une erreur remet à zéro. */
+const MULT=n=>n>=5?3:n>=3?2:1;
+const multTag=n=>MULT(n)>1?`<b class="streak x${MULT(n)}">🔥 ×${MULT(n)}</b>`:'';
+/* gages (sans alcool) : du plus doux au plus fort */
+const GAGES=[
+ ['Fais ton plus beau sourire de pub pour dentifrice pendant 10 secondes.','Imite le cri d\'un animal choisi par le groupe.','Fais un compliment sincère à chaque joueur.','Fais une révérence royale à tout le monde.','Raconte une blague, même nulle.','Parle avec un accent jusqu\'à la prochaine partie.'],
+ ['Chante le refrain de la dernière chanson de la partie.','Mime un titre de chanson : les autres doivent deviner.','Fais 10 squats en chantant.','Danse 15 secondes sur une musique choisie par le groupe.','Imite un chanteur ou une chanteuse choisi par le groupe.','Parle comme un robot jusqu\'à la fin de la prochaine partie.'],
+ ['Chante un refrain choisi par le groupe, debout, avec la voix à fond.','Invente une chorégraphie de 20 secondes et danse-la devant tout le monde.','Déclare ton amour à un objet de la pièce, avec beaucoup d\'émotion.','Enchaîne 3 refrains a cappella sans t\'arrêter.','Défile comme un mannequin dans toute la pièce, le groupe fait la musique.','Fais une interview de toi-même comme une star qui vient de gagner un Grammy.']
+];
+function drawGage(lvl,not){const l=GAGES[Math.max(0,Math.min(2,lvl))],c=l.filter(g=>!(not||[]).includes(g));return (c.length?c:l)[Math.random()*(c.length||l.length)|0]}
 
 function segHtml(attr,vals,cur,labels){return `<span class="seg">${vals.map((v,i)=>`<button data-${attr}="${v}" aria-pressed="${v===cur}">${labels?labels[i]:v}</button>`).join('')}</span>`}
 function renderGames(){
@@ -686,21 +724,24 @@ function renderGames(){
   const netHint=`<p class="hint">Tu crées la partie et tu obtiens un code. Tes amis la rejoignent depuis leur téléphone (jusqu'à ${MAXP} joueurs) et répondent dessus, façon Kahoot. Le son sort de cet appareil.</p>`;
   if(S.game==='duel')h=where+(net?netHint:`<div class="duo"><label class="red">Joueur rouge<input id="p1" maxlength="18" placeholder="Rouge" autocomplete="off" value="${esc(S.duel[0])}"></label><span class="vs">VS</span><label class="blue">Joueur bleu<input id="p2" maxlength="18" placeholder="Bleu" autocomplete="off" value="${esc(S.duel[1])}"></label></div>`)+h+`<label class="tog"><input type="checkbox" id="malus" ${o.malus?'checked':''}><span>Malus en cas d'erreur (−150 points × difficulté)</span></label>`;
   if(S.game==='party')h=where+(net?netHint:`<div class="prow"><input id="pName" maxlength="18" placeholder="Prénom d'un joueur" autocomplete="off" aria-label="Prénom d'un joueur"><button class="btn" id="pAdd">Ajouter</button><span class="pcount" id="pCount"></span></div><div class="tags" id="pTags"></div>`)+h+
-    `<div class="prow"><span class="lbl">Intensité</span>${segHtml('int',Object.keys(INT),o.int,Object.values(INT).map(x=>x.n))}</div><p class="hint" id="intHint">${esc(INT[o.int].d)} Mauvaise réponse ou pas de réponse : au moins 2 gorgées.</p>`+
-    `<label class="tog"><input type="checkbox" id="cards" ${o.cards?'checked':''}><span>Cartes spéciales (Réflexe éclair, Double ou rien, Karaoké…)</span></label><label class="tog"><input type="checkbox" id="soft" ${S.soft?'checked':''}><span>Version sans alcool (des pompes au lieu des gorgées)</span></label>`+
-    `<p class="warn">Jeu réservé aux adultes. Buvez avec modération, gardez de l'eau sur la table et personne ne prend le volant. Chaque joueur a un joker eau par partie pour échapper à une peine.</p>`;
+    `<div class="prow"><span class="lbl">Version</span>${segHtml('drink',['alcool','gages','pompes'],S.drink,['🍺 Avec alcool','🎭 Sans alcool : gages','💪 Sans alcool : pompes'])}</div>`+
+    (S.gm?`<p class="hint">Personne ne boit. Bonne réponse : 1 point (départage au temps de réponse). À la fin, le 1er n'a rien et chacun des autres a un gage, de plus en plus fort selon sa place (chanter, mimer, danser…).</p>`
+      :`<div class="prow"><span class="lbl">Intensité</span>${segHtml('int',Object.keys(INT),o.int,Object.values(INT).map(x=>x.n))}</div><p class="hint" id="intHint">Bonne réponse : tu ne ${S.soft?'fais rien':'bois rien'}. ${esc(S.soft?INT[o.int].d.replace(/gorgées?/,m=>m.replace('gorgée','pompe')):INT[o.int].d)} À la fin de la partie : le 1er rien, le 2e ${unit(1)}, le 3e ${unit(2)}… (égalité départagée au temps de réponse).</p>`)+
+    `<label class="tog"><input type="checkbox" id="cards" ${o.cards?'checked':''}><span>Cartes spéciales (Réflexe éclair${S.gm?'':', Double ou rien, Karaoké…'})</span></label>`+
+    (S.drink==='alcool'?`<p class="warn">Jeu réservé aux adultes. Buvez avec modération, gardez de l'eau sur la table et personne ne prend le volant. Chaque joueur a un joker eau par partie pour échapper à une peine.</p>`:'');
   $('#setup').innerHTML=h;
   if(S.game==='party'&&!net)renderParty();
   $('#goBtn').textContent=net?'CRÉER LA PARTIE':'LANCER LA PARTIE';
-  $('#rules').innerHTML=S.game==='duel'?`Bonne réponse : 300 à 1000 points selon la vitesse (× difficulté), +150 au premier qui trouve.${o.malus?' Mauvaise réponse : −150 (× difficulté).':''} Pas de réponse : 0. La musique tourne pendant tout le chrono. ${net?'En ligne : chacun répond sur son téléphone, le classement s\'affiche après chaque manche.':'Clavier : rouge 1 à 4, bleu 7 8 9 0.'}`
-    :S.game==='party'?(net?'Chaque manche, tout le monde répond en même temps sur son téléphone.':'Chaque manche, tout le monde répond en même temps sur sa ligne de boutons.')+' À la fin du chrono, classement : ceux qui ont trouvé (du plus rapide au plus lent), puis ceux qui se sont trompés, puis ceux qui n\'ont pas répondu. Le premier ne boit rien, le dernier prend la plus grosse peine, ceux du milieu une peine qui monte avec le classement.'
-    :'Bonne réponse : entre 300 et 1000 points selon ta vitesse, multipliés par la difficulté (×1, ×1,5, ×2). Bonus de série : +50 par bonne réponse d\'affilée à partir de la 2e. La musique tourne pendant tout le chrono. Clavier : 1 à 4.';
+  $('#rules').innerHTML=S.game==='duel'?`Bonne réponse : 300 à 1000 points selon la vitesse (× difficulté), +150 au premier qui trouve. Série : 3 bonnes d\'affilée = ×2, 5 d\'affilée = ×3. Le dernier a un gage à la fin.${o.malus?' Mauvaise réponse : −150 (× difficulté).':''} Pas de réponse : 0. La musique tourne pendant tout le chrono. ${net?'En ligne : chacun répond sur son téléphone, le classement s\'affiche après chaque manche.':'Clavier : rouge 1 à 4, bleu 7 8 9 0.'}`
+    :S.game==='party'?(net?'Chaque manche, tout le monde répond en même temps sur son téléphone.':'Chaque manche, tout le monde répond en même temps sur sa ligne de boutons.')+(S.gm?' Bonne réponse : 1 point. À la fin, classement par points (égalité : le plus rapide au total passe devant). Le 1er n\'a rien, les autres ont un gage de plus en plus fort selon leur place.':' Bonne réponse : rien. Mauvaise réponse ou pas de réponse : tu bois. À la fin, classement par bonnes réponses (égalité : le plus rapide au total passe devant). Le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.')
+    :'Bonne réponse : entre 300 et 1000 points selon ta vitesse, multipliés par la difficulté (×1, ×1,5, ×2). Série : 3 bonnes réponses d\'affilée = points ×2, 5 d\'affilée = points ×3 (une erreur remet à zéro). La musique tourne pendant tout le chrono. Clavier : 1 à 4.';
 }
 $('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
 function saveOpt(){store.set('opt',S.opt)}
 $('#setup').addEventListener('click',e=>{
   const nr=e.target.closest('[data-nr]');if(nr){opt().n=+nr.dataset.nr;saveOpt();renderGames();summary();return}
   const it=e.target.closest('[data-int]');if(it){opt().int=it.dataset.int;saveOpt();renderGames();return}
+  const dk=e.target.closest('[data-drink]');if(dk){S.drink=dk.dataset.drink;S.soft=S.drink==='pompes';S.gm=S.drink==='gages';store.set('drink',S.drink);renderGames();return}
   const rp=e.target.closest('[data-rp]');if(rp){S.party.splice(+rp.dataset.rp,1);store.set('party',S.party);renderParty();return}
   if(e.target.closest('#pAdd'))addPlayer();
 });
@@ -708,7 +749,6 @@ $('#setup').addEventListener('input',e=>{if(e.target.id==='p1'||e.target.id==='p
 $('#setup').addEventListener('change',e=>{
   if(e.target.id==='malus'){opt().malus=e.target.checked;saveOpt();renderGames()}
   if(e.target.id==='cards'){opt().cards=e.target.checked;saveOpt()}
-  if(e.target.id==='soft'){S.soft=e.target.checked;store.set('soft',S.soft)}
 });
 $('#setup').addEventListener('keydown',e=>{if(e.target.id==='pName'&&e.key==='Enter'){e.preventDefault();addPlayer()}});
 function renderParty(){
@@ -734,10 +774,10 @@ function start(){
 /* lance la partie (sur un écran ou en ligne) ; renvoie un message d'erreur si impossible */
 function begin(p,list){
   S.n=opt().n;
-  const b=buildRounds(p.ids,S.n);
+  const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
   S.pool=b.pool;S.rounds=b.rounds;S.name=p.name;S.i=0;S.fails=0;S.lastCard=null;
-  S.pl=list.map(({name,net})=>({name,net,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0}));
+  S.pl=list.map(({name,net})=>({name,net,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0,tt:0,fin:0,gage:''}));
   // débloque le son dans Safari : un premier play() pendant le clic
   unlockAudio();
   keepAwake(true);
@@ -753,15 +793,15 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 function hud(){
   const r=S.rounds[S.i];
   let h=`<span><small>Manche</small>${S.i+1}/${S.n}</span>`;
-  if(S.game==='solo')h+=`<span><small>Série</small>${S.pl[0].streak}</span><span><small>Score</small>${fmt(S.pl[0].score)}</span>`;
-  if(S.game==='duel'&&S.pl.length===2)h+=S.pl.map((p,i)=>`<span class="pc${i}"><small>${esc(p.name)}</small>${fmt(p.score)}</span>`).join('');
+  if(S.game==='solo')h+=`<span><small>Série</small>${S.pl[0].streak} ${multTag(S.pl[0].streak)}</span><span><small>Score</small>${fmt(S.pl[0].score)}</span>`;
+  if(S.game==='duel'&&S.pl.length===2)h+=S.pl.map((p,i)=>`<span class="pc${i}"><small>${esc(p.name)}</small>${fmt(p.score)} ${multTag(p.streak)}</span>`).join('');
   if(S.game==='duel'&&S.pl.length!==2){const top=[...S.pl].sort((a,b)=>b.score-a.score)[0];h+=`<span><small>En tête : ${esc(top.name)}</small>${fmt(top.score)}</span><span><small>Joueurs</small>${S.pl.length}</span>`}
-  if(S.game==='party')h+=`<span><small>${S.soft?'Pompes':'Gorgées'}</small>${S.pl.reduce((s,p)=>s+p.drunk,0)}</span><span><small>${S.soft?'Séries de 20':'Culs secs'}</small>${S.pl.reduce((s,p)=>s+p.cs,0)}</span>`;
+  if(S.game==='party'){const top=[...S.pl].sort(pbetter)[0];h+=`<span><small>En tête : ${esc(top.name)}</small>${top.good} ✓</span>`+(S.gm?'':`<span><small>${S.soft?'Pompes':'Gorgées'}</small>${S.pl.reduce((s,p)=>s+p.drunk,0)}</span>`)}
   $('#hud').innerHTML=h;
 }
 function drawCard(){
   if(!opt().cards||S.i===0||Math.random()>.35)return null;
-  const ks=Object.keys(CARDS).filter(k=>k!==S.lastCard);return ks[Math.random()*ks.length|0];
+  const ks=S.gm?['eclair']:Object.keys(CARDS).filter(k=>k!==S.lastCard);return ks[Math.random()*ks.length|0];
 }
 function round(){
   const r=S.rounds[S.i],D=DIFF[S.diff];
@@ -819,7 +859,7 @@ function jsonp(url,ms=7000){return new Promise((res,rej)=>{const cb='br'+Math.ra
 async function resolveUrl(t,skipDeezer){
   if(!skipDeezer&&t.url&&t.exp>Date.now()/1000+120)return t.url;
   if(!skipDeezer)try{const d=await jsonp(`https://api.deezer.com/track/${t.id}?output=jsonp`);if(d&&d.preview){t.url=d.preview;const m=/exp=(\d+)/.exec(d.preview);t.exp=m?+m[1]:Date.now()/1000+600;return t.url}}catch(e){}
-  try{const d=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(DB.a[t.ai]+' '+t.title)}&entity=song&limit=5&country=FR`);const an=norm(DB.a[t.ai]),r=(d.results||[]).find(r=>r.previewUrl&&norm(r.trackName).includes(t.b.slice(0,12))&&(norm(r.artistName).includes(an.slice(0,8))||an.includes(norm(r.artistName).slice(0,8))));if(r){t.url=r.previewUrl;t.exp=Date.now()/1000+86400;return t.url}}catch(e){}
+  try{const d=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent((t.an||DB.a[t.ai])+' '+t.title)}&entity=song&limit=5&country=FR`);const an=norm(t.an||DB.a[t.ai]),r=(d.results||[]).find(r=>r.previewUrl&&norm(r.trackName).includes(t.b.slice(0,12))&&(norm(r.artistName).includes(an.slice(0,8))||an.includes(norm(r.artistName).slice(0,8))));if(r){t.url=r.previewUrl;t.exp=Date.now()/1000+86400;return t.url}}catch(e){}
   alog('aucune adresse pour '+t.id);return '';
 }
 async function playClip(r){
@@ -898,19 +938,19 @@ function reveal(){
   let html='';
   if(S.game==='solo'){
     const pl=S.pl[0],x=r.res[0];
-    if(x.ok){pl.streak++;pl.good++;x.pts=Math.round((300+700*Math.max(0,1-x.t/r.limit))*D.mult)+(pl.streak>=2?50*(pl.streak-1):0)}else pl.streak=0;
+    if(x.ok){pl.streak++;pl.good++;x.mult=MULT(pl.streak);x.pts=Math.round((300+700*Math.max(0,1-x.t/r.limit))*D.mult*x.mult)}else pl.streak=0;
     pl.score+=x.pts;
-    html=x.ok?`<span class="pop">+${fmt(x.pts)} pts</span><small>Répondu en ${fmtT(x.t)}${pl.streak>=2?` · série de ${pl.streak}`:''}</small>`:x.t==null?`Temps écoulé !<small>C'était ${what}</small>`:`Raté !<small>C'était ${what}</small>`;
+    html=x.ok?`<span class="pop">+${fmt(x.pts)} pts ${multTag(pl.streak)}</span><small>Répondu en ${fmtT(x.t)}${pl.streak>=2?` · série de ${pl.streak}`:''}${x.mult>1?` · points ×${x.mult}`:pl.streak===2?' · encore 1 et c\'est ×2':''}</small>`:x.t==null?`Temps écoulé !<small>C'était ${what}</small>`:`Raté !<small>C'était ${what}</small>`;
   }
   if(S.game==='duel'){
     const firsts=r.res.filter(x=>x.ok).sort((a,b)=>a.t-b.t);
     for(const x of r.res){
       const pl=S.pl[x.p];
-      if(x.ok){pl.good++;x.pts=Math.round((300+700*Math.max(0,1-x.t/r.limit))*D.mult)+(firsts[0]===x?150:0)}
-      else if(x.t!=null&&opt().malus)x.pts=-Math.round(150*D.mult);
+      if(x.ok){pl.good++;pl.streak++;x.mult=MULT(pl.streak);x.pts=Math.round(((300+700*Math.max(0,1-x.t/r.limit))*D.mult+(firsts[0]===x?150:0))*x.mult)}
+      else{pl.streak=0;if(x.t!=null&&opt().malus)x.pts=-Math.round(150*D.mult)}
       pl.score+=x.pts;
     }
-    html=S.pl.length===2?`<span class="duelres">${r.res.map((x,k)=>`<span class="pc${k}">${esc(S.pl[x.p].name)} ${x.pts>0?'+':''}${fmt(x.pts)}</span>`).join('')}</span><small>C'était ${what}</small>`
+    html=S.pl.length===2?`<span class="duelres">${r.res.map((x,k)=>`<span class="pc${k}">${esc(S.pl[x.p].name)} ${x.pts>0?'+':''}${fmt(x.pts)}${x.mult>1?` (×${x.mult})`:''}</span>`).join('')}</span><small>C'était ${what}</small>`
       :`${firsts[0]?`${esc(S.pl[firsts[0].p].name)} est le plus rapide !`:'Personne n\'a trouvé.'}<small>C'était ${what}</small>`;
   }
   if(S.online)r.res.forEach((x,k)=>{const c=$('#np'+k),d=$('#ds'+k);if(!c)return;c.classList.remove('in');c.classList.add(x.ok?'ok':'ko');if(d)d.textContent=S.game==='duel'?(x.pts>0?'+':'')+fmt(x.pts):x.ok?fmtT(x.t):x.choice!=null?'faux':'pas répondu'});
@@ -924,28 +964,25 @@ function reveal(){
 
 /* ---------- mode Babinski (« Là pour se détruire ») ---------- */
 function partyRound(r,what){
-  const I=INT[opt().int],n=S.pl.length,st=r.stake;
+  /* seuls ceux qui se trompent (ou ne répondent pas) boivent ; une bonne réponse = 1 point */
+  const I=INT[opt().int],st=r.stake;
   const order=[...r.res].sort((a,b)=>(b.ok-a.ok)||((a.t==null)-(b.t==null))||((a.t??99)-(b.t??99)));
   const anyOk=order.some(x=>x.ok);
   r.pen=order.map((x,i)=>{
-    let sips=0,cs=false;
-    if(!anyOk){sips=r.card==='tournee'?3:2}
-    else if(i===0){sips=0}
-    else if(i===n-1){if(I.cs)cs=true;else sips=I.max}
-    else{sips=1+Math.round((i-1)*(I.mid-1)/Math.max(1,n-3));if(!x.ok)sips=Math.max(2,sips)}
-    if(!cs&&sips)sips=Math.min(sips*st,10);
-    return {p:x.p,rank:i+1,ok:x.ok,t:x.t,choice:x.choice,sips,cs,joker:false};
+    let sips=0;
+    if(!x.ok&&!S.gm)sips=Math.min((!anyOk&&r.card==='tournee'?3:I.wrong)*st,10);
+    return {p:x.p,rank:i+1,ok:x.ok,t:x.t,choice:x.choice,sips,cs:false,joker:false};
   });
-  for(const e of r.pen){const pl=S.pl[e.p];pl.drunk+=e.sips;if(e.cs)pl.cs++;if(e.ok)pl.good++}
+  for(const e of r.pen){const pl=S.pl[e.p];pl.drunk+=e.sips;if(e.ok){pl.good++;pl.tt+=e.t}}
   S.toGive=0;S.vote=false;S.giver=r.pen[0].p;
-  if(anyOk){S.pl[S.giver].wins++;if(r.card==='roi')S.toGive=3;if(r.card==='karaoke')S.vote=true}
+  if(anyOk){S.pl[S.giver].wins++;if(!S.gm&&r.card==='roi')S.toGive=3;if(!S.gm&&r.card==='karaoke')S.vote=true}
   r.log={anyOk};
   sendResults(r);
   $('#status').innerHTML=(anyOk?`${esc(S.pl[S.giver].name)} est le plus rapide !`:'Personne n\'a trouvé.')+`<small>C'était ${what}</small>`;
   hud();
   playFx(r,()=>{renderExtra(r);const nb=$('#nextBtn');nb.classList.remove('hide');if(!S.toGive&&!S.vote)nb.focus()});
 }
-function penText(e){return e.cs?CS():e.sips?unit(e.sips):'rien'}
+function penText(e){return S.gm?(e.ok?'+1 point':'raté'):e.cs?CS():e.sips?unit(e.sips):'rien'}
 function renderExtra(r){
   const rows=r.pen.map(e=>{const pl=S.pl[e.p];const how=e.ok?fmtT(e.t):e.choice!=null?`faux (${LET[e.choice]})`:'pas répondu';
     return `<li class="${e.rank===1&&r.log.anyOk?'win':''} ${e.cs?'cs':''}"><span class="rk">${e.rank}</span><span class="nm"><b>${esc(pl.name)}</b><small>${how}</small></span><span class="pn">${e.joker?'verre d\'eau':esc(penText(e))}</span>${(e.sips||e.cs)&&!e.joker&&pl.joker?`<button class="btn ghost sm" data-joker="${e.p}">Joker eau</button>`:'<span></span>'}</li>`}).join('');
@@ -970,9 +1007,9 @@ function confetti(){let h='';const c=['#ff3d9a','#27e0ff','#ffd23f','#9b5cff','#
 function playFx(r,done){
   const fx=$('#fx'),steps=[];
   const first=r.pen[0];
-  if(r.log.anyOk)steps.push({cls:'fx-win',html:`${confetti()}<p class="fx-k">Premier en ${fmtT(first.t)}</p><p class="fx-n">${esc(S.pl[first.p].name)}</p><p class="fx-t">ne boit rien</p>`});
-  else steps.push({cls:'fx-none',html:`<p class="fx-k">Personne n'a trouvé</p><p class="fx-n">Tout le monde boit</p><p class="fx-t">${esc(unit(r.pen[0].sips))}</p>`});
-  if(r.log.anyOk)for(const e of [...r.pen].filter(e=>e.sips||e.cs).sort((a,b)=>(a.cs-b.cs)||(a.sips-b.sips)))
+  if(r.log.anyOk)steps.push({cls:'fx-win',html:`${confetti()}<p class="fx-k">Premier en ${fmtT(first.t)}</p><p class="fx-n">${esc(S.pl[first.p].name)}</p><p class="fx-t">${S.gm?'+1 point':'ne boit rien'}</p>`});
+  else steps.push({cls:'fx-none',html:`<p class="fx-k">Personne n'a trouvé</p><p class="fx-n">${S.gm?'Aucun point':'Tout le monde boit'}</p><p class="fx-t">${S.gm?'cette manche':esc(unit(r.pen[0].sips))}</p>`});
+  if(r.log.anyOk&&!S.gm)for(const e of [...r.pen].filter(e=>e.sips||e.cs).sort((a,b)=>(a.cs-b.cs)||(a.sips-b.sips)))
     steps.push({cls:e.cs?'fx-cs':'fx-drink',html:`${glass(e.cs)}<p class="fx-k">${e.rank}<sup>e</sup> · ${e.ok?fmtT(e.t):e.choice!=null?'mauvaise réponse':'pas de réponse'}</p><p class="fx-n">${esc(S.pl[e.p].name)}</p><p class="fx-t">${e.cs?(S.soft?'20 pompes !':'CUL SEC !'):'boit '+esc(unit(e.sips))}</p>`});
   let i=0,timer=0;
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1105,7 +1142,7 @@ function resync(e){
 function sendQ(r){const ch=r.choices.map(c=>[c.title,c.artist]);const u=r.ans.url||'',off=+(r.off||0).toFixed(2);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,card:r.card?CARDS[r.card].n:'',u,off}))}
 function standing(){
   if(S.game==='duel')return [...S.pl.keys()].sort((a,b)=>S.pl[b].score-S.pl[a].score);
-  const w=p=>p.drunk+p.cs*8;return [...S.pl.keys()].sort((a,b)=>w(S.pl[a])-w(S.pl[b])||S.pl[b].wins-S.pl[a].wins);
+  return [...S.pl.keys()].sort((a,b)=>pbetter(S.pl[a],S.pl[b]));
 }
 function sendResults(r){
   if(!S.online)return;
@@ -1113,16 +1150,16 @@ function sendResults(r){
   const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>{
     const x=r.res.find(z=>z.p===k)||{};
-    const m={t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist,r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,last:S.i>=S.n-1,of:S.pl.length};
-    if(S.game==='duel'){m.pts=x.pts||0;m.score=pl.score;m.rank=ord.indexOf(k)+1}
+    const m={t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist,r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:S.gm,last:S.i>=S.n-1,of:S.pl.length};
+    if(S.game==='duel'){m.pts=x.pts||0;m.mult=x.mult||1;m.streak=pl.streak;m.score=pl.score;m.rank=ord.indexOf(k)+1}
     else{const en=r.pen.find(z=>z.p===k);Object.assign(m,{rank:en.rank,sips:en.sips,cs:en.cs,joker:en.joker,canJoker:!!(en.sips||en.cs)&&!en.joker&&pl.joker,anyOk:r.log.anyOk,first:S.pl[r.pen[0].p].name,give:S.giver===k&&S.toGive>0?S.toGive:0,sing:S.giver===k&&S.vote})}
     return m;
   });
 }
 function sendEnd(title){
   const ord=standing();
-  const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
-  netEach((pl,k)=>({t:'end',title,rank:ord.indexOf(k)+1,of:S.pl.length,board,game:S.game,good:pl.good,n:S.n}));
+  const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':`${S.pl[k].good} ✓ · ${S.gm?(S.pl[k].gage?'gage':'rien'):S.pl[k].fin?unit(S.pl[k].fin):'rien'}`]);
+  netEach((pl,k)=>({t:'end',title,rank:ord.indexOf(k)+1,of:S.pl.length,board,game:S.game,good:pl.good,n:S.n,soft:S.soft,gm:S.gm,fin:pl.fin,gage:pl.gage,tt:+pl.tt.toFixed(1)}));
 }
 function renderDuelBoard(r){
   const ord=standing();
@@ -1146,6 +1183,8 @@ function results(){
     const g=pl.good,ratio=g/S.n,v=ratio===1?'Sans faute. Encyclopédie vivante.':ratio>=.8?'Très grosse oreille.':ratio>=.5?'Pas mal, encore un effort sur la vitesse.':ratio>=.3?'Il y a du potentiel. On remet ça ?':'Les bacs t\'ont eu cette fois. Revanche ?';
     ver.textContent=`${g}/${S.n} en ${DIFF[S.diff].n.toLowerCase()} · ${S.name}. ${v}${pl.score>prev&&prev?' Nouveau record !':prev&&pl.score<=prev?` Record : ${fmt(prev)} pts.`:''}`;
   }
+  for(const p of S.pl)p.gage=p.gage&&S.game==='party'?p.gage:'';
+  if(S.game==='duel'){const o=[...S.pl].sort((a,b)=>b.score-a.score),l=o[o.length-1];if(l.score<o[0].score)l.gage=drawGage(1)}
   if(S.game==='duel'&&S.pl.length!==2){
     const ord=[...S.pl].sort((a,b)=>b.score-a.score);
     fin.textContent=ord[0].score===ord[1].score?'Égalité en tête':`${ord[0].name} gagne`;
@@ -1159,24 +1198,33 @@ function results(){
     board.innerHTML=S.pl.map((p,i)=>`<li class="pc${i}"><b>${esc(p.name)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}</span><em>${fmt(p.score)} pts</em></li>`).join('');
   }
   if(S.game==='party'){
-    const w=p=>p.drunk+p.cs*8;
-    const rk=[...S.pl].sort((a,b)=>w(a)-w(b)||b.wins-a.wins);
-    const cs=[...S.pl].sort((a,b)=>b.cs-a.cs)[0],fast=[...S.pl].sort((a,b)=>b.wins-a.wins)[0];
-    fin.textContent=`Plus sobre : ${rk[0].name}`;
-    ver.textContent=`${fast.wins?`${fast.name} a été le plus rapide ${plural(fast.wins,'fois')}. `:''}${cs.cs?`${cs.name} remporte le titre de roi du ${S.soft?'gainage':'cul sec'} (${cs.cs}). `:''}Pensez à boire de l'eau, et personne ne prend le volant ce soir.`;
-    board.innerHTML=rk.map(p=>`<li><b>${esc(p.name)}</b><span>${`${p.wins} manche${p.wins>1?'s':''} gagnée${p.wins>1?'s':''}`} · ${`${p.good} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}`}${p.joker?'':' · joker utilisé'}</span><em>${esc(total(p))}</em></li>`).join('');
+    /* classement final : bonnes réponses, égalité départagée au temps total ; le 1er rien, puis 1 gorgée de plus par place */
+    const rk=[...S.pl].sort(pbetter),n=rk.length;
+    rk.forEach((p,i)=>{p.fin=S.gm?0:finSips(i+1);p.gage=S.gm&&i>0?drawGage(n<=2?2:Math.round((i-1)/(n-2)*2),rk.map(q=>q.gage)):''});
+    const fast=[...S.pl].sort((a,b)=>b.wins-a.wins)[0];
+    fin.textContent=rk[1]&&!pbetter(rk[0],rk[1])?'Égalité parfaite en tête':`${rk[0].name} gagne`;
+    ver.textContent=`${rk[0].good}/${S.n} bonnes réponses pour ${rk[0].name}. ${fast.wins?`${fast.name} a été le plus rapide ${fast.wins} fois. `:''}`+(S.gm?'Fin de partie : le 1er n\'a rien, les autres font leur gage (de plus en plus fort selon la place).':`Fin de partie : le 1er ne ${S.soft?'fait rien':'boit rien'}, puis ${unit(1)} de plus à chaque place. ${S.soft?'':'Pensez à boire de l\'eau, et personne ne prend le volant ce soir.'}`);
+    board.innerHTML=rk.map((p,i)=>`<li><b>${esc(p.name)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}${p.good?` · ${fmtT(p.tt)} au total`:''}${S.gm?'':` · ${unit(p.drunk)} pendant la partie`}${p.joker||S.gm?'':' · joker utilisé'}</span><em>${S.gm?(i?'gage':'rien'):i?(S.soft?'':'boit ')+esc(unit(p.fin)):'rien'}</em></li>`).join('');
   }
+  renderGages();
   $('#recap').innerHTML=S.rounds.map((r,i)=>{
     let side='';
     if(S.game==='solo'){const x=r.res&&r.res[0];side=`<span class="p">${x&&x.ok?'+'+x.pts:'0'}<small>${x&&x.t!=null?fmtT(x.t):'temps écoulé'}</small></span>`}
     if(S.game==='duel'&&S.pl.length!==2){const b=(r.res||[]).filter(x=>x.ok).sort((a,c)=>a.t-c.t)[0];side=`<span class="p small">${b?esc(S.pl[b.p].name)+' +'+fmt(b.pts):'—'}<small>${b?'le plus rapide':'personne'}</small></span>`}
     else if(S.game==='duel')side=`<span class="p duo">${(r.res||[]).map((x,k)=>`<i class="pc${k}">${x.pts>0?'+':''}${x.pts}</i>`).join('')}</span>`;
-    if(S.game==='party')side=`<span class="p small">${r.pen?esc(r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
+    if(S.game==='party')side=`<span class="p small">${r.pen?esc(S.gm?r.pen.filter(e=>e.ok).map(e=>S.pl[e.p].name).join(' · ')||'—':r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
     const ok=r.res&&r.res.some(x=>x.ok);
     return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${esc(r.ans.title)}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
   }).join('');
+  if(S.game!=='party')renderGages();
   if(S.online)sendEnd(fin.textContent);
 }
+/* gages de fin de partie (Duel : le dernier ; Babinski sans alcool : tout le monde sauf le 1er) */
+function renderGages(){
+  const list=standing().map(k=>[k,S.pl[k]]).filter(([,p])=>p.gage);
+  $('#gagebox').innerHTML=list.length?`<h2>🎭 ${list.length>1?'Les gages':'Le gage du dernier'}</h2>${list.map(([k,p])=>`<div class="gage"><b>${esc(p.name)}</b><p>${esc(p.gage)}</p><button class="btn ghost sm" data-regage="${k}">🎲 Autre gage</button></div>`).join('')}`:'';
+}
+$('#gagebox').addEventListener('click',e=>{const b=e.target.closest('[data-regage]');if(!b)return;const p=S.pl[+b.dataset.regage],lv=GAGES.findIndex(l=>l.includes(p.gage));p.gage=drawGage(lv<0?1:lv,[p.gage]);renderGages();if(S.online)sendEnd($('#final').textContent)});
 $('#againBtn').addEventListener('click',()=>{S.wantNet=!!NET.peer;start();S.wantNet=false}); /* en ligne : retour à la salle d'attente */
 $('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home')});
 $('#goBtn').addEventListener('click',()=>{S.wantNet=false;start()});
@@ -1327,15 +1375,16 @@ function result(m){
   let h;
   if(m.game==='duel'){
     h=`<div class="mark ${m.ok?'ok':'ko'}">${m.ok?'✓':'✗'}</div><p class="ctl-big">${m.ok?'+'+m.pts.toLocaleString('fr-FR'):m.pts<0?m.pts.toLocaleString('fr-FR')+' pts':m.c!=null?'Raté':'Trop tard'}</p>
+      ${m.mult>1?`<p class="ctl-sub"><b class="streak x${m.mult}">🔥 Série de ${m.streak} : points ×${m.mult}</b></p>`:m.streak===2?`<p class="ctl-sub"><small>Série de 2 : encore une et tes points sont ×2</small></p>`:''}
       <p class="ctl-sub">${how}<small>Tu es ${ord(m.rank)} sur ${m.of} · ${m.score.toLocaleString('fr-FR')} points</small></p>`;
   }else{
     let big,art='';
     if(m.joker){big='Verre d\'eau';art=glass(false)}
+    else if(m.ok){big=m.gm?'+1 point !':C.soft?'Bonne réponse, pas de pompes !':'Bonne réponse, tu ne bois rien !';art=again||m.rank!==1?'':confetti()}
+    else if(m.gm){big='Raté !'}
     else if(!m.anyOk){big=`Tout le monde boit ${unit(m.sips)}`;art=glass(false)}
-    else if(m.rank===1){big='Tu ne bois rien !';art=again?'':confetti()}
-    else if(m.cs){big=`<span class="cs-t">${C.soft?'20 pompes !':'CUL SEC !'}</span>`;art=glass(true)}
     else{big=`Tu bois ${unit(m.sips)}`;art=glass(false)}
-    h=`${art}<p class="ctl-big">${big}</p><p class="ctl-sub">${m.anyOk?`Tu es ${ord(m.rank)} sur ${m.of}`:'Personne n\'a trouvé'}<small>${how}${m.anyOk&&m.rank!==1?` · ${esc(m.first)} a été le plus rapide`:''}</small></p>
+    h=`${art}<p class="ctl-big">${big}</p><p class="ctl-sub">${m.anyOk?`${m.ok?`Tu es ${ord(m.rank)} sur ${m.of} cette manche`:'Tu t\'es trompé'}`:'Personne n\'a trouvé'}<small>${how}${m.anyOk&&m.rank!==1?` · ${esc(m.first)} a été le plus rapide`:''}</small></p>
       ${m.canJoker?`<button class="btn y" id="cJoker">Utiliser mon joker eau</button>`:''}
       ${m.give?`<p class="ctl-sub">Tu distribues ${unit(m.give)}<small>Dis à l'hôte à qui, il les répartit sur son écran.</small></p>`:''}
       ${m.sing?`<p class="ctl-sub">À toi de chanter le refrain !<small>Le groupe juge sur l'écran de l'hôte.</small></p>`:''}`;
@@ -1343,10 +1392,13 @@ function result(m){
   screen(top(`Manche ${m.i+1}/${m.n}`,esc(C.name))+`<div class="ctl-res">${h}${was}</div>${list}<p class="ctl-sub"><small>${m.last?'Dernière manche : résultats dans un instant.':'La prochaine manche arrive.'}</small></p>`);
 }
 function end(m){
-  screen(top('Partie '+esc(C.code),esc(C.name))+`${m.rank===1?confetti():''}<p class="kicker" style="text-align:center">${esc(m.title)}</p><p class="ctl-big">${m.game==='duel'?(m.rank===1?'Victoire !':`${ord(m.rank)} sur ${m.of}`):(m.rank===1?'Le plus sobre !':`${ord(m.rank)} sur ${m.of}`)}</p>
+  if(m.soft!=null)C.soft=m.soft;
+  screen(top('Partie '+esc(C.code),esc(C.name))+`${m.rank===1?confetti():''}<p class="kicker" style="text-align:center">${esc(m.title)}</p><p class="ctl-big">${m.rank===1?'Victoire !':`${ord(m.rank)} sur ${m.of}`}</p>
   <p class="ctl-sub">${`${m.good} bonne${m.good>1?'s':''} réponse${m.good>1?'s':''}`} sur ${m.n}<small>Attends que l'hôte relance une partie.</small></p>
+  ${m.game==='party'&&!m.gm?`${m.fin?glass(false):''}<p class="ctl-big">${m.fin?`Tu bois ${unit(m.fin)}`:'Tu ne bois rien !'}</p><p class="ctl-sub"><small>Fin de partie : le 1er rien, puis ${unit(1)} de plus à chaque place.</small></p>`:''}
+  ${m.gage?`<div class="ctl-card"><span>🎭 Ton gage</span><b>${esc(m.gage)}</b></div>`:''}
   <ol class="rank">${m.board.map(([n,v],i)=>`<li class="${n===C.name?'win':''}"><span class="rk">${i+1}</span><span class="nm"><b>${esc(n)}</b></span><span class="pn">${esc(v)}</span><span></span></li>`).join('')}</ol>
-  ${m.game==='party'?`<p class="warn">Pensez à boire de l'eau, et personne ne prend le volant ce soir.</p>`:''}
+  ${m.game==='party'&&!m.gm&&!m.soft?`<p class="warn">Pensez à boire de l'eau, et personne ne prend le volant ce soir.</p>`:''}
   <button class="btn alt" id="cLeave">Quitter la partie</button>`);
 }
 $('#ctlBody').addEventListener('click',e=>{
