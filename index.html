@@ -326,7 +326,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <p class="dbinfo" id="dbinfo">Chargement de la base de musiques…</p>
     <p class="mood" id="mood"></p>
 
-    <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Crée-la ici, et tes amis la rejoignent depuis leur téléphone avec le code.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
+    <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Tu obtiens un code, tes amis la rejoignent depuis leur téléphone. Mode, playlist et difficulté : ceux réglés plus bas.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
     <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
 
     <h2>1. Mode de jeu</h2>
@@ -615,7 +615,7 @@ function renderGames(){
   document.body.dataset.game=S.game;
   let h=`<div class="prow"><span class="lbl">Manches</span>${segHtml('nr',ROUNDS_OPT[S.game],o.n)}</div>`;
   const net=online();
-  const where=S.game==='solo'?'':`<div class="prow"><span class="lbl">Comment vous jouez ?</span>${segHtml('where',['local','online'],net?'online':'local',['Sur cet écran','Chacun son téléphone'])}</div>`;
+  const where=''; /* le jeu en ligne se lance avec « Créer une partie » en haut de l'accueil */
   const netHint=`<p class="hint">Tu crées la partie et tu obtiens un code. Tes amis la rejoignent depuis leur téléphone (jusqu'à ${MAXP} joueurs) et répondent dessus, façon Kahoot. Le son sort de cet appareil.</p>`;
   if(S.game==='duel')h=where+(net?netHint:`<div class="duo"><label class="red">Joueur rouge<input id="p1" maxlength="18" placeholder="Rouge" autocomplete="off" value="${esc(S.duel[0])}"></label><span class="vs">VS</span><label class="blue">Joueur bleu<input id="p2" maxlength="18" placeholder="Bleu" autocomplete="off" value="${esc(S.duel[1])}"></label></div>`)+h+`<label class="tog"><input type="checkbox" id="malus" ${o.malus?'checked':''}><span>Malus en cas d'erreur (−150 points × difficulté)</span></label>`;
   if(S.game==='party')h=where+(net?netHint:`<div class="prow"><input id="pName" maxlength="18" placeholder="Prénom d'un joueur" autocomplete="off" aria-label="Prénom d'un joueur"><button class="btn" id="pAdd">Ajouter</button><span class="pcount" id="pCount"></span></div><div class="tags" id="pTags"></div>`)+h+
@@ -632,7 +632,6 @@ function renderGames(){
 $('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
 function saveOpt(){store.set('opt',S.opt)}
 $('#setup').addEventListener('click',e=>{
-  const wh=e.target.closest('[data-where]');if(wh){opt().where=wh.dataset.where;saveOpt();hideErr();renderGames();summary();return}
   const nr=e.target.closest('[data-nr]');if(nr){opt().n=+nr.dataset.nr;saveOpt();renderGames();summary();return}
   const it=e.target.closest('[data-int]');if(it){opt().int=it.dataset.int;saveOpt();renderGames();return}
   const rp=e.target.closest('[data-rp]');if(rp){S.party.splice(+rp.dataset.rp,1);store.set('party',S.party);renderParty();return}
@@ -924,7 +923,7 @@ $('#quitBtn').addEventListener('click',()=>{if(S.online)return openLobby();S.pha
    Messages vers les téléphones : welcome, lobby, wait, q (question), r (résultat), end, bye, err.
    Messages des téléphones : hello {name,rid}, a {i,c,e} (réponse, e = secondes), joker, leave. */
 const NET=window.NET={peer:null,code:'',lobby:[],started:false};
-function online(){return S.game!=='solo'&&opt().where==='online'}
+function online(){return S.game!=='solo'&&!!S.wantNet}
 const CODE_L='BCDFGHJKLMNPQRSTVWXZ';
 function joinUrl(){const u=new URL(location.pathname,location.origin);u.searchParams.set('join',NET.code);const q=new URLSearchParams(location.search).get('peer');if(q)u.searchParams.set('peer',q);return u.href}
 function nsend(e,m){if(!e||!e.conn||!e.conn.open)return;try{e.conn.send(m)}catch(err){}}
@@ -1106,14 +1105,13 @@ function results(){
   }).join('');
   if(S.online)sendEnd(fin.textContent);
 }
-$('#againBtn').addEventListener('click',start);
+$('#againBtn').addEventListener('click',()=>{S.wantNet=!!NET.peer;start();S.wantNet=false}); /* en ligne : retour à la salle d'attente */
 $('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home')});
-$('#goBtn').addEventListener('click',start);
-/* « Créer une partie » sur l'accueil : passe en mode en ligne (Duel si on était en Solo) et descend aux réglages */
+$('#goBtn').addEventListener('click',()=>{S.wantNet=false;start()});
+/* « Créer une partie » sur l'accueil : crée la partie en ligne tout de suite (Duel si on était en Solo) avec la playlist et la difficulté de la page */
 $('#createOpen').addEventListener('click',()=>{
-  if(S.game==='solo'){S.game='duel';store.set('game',S.game)}
-  opt().where='online';saveOpt();hideErr();renderGames();summary();
-  $('#games').scrollIntoView({behavior:'smooth',block:'start'});
+  if(S.game==='solo'){S.game='duel';store.set('game',S.game);renderGames();summary()}
+  S.wantNet=true;start();S.wantNet=false;
 });
 renderGames();
 

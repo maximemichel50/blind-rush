@@ -24,7 +24,7 @@ La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont d
 
 ## Jouer en ligne (façon Kahoot / WhoLiked)
 
-Sur l'accueil, toucher **Créer une partie** (ou, pour Duel et Babinski, choisir « Chacun son téléphone »), régler la playlist et la difficulté, puis **Créer la partie** :
+Sur l'accueil, toucher **Créer une partie** (en haut de la page). La partie est créée tout de suite avec le mode, la playlist et la difficulté réglés sur la page (Duel si on était en Solo). Le bouton « Lancer la partie » du bas sert aux parties sur un seul écran.
 
 1. L'écran de l'hôte affiche un **code de 4 lettres**, un lien et un QR code. La musique sort de cet appareil.
 2. Les joueurs ouvrent le lien ou scannent le QR code (ou touchent « Rejoindre une partie » sur l'accueil et tapent le code), puis choisissent un prénom. Jusqu'à 12 joueurs. L'hôte peut jouer aussi depuis son écran.
