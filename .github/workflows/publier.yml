@@ -46,6 +46,21 @@ jobs:
           # quelqu'un a peut-être publié pendant la reconstruction : on se met à jour avant d'envoyer
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
 
+      - name: Playlists à thème (si demandé ou après une reconstruction)
+        # aussi quand le message du commit contient [playlists]
+        if: ${{ inputs.reconstruire || contains(github.event.head_commit.message, '[reconstruire]') || contains(github.event.head_commit.message, '[playlists]') }}
+        run: |
+          pip3 install requests
+          git pull --rebase origin main || true
+          cd tools
+          python3 playlists_theme.py
+          cd ..
+          git config user.name "blind-rush-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add db.json
+          git commit -m "Met à jour les playlists à thème" || echo "Rien de nouveau"
+          for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
