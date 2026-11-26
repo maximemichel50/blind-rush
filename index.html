@@ -447,10 +447,17 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
 .mode.big .gi{display:block;margin:0 0 auto;padding-bottom:14px;color:var(--ca)}.mode.big .gi svg{width:40px;height:40px;fill:currentColor;filter:drop-shadow(0 0 10px color-mix(in srgb,var(--ca) 60%,transparent))}
 .mode.big:hover{transform:translateY(-3px);box-shadow:inset 0 0 0 2px var(--ca),0 0 30px color-mix(in srgb,var(--ca) 35%,transparent)}
 .view .back{margin:16px 0 0;padding:10px 16px;min-height:40px}
+.lbmenu{display:block;width:100%;margin:0 0 10px;font-size:15px;padding:18px}
 .joinlink{display:block;margin:4px 0 0;text-transform:none;letter-spacing:.02em}
-.netbtn{display:block;margin:14px auto 0}body[data-game=solo] .netbtn{display:none}
+.netbtn{display:none!important}
 body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
 @media(max-width:600px){.bigchoice{grid-template-columns:minmax(0,1fr)}.mode.big{min-height:150px}}
+
+/* réglages : une étape par écran */
+.wstep{display:none}.wstep.on{display:block}
+.wtop0,.wtop{display:none}#vSetup.first .wtop0,#vSetup.first .wtop{display:block}
+.wprog{margin:18px 0 0;font:700 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
+.wnext{display:block;margin:26px 0 0}
 </style>
 </head>
 <body>
@@ -469,8 +476,9 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
       <p class="lead">Choisis comment tu joues. Tout le reste se règle à l'étape suivante.</p>
       <div class="bigchoice">
         <button class="mode big" data-go="solo" style="--ca:#ff4a1c;--cb2:#ff2fb0;--cp:radial-gradient(circle at 90% 10%,rgba(255,74,28,.22),transparent 55%)"><i class="gi" data-icon="solo"></i><b>Solo</b><span>Toi contre le chrono. Ton score entre au classement mondial.</span></button>
-        <button class="mode big" data-go="multi" style="--ca:#2f6bff;--cb2:#ff2fb0;--cp:radial-gradient(circle at 90% 10%,rgba(47,107,255,.22),transparent 55%)"><i class="gi" data-icon="multi"></i><b>Multijoueur</b><span>Duel ou Babinski, sur un seul écran ou chacun son téléphone.</span></button>
+        <button class="mode big" data-go="multi" style="--ca:#2f6bff;--cb2:#ff2fb0;--cp:radial-gradient(circle at 90% 10%,rgba(47,107,255,.22),transparent 55%)"><i class="gi" data-icon="multi"></i><b>Multijoueur</b><span>Duel ou Babinski, chacun sur son téléphone.</span></button>
       </div>
+      <button class="btn alt lbmenu" data-go="lb">🏆 Classement mondial</button>
       <button class="btn ghost joinlink" data-join="1">Un ami t'a donné un code ? Rejoindre sa partie</button>
       <p class="dbinfo" id="dbinfo">Chargement de la base de musiques…</p>
     </div>
@@ -479,23 +487,38 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
       <h1 class="menuh">Multijoueur</h1>
       <p class="lead">À quoi vous jouez ?</p>
       <div class="bigchoice">
-        <button class="mode big" data-go="duel" style="--ca:#ff3b30;--cb2:#2f6bff;--cp:linear-gradient(115deg,rgba(255,59,48,.14) 0 50%,rgba(47,107,255,.14) 50% 100%)"><i class="gi" data-icon="duel"></i><b>Duel</b><span>Le plus rapide et le plus juste gagne. À deux sur le même écran, ou à plusieurs en ligne.</span></button>
-        <button class="mode big m-party" data-go="party" style="--ca:#ff2fb0;--cb2:#7a3cff;--cp:radial-gradient(circle at 50% 110%,rgba(39,224,255,.2),transparent 50%)"><i class="gi" data-icon="party"></i><b>Babinski</b><span>Le jeu de soirée : ceux qui se trompent boivent (ou font un gage).</span></button>
+        <button class="mode big" data-go="duel" style="--ca:#ff3b30;--cb2:#2f6bff;--cp:linear-gradient(115deg,rgba(255,59,48,.14) 0 50%,rgba(47,107,255,.14) 50% 100%)"><i class="gi" data-icon="duel"></i><b>Duel</b><span>Le plus rapide et le plus juste gagne. À 2 ou plus, chacun sur son téléphone.</span></button>
+        <button class="mode big m-party" data-go="party" style="--ca:#ff2fb0;--cb2:#7a3cff;--cp:radial-gradient(circle at 50% 110%,rgba(39,224,255,.2),transparent 50%)"><i class="gi" data-icon="party"></i><b>Babinski</b><span>Le jeu de soirée : ceux qui se trompent boivent (ou font un gage). Chacun sur son téléphone.</span></button>
       </div>
       <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
     </div>
+    <div class="view hide" id="vLb">
+      <button class="btn ghost back" data-back="menu">← Retour</button>
+      <h1 class="menuh">Classement mondial</h1>
+      <p class="lead">Les meilleurs scores en Solo. Choisis une playlist ou un style, puis le nombre de manches.</p>
+      <div class="prow"><span class="lbl">Manches</span><span class="seg" id="lbRounds"></span></div>
+      <h3 class="plh">Playlists à thème</h3><div class="chips" id="lbPls"></div>
+      <h3 class="plh">Styles</h3><div class="chips" id="lbCats"></div>
+      <div class="lbbox hide" id="lbView"></div>
+    </div>
     <div class="view hide" id="vSetup">
     <button class="btn ghost back" id="backSetup" data-back="menu">← Retour</button>
-    <h1 id="hero">Devine le son. Avant les autres.</h1>
+    <div class="wtop0"><h1 id="hero">Devine le son. Avant les autres.</h1>
     <p class="lead" id="lead">10 manches, 4 réponses. Plus tu réponds vite, plus tu marques.</p>
     <p class="mood" id="mood"></p>
+    </div><div class="wtop">
     <div class="sndtest"><button class="btn sm" id="sndBtn" type="button">🔊 Tester le son</button><div id="sndOut" class="hide"><p id="sndMsg"></p><pre id="sndLog"></pre></div></div>
 
 
+    </div>
+    <p class="wprog" id="wprog"></p>
+    <div class="wstep" data-w="opts">
     <h2 class="step s1"><i>01</i>Mode de jeu</h2>
     <p class="gdesc" id="gameDesc"></p>
     <div class="setup" id="setup"></div>
 
+    </div>
+    <div class="wstep" data-w="pl">
     <h2 class="step s2"><i>02</i>Ta playlist</h2>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tabStyle" aria-selected="true">Par style</button>
@@ -516,9 +539,13 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
       </div>
     </div>
 
+    </div>
+    <div class="wstep" data-w="diff">
     <h2 class="step s3"><i>03</i>Difficulté</h2>
     <div class="diffs" id="diffs"></div>
 
+    </div>
+    <div class="wstep" data-w="go">
     <div class="launch">
       <button class="go" id="goBtn" disabled>CHARGEMENT…</button>
       <button class="btn y netbtn" id="createOpen">📱 Ou créer une partie en ligne (chacun son téléphone)</button>
@@ -526,8 +553,10 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
       <button class="btn alt lbbtn" id="lbBtn">🏆 Classement mondial de cette playlist</button>
       <div class="lbbox hide" id="lbHome"></div>
     </div>
-    <div class="err hide" id="err" role="alert"></div>
     <p class="rules" id="rules"></p>
+    </div>
+    <div class="err hide" id="err" role="alert"></div>
+    <button class="go wnext" id="wNext">SUIVANT →</button>
     </div>
   </section>
 
@@ -746,7 +775,7 @@ const DIFF={
 };
 const store={get(k,d){try{const v=localStorage.getItem('br-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,JSON.stringify(v))}catch(e){}}};
 const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
-S.drink=store.get('drink',S.soft?'pompes':'alcool');S.soft=S.drink==='pompes';S.gm=S.drink==='gages';
+S.where=store.get('where','net');S.drink=store.get('drink',S.soft?'pompes':'alcool');S.soft=S.drink==='pompes';S.gm=S.drink==='gages';
 S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.online=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
@@ -820,7 +849,7 @@ function summary(){
   applyTheme(themeKey());const lh=document.getElementById("lbHome");if(lh)lh.classList.add("hide");
   const p=playlist(),el=$('#summary');
   if(!p){el.innerHTML='Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
-  el.innerHTML=`${esc(GAMES[S.game].n)}${online()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
+  el.innerHTML=`${esc(GAMES[S.game].n)}${online()||netPref()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
 }
 function showErr(m){const e=$('#err');e.textContent=m;e.classList.remove('hide')}
 function hideErr(){$('#err').classList.add('hide')}
@@ -872,8 +901,8 @@ function makeChoices(ans,pool){
 /* ---------- modes de jeu ---------- */
 const GAMES={
   solo:{n:'Solo',d:'Toi contre le chrono. Record à battre.',h:'Devine le son. Avant les autres.',lead:'4 réponses par manche. Plus tu réponds vite, plus tu marques.'},
-  duel:{n:'Duel',d:'À deux sur le même écran, ou à plusieurs en ligne. Le plus rapide et le plus juste gagne.',h:'Chacun pour soi. Le plus rapide gagne.',lead:'Face-à-face ou mêlée générale jusqu\'à 12 en ligne. Chaque seconde compte, chaque erreur coûte.'},
-  party:{n:'Babinski',d:'Là pour se détruire. Soirée sur un écran ou chacun son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps : ceux qui se trompent boivent. À la fin, plus tu es mal classé, plus tu bois.'}
+  duel:{n:'Duel',d:'À 2 ou plus, chacun sur son téléphone. Le plus rapide et le plus juste gagne.',h:'Chacun pour soi. Le plus rapide gagne.',lead:'Face-à-face ou mêlée générale jusqu\'à 12 en ligne. Chaque seconde compte, chaque erreur coûte.'},
+  party:{n:'Babinski',d:'Là pour se détruire. Chacun sur son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps : ceux qui se trompent boivent. À la fin, plus tu es mal classé, plus tu bois.'}
 };
 /* icônes de la barre des modes */
 const GICON={
@@ -971,7 +1000,7 @@ function renderGames(){
   $('#hero').textContent=g.h;$('#lead').textContent=g.lead;
   document.body.dataset.game=S.game;
   let h=`<div class="prow"><span class="lbl">Manches</span>${segHtml('nr',ROUNDS_OPT[S.game],o.n)}</div>`;
-  const net=online();
+  const net=online()||netPref();
   const where=''; /* le jeu en ligne se lance avec « Créer une partie » en haut de l'accueil */
   const netHint=`<p class="hint">Tu crées la partie et tu obtiens un code. Tes amis la rejoignent depuis leur téléphone (jusqu'à ${MAXP} joueurs) et répondent dessus, façon Kahoot. Le son sort de cet appareil.</p>`;
   if(S.game==='duel')h=where+(net?netHint:`<div class="duo"><label class="red">Joueur rouge<input id="p1" maxlength="18" placeholder="Rouge" autocomplete="off" value="${esc(S.duel[0])}"></label><span class="vs">VS</span><label class="blue">Joueur bleu<input id="p2" maxlength="18" placeholder="Bleu" autocomplete="off" value="${esc(S.duel[1])}"></label></div>`)+h+`<label class="tog"><input type="checkbox" id="malus" ${o.malus?'checked':''}><span>Malus en cas d'erreur (−150 points × difficulté)</span></label>`;
@@ -991,6 +1020,7 @@ function renderGames(){
 $('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;if(b.dataset.g==='party'&&S.game!=='party')clubFx();S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
 function saveOpt(){store.set('opt',S.opt)}
 $('#setup').addEventListener('click',e=>{
+  const wh=e.target.closest('[data-where]');if(wh){S.where=wh.dataset.where;store.set('where',S.where);renderGames();summary();return}
   const nr=e.target.closest('[data-nr]');if(nr){opt().n=+nr.dataset.nr;saveOpt();renderGames();summary();return}
   const it=e.target.closest('[data-int]');if(it){opt().int=it.dataset.int;saveOpt();renderGames();return}
   const dk=e.target.closest('[data-drink]');if(dk){S.drink=dk.dataset.drink;S.soft=S.drink==='pompes';S.gm=S.drink==='gages';store.set('drink',S.drink);renderGames();return}
@@ -1295,6 +1325,7 @@ $('#quitBtn').addEventListener('click',()=>{if(S.online)return openLobby();S.pha
    Messages des téléphones : hello {name,rid}, a {i,c,e} (réponse, e = secondes), joker, leave. */
 const NET=window.NET={peer:null,code:'',lobby:[],started:false};
 function online(){return S.game!=='solo'&&!!S.wantNet}
+const netPref=()=>S.game!=='solo'; /* Duel et Babinski : toujours chacun sur son téléphone (choix de Max) */
 const CODE_L='BCDFGHJKLMNPQRSTVWXZ';
 function joinUrl(){const u=new URL(location.pathname,location.origin);u.searchParams.set('join',NET.code);const q=new URLSearchParams(location.search).get('peer');if(q)u.searchParams.set('peer',q);return u.href}
 function nsend(e,m){if(!e||!e.conn||!e.conn.open)return;try{e.conn.send(m)}catch(err){}}
@@ -1440,7 +1471,7 @@ function lbRender(el,b,res,mineId){
   const best=[],seen=new Set();for(const e of res?res.list:[]){if(seen.has(e.u))continue;seen.add(e.u);best.push(e)} // meilleur score de chaque joueur
   const rk=best.findIndex(e=>e.u===UID);
   el.innerHTML=`<h3>🏆 Classement mondial</h3><p class="lbsub">${esc(b.name)} · ${b.n} manches · ${best.length} joueur${best.length>1?'s':''}</p>`+
-   (pseudo?'':`<div class="lbform"><input id="lbPseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname"><button class="btn y" id="lbSave">Enregistrer mon score</button></div>`)+
+   (pseudo||el.id!=='lbbox'?'':`<div class="lbform"><input id="lbPseudo" maxlength="16" placeholder="Ton pseudo" autocomplete="nickname"><button class="btn y" id="lbSave">Enregistrer mon score</button></div>`)+
    (!res?'<p class="lbmsg">Chargement du classement…</p>':best.length?`<ol>${best.slice(0,10).map((e,i)=>`<li class="${e.u===UID?'me':''}"><span class="rk">${i+1}</span><span><b>${esc(e.n)}</b><small>${e.g}/${e.r} · ${esc((DIFF[e.d]||{n:e.d}).n)}</small></span><span class="sc">${fmt(e.s)}</span></li>`).join('')}</ol>`+
      (rk>=10?`<p class="lbmsg">Toi : <b>${rk+1}e</b> avec ${fmt(best[rk].s)} pts.</p>`:'')
     :'<p class="lbmsg">Personne encore. Fais le premier score !</p>')+
@@ -1546,15 +1577,49 @@ function renderGages(){
 }
 $('#gagebox').addEventListener('click',e=>{const b=e.target.closest('[data-regage]');if(!b)return;const p=S.pl[+b.dataset.regage],lv=GAGES.findIndex(l=>l.includes(p.gage));p.gage=drawGage(lv<0?1:lv,[p.gage]);renderGages();if(S.online)sendEnd($('#final').textContent)});
 $('#againBtn').addEventListener('click',()=>{S.wantNet=!!NET.peer;start();S.wantNet=false}); /* en ligne : retour à la salle d'attente */
-$('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home')});
-$('#goBtn').addEventListener('click',()=>{S.wantNet=false;start()});
+$('#menuBtn').addEventListener('click',()=>{if(NET.peer)closeNet();show('home');view('setup');wShow(0)});
+$('#goBtn').addEventListener('click',()=>{S.wantNet=netPref();start();S.wantNet=false});
 /* « Créer une partie » sur l'accueil : crée la partie en ligne tout de suite (Duel si on était en Solo) avec la playlist et la difficulté de la page */
+/* réglages en étapes : Solo = playlist, difficulté, manches + lancer ; Multijoueur = joueurs et options, playlist, difficulté, lancer */
+const W={i:0};
+const wSteps=()=>S.game==='solo'?[['pl'],['diff'],['opts','go']]:[['opts'],['pl'],['diff'],['go']];
+const W_T={opts:S=>S.game==='solo'?'Manches':'Règles du jeu',pl:()=>'Ta playlist',diff:()=>'Difficulté',go:()=>'Lancer'};
+function wShow(i){
+  const st=wSteps();W.i=Math.max(0,Math.min(i,st.length-1));const cur=st[W.i];
+  document.querySelectorAll('#vSetup .wstep').forEach(x=>x.classList.toggle('on',cur.includes(x.dataset.w)));
+  let n=0;for(const k of ['opts','pl','diff']){const h=document.querySelector(`.wstep[data-w=${k}] h2.step`);if(!h)continue;const pos=st.findIndex(g=>g.includes(k));h.querySelector('i').textContent=String(pos+1).padStart(2,'0')}
+  $('#vSetup').classList.toggle('first',W.i===0);
+  $('#wprog').textContent=`Étape ${W.i+1} sur ${st.length} · ${cur.map(k=>W_T[k](S)).join(' et ')}`;
+  $('#wNext').classList.toggle('hide',W.i===st.length-1);
+  hideErr();
+  $('#backSetup').textContent=W.i?'← Étape précédente':'← Retour';
+  window.scrollTo(0,0);
+}
+$('#wNext').addEventListener('click',()=>{
+  const cur=wSteps()[W.i];
+  if(cur.includes('pl')&&!playlist())return showErr('Choisis tes artistes puis appuie sur « Valider la sélection », ou passe sur « Par style ».')
+  if(cur.includes('opts')&&S.game==='party'&&!netPref()&&S.party.length<2)return showErr('Ajoute au moins 2 joueurs pour le mode Babinski.')
+  wShow(W.i+1);
+});
+$('#backSetup').addEventListener('click',e=>{if(W.i>0){e.stopPropagation();wShow(W.i-1)}},true);
+/* page Classement mondial (depuis l'accueil) */
+const LBP={cat:null,n:10};
+function lbPage(){
+  if(!LBP.cat)LBP.cat=S.mode!=='pick'&&S.cat?S.cat:(PLS[0]?PLS[0].k:'mix');
+  const chip=(k,n,e)=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-lbc="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${LBP.cat===k}">${e?e+' ':''}${esc(n)}</button>`};
+  $('#lbPls').innerHTML=PLS.map(p=>chip(p.k,p.n,p.e)).join('');
+  $('#lbCats').innerHTML=CATS.map(([k,n])=>chip(k,n)).join('');
+  $('#lbRounds').innerHTML=ROUNDS_OPT.solo.map(v=>`<button data-lbn="${v}" aria-pressed="${v===LBP.n}">${v}</button>`).join('');
+  const nm=(PLS.find(p=>p.k===LBP.cat)||{}).n||(CATS.find(c=>c[0]===LBP.cat)||[])[1]||'';
+  lbShow($('#lbView'),{k:'c-'+String(LBP.cat).replace(/[^a-z0-9]/gi,'_').slice(0,40)+'-'+LBP.n,name:nm,n:LBP.n});
+}
+$('#vLb').addEventListener('click',e=>{const c=e.target.closest('[data-lbc]'),n=e.target.closest('[data-lbn]');if(c){LBP.cat=c.dataset.lbc;lbPage()}else if(n){LBP.n=+n.dataset.lbn;lbPage()}});
 /* accueil : menu Solo / Multijoueur, puis l'écran de réglages */
-function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['setup','vSetup']])$('#'+id).classList.toggle('hide',k!==v);document.body.dataset.view=v;window.scrollTo(0,0);if(v!=='setup')hideErr()}
+function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['lb','vLb'],['setup','vSetup']])$('#'+id).classList.toggle('hide',k!==v);document.body.dataset.view=v;window.scrollTo(0,0);if(v!=='setup')hideErr()}
 document.querySelectorAll('.gi[data-icon]').forEach(i=>{i.innerHTML=i.dataset.icon==='multi'?GICON.duel:GICON[i.dataset.icon]});
 $('#home').addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');
-  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='party'&&S.game!=='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';return view('setup')}
+  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='lb'){view('lb');return lbPage()}if(k==='party'&&S.game!=='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
   const b=e.target.closest('[data-back]');if(b)return view(b.dataset.back);
   if(e.target.closest('[data-join]'))$('#joinOpen').click();
 });
