@@ -49,14 +49,15 @@ Technique : connexion directe entre appareils avec [PeerJS](https://peerjs.com/)
 
 ```
 { "a": ["Ninho", "Jul", ...],                 // artistes (index = position)
+  "p": [3, 3, 2, ...],                          // notoriété : 3 = choisi à la main, 2 = plus d'1 million de fans, 1 = plus de 300 000, 0 = autre
   "c": [["rapfr", "Rap FR", [0, 1, ...]], ...], // styles : clé, nom, index des artistes
   "t": [[artiste, "titre", "artiste affiché si feat", idDeezer, "hashPochette", "album"], ...] }
 ```
 
 ## Ajouter des artistes ou un style
 
-1. Ajouter les noms dans `tools/styles_artistes.py` (et un thème dans `THEMES` si nouveau style).
-2. Depuis `tools/` : `python3 construire_base.py`, puis `python3 agrandir_base.py`, puis `python3 empaqueter_base.py` → régénère `db.json`.
+1. Ajouter les noms dans `tools/styles_artistes.py`, de préférence dans `AJOUTS` (et un thème dans `THEMES` si nouveau style). Les artistes choisis à la main sortent 8 fois plus souvent que les artistes ajoutés automatiquement, et les décennies ne contiennent que des artistes choisis à la main.
+2. Depuis `tools/` : `python3 construire_base.py`, puis `python3 agrandir_base.py`, puis `python3 empaqueter_base.py` → régénère `db.json` (30 titres par artiste, sans les versions « feat. », live ou remix). Ou bien sur GitHub : Actions → publier → Run workflow en cochant « reconstruire », ou un commit dont le message contient `[reconstruire]`. Si Deezer répond mal, la base n'est pas remplacée.
 
 ## Règles de travail à deux
 

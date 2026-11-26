@@ -278,6 +278,37 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 .ctl .warn{text-align:center;color:var(--muted)}
 .cs-t{color:#ff3d9a}
 @media(max-width:600px){.lbgrid{grid-template-columns:minmax(0,1fr)}.lbqr{justify-self:center}.joinbar .btn{width:100%}}
+/* téléphone : tout l'écran de jeu tient sans faire défiler (disque réduit, boutons compacts) */
+@media(max-width:600px){
+ body[data-screen=game] header{margin-bottom:0}
+ body[data-screen=game] .stage{margin:4px 0 0}
+ body[data-screen=game] .deck{width:min(150px,40vw)}
+ body[data-screen=game][data-game=duel] .deck,body[data-screen=game][data-game=party] .deck{width:min(104px,28vw)}
+ body[data-screen=game] .ring{inset:-8px;width:calc(100% + 16px);height:calc(100% + 16px)}
+ body[data-screen=game] .timer{min-width:40px;height:40px;font-size:20px;right:-12px;top:-12px}
+ body[data-screen=game] .status{min-height:40px;margin:8px 0 6px;font-size:16px}
+ body[data-screen=game] .status small{font-size:13px}
+ .ans{min-height:56px;padding:8px 10px;gap:10px}
+ .pads.two{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .pads.two .pad{padding:6px}
+ .pads.two .answers{gap:6px}
+ .pads.two .ans{min-height:62px;padding:6px 7px;gap:6px;font-size:13px}
+ .pads.two .ans .k{width:26px;height:26px;font-size:15px}
+ .pads.two .ans span{font-size:12px}
+ .pad h4{font-size:18px;margin-bottom:6px}
+ .pads.party .ro{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .roc{padding:6px 8px;gap:6px;font-size:13px}.roc .k{width:24px;height:24px;font-size:14px}.roc span span{font-size:12px}
+ .desks{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}
+ .desk{grid-template-columns:minmax(0,1fr);padding:6px 8px;gap:4px}
+ .desk .db{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+ .ans.dk{width:auto;height:38px;font-size:19px}
+ .desk .ds{grid-column:auto;text-align:left;font-size:12px}
+ .desk .ds:empty{display:none}
+ .ans b,.roc b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .ans b+span,.roc b+span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .ans>span:last-child,.roc>span:last-child{min-width:0}
+ body[data-screen=game][data-game=duel] .status small{display:none}
+}
 </style>
 </head>
 <body>
@@ -325,7 +356,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <div class="diffs" id="diffs"></div>
 
     <div class="launch">
-      <button class="go" id="goBtn">LANCER LA PARTIE</button>
+      <button class="go" id="goBtn" disabled>CHARGEMENT…</button>
       <p class="summary" id="summary"></p>
     </div>
     <div class="err hide" id="err" role="alert"></div>
@@ -406,9 +437,11 @@ const fmt=n=>n.toLocaleString('fr-FR');
 const plural=(n,w)=>`${n} ${w}${n>1?'s':''}`;
 
 /* ---------- base de données intégrée ---------- */
-const ARTISTS=DB.a.map((n,i)=>({i,n,k:norm(n),tracks:[]}));
+const POP=DB.p||[];
+const ARTISTS=DB.a.map((n,i)=>({i,n,k:norm(n),tracks:[],w:[1,2,4,8][POP[i]??3]}));
+const base=s=>norm(String(s).replace(/\s*[([][^)\]]*[)\]]/g,''))||norm(s);
 const TRACKS=DB.t.map(([ai,title,disp,id,md5,album])=>{
-  const t={ai,title,artist:disp||DB.a[ai],id,album,cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0};
+  const t={ai,title,artist:disp||DB.a[ai],id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0};
   ARTISTS[ai].tracks.push(t);return t;
 });
 const CATS=[['mix','Mix monde',ARTISTS.map(a=>a.i)],...DB.c];
@@ -497,7 +530,8 @@ $('#clearSel').addEventListener('click',()=>{S.pick=[];S.valid=[];store.set('val
 $('#validate').addEventListener('click',()=>{
   const n=S.pick.reduce((s,i)=>s+ARTISTS[i].tracks.length,0);
   if(!S.pick.length)return showErr('Ajoute au moins un artiste avant de valider.');
-  if(n<ROUNDS)return showErr(`Ta sélection n'a que ${plural(n,'titre')}. Il en faut au moins ${ROUNDS} : ajoute un ou deux artistes.`);
+  const need=Math.max(ROUNDS,opt().n);
+  if(n<need)return showErr(`Ta sélection n'a que ${plural(n,'titre')}. Il en faut au moins ${need} pour ${opt().n} manches : ajoute un ou deux artistes.`);
   hideErr();S.valid=[...S.pick];store.set('valid',S.valid);renderSel();summary();$('#goBtn').focus();
 });
 function playlist(){
@@ -514,20 +548,30 @@ function showErr(m){const e=$('#err');e.textContent=m;e.classList.remove('hide')
 function hideErr(){$('#err').classList.add('hide')}
 
 /* ---------- tirage des manches (hors ligne, depuis la base) ---------- */
+/* tirage pondéré : les artistes connus (choisis à la main) sortent bien plus souvent que les autres */
+const wshuffle=(a,w)=>a.map(x=>[Math.random()**(1/w(x)),x]).sort((p,q)=>q[0]-p[0]).map(p=>p[1]);
 function buildRounds(ids,n){
-  const groups=shuffle(ids.map(i=>ARTISTS[i].tracks).filter(g=>g.length));
+  const groups=wshuffle(ids.map(i=>ARTISTS[i]).filter(a=>a.tracks.length),a=>a.w).map(a=>a.tracks);
   const pool=groups.flat();
   // chaque artiste donne d'abord ses titres les plus connus
   const queues=groups.map(g=>[...shuffle(g.slice(0,6)),...shuffle(g.slice(6))]);
   const answers=[],used=new Set();
   while(answers.length<n&&queues.some(q=>q.length)){
-    for(const q of queues){if(answers.length>=n)break;while(q.length){const t=q.shift();if(!used.has(t)){used.add(t);answers.push(t);break}}}
+    for(const q of queues){if(answers.length>=n)break;while(q.length){const t=q.shift();if(!used.has(t.id)&&!used.has(t.b)){used.add(t.id);used.add(t.b);answers.push(t);break}}}
   }
   return {pool,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,pool)}))};
 }
+/* 3 mauvaises réponses : d'autres artistes d'abord, de notoriété proche, jamais un titre qui ressemble à la bonne réponse */
 function makeChoices(ans,pool){
-  const others=shuffle(pool.filter(t=>t.key!==ans.key));
-  const pick=[];for(const t of [...others.filter(t=>t.ai!==ans.ai),...others])if(pick.length<3&&!pick.some(p=>p.key===t.key))pick.push(t);
+  const pick=[],ok=t=>t.b!==ans.b&&!pick.some(p=>p.b===t.b);
+  const wmax=Math.max(...pool.slice(0,400).map(t=>ARTISTS[t.ai].w),1);
+  for(let tries=0;pick.length<3&&tries<3000;tries++){
+    const t=pool[Math.random()*pool.length|0];
+    if(tries<1500&&t.ai===ans.ai)continue;
+    if(tries<800&&Math.random()*wmax>ARTISTS[t.ai].w)continue;
+    if(ok(t))pick.push(t);
+  }
+  if(pick.length<3)for(const t of shuffle(pool))if(pick.length<3&&ok(t))pick.push(t);
   return shuffle([ans,...pick]);
 }
 
@@ -551,6 +595,7 @@ const CARDS={
   karaoke:{n:'Karaoké',d:'Le premier chante le refrain. Réussi : il distribue 2. Raté : il boit 2.'}
 };
 const unit=n=>S.soft?plural(n,'pompe'):plural(n,'gorgée');
+const total=p=>p.drunk||!p.cs?(p.drunk?unit(p.drunk):'rien')+(p.cs?` + ${p.cs} ${S.soft?'× 20':'cul sec'}`:''):`${p.cs} ${S.soft?'× 20 pompes':'cul sec'}`;
 const CS=()=>S.soft?'20 pompes':'cul sec';
 const KEYS2=['Digit7','Digit8','Digit9','Digit0'];
 const LET='ABCD';
@@ -626,9 +671,14 @@ function begin(p,list){
   // débloque le son dans Safari : un premier play() pendant le clic
   audio.src='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
   audio.play().catch(()=>{});
+  keepAwake(true);
   show('game');round();
   return '';
 }
+/* garde l'écran allumé pendant la partie (sinon le chrono s'arrête quand l'écran se met en veille) */
+let WL=null;
+async function keepAwake(on){try{if(on&&!WL&&navigator.wakeLock){WL=await navigator.wakeLock.request('screen');WL.addEventListener('release',()=>WL=null)}if(!on&&WL){const w=WL;WL=null;await w.release()}}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&!$('#game').classList.contains('hide'))keepAwake(true)});
 function hud(){
   const r=S.rounds[S.i];
   let h=`<span><small>Manche</small>${S.i+1}/${S.n}</span>`;
@@ -697,7 +747,7 @@ function jsonp(url,ms=7000){return new Promise((res,rej)=>{const cb='br'+Math.ra
 async function resolveUrl(t,skipDeezer){
   if(!skipDeezer&&t.url&&t.exp>Date.now()/1000+120)return t.url;
   if(!skipDeezer)try{const d=await jsonp(`https://api.deezer.com/track/${t.id}?output=jsonp`);if(d&&d.preview){t.url=d.preview;const m=/exp=(\d+)/.exec(d.preview);t.exp=m?+m[1]:Date.now()/1000+600;return t.url}}catch(e){}
-  try{const d=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(DB.a[t.ai]+' '+t.title)}&entity=song&limit=5&country=FR`);const r=(d.results||[]).find(r=>r.previewUrl&&norm(r.trackName).includes(t.key.slice(0,12)))||(d.results||[]).find(r=>r.previewUrl);if(r){t.url=r.previewUrl;t.exp=Date.now()/1000+86400;return t.url}}catch(e){}
+  try{const d=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(DB.a[t.ai]+' '+t.title)}&entity=song&limit=5&country=FR`);const an=norm(DB.a[t.ai]),r=(d.results||[]).find(r=>r.previewUrl&&norm(r.trackName).includes(t.b.slice(0,12))&&(norm(r.artistName).includes(an.slice(0,8))||an.includes(norm(r.artistName).slice(0,8))));if(r){t.url=r.previewUrl;t.exp=Date.now()/1000+86400;return t.url}}catch(e){}
   return '';
 }
 async function playClip(r){
@@ -706,7 +756,7 @@ async function playClip(r){
   if(!ok){url=await resolveUrl(r.ans,true);ok=url?await loadSrc(url):false}
   if(!ok){
     S.fails++;
-    if(S.fails>=3&&S.fails>=S.i+3){S.phase='dead';$('#status').innerHTML='Le son ne passe pas.<small>Vérifie ta connexion internet, puis recharge la page.</small>';return}
+    if(S.fails>=3&&S.fails>=S.i+3){S.phase='dead';$('#status').innerHTML='Le son ne passe pas.<small>Vérifie ta connexion internet, puis recharge la page.</small>';netEach(()=>({t:'note',h:'Le son ne passe pas',m:'L\'écran de l\'hôte n\'arrive plus à jouer la musique. Attends qu\'il relance la partie.'}));return}
     const used=new Set(S.rounds.map(x=>x.ans));const alt=shuffle(S.pool).find(t=>!used.has(t));
     if(alt){r.ans=alt;r.choices=makeChoices(alt,S.pool);$('#cover').src=alt.cover||'';renderPads(r);return playClip(r)}
   }
@@ -985,7 +1035,7 @@ function standing(){
 function sendResults(r){
   if(!S.online)return;
   const ci=r.choices.indexOf(r.ans),ord=standing();
-  const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':unit(S.pl[k].drunk)+(S.pl[k].cs?` + ${S.pl[k].cs} ${S.soft?'× 20':'cul sec'}`:'')]);
+  const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>{
     const x=r.res.find(z=>z.p===k)||{};
     const m={t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist,r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,last:S.i>=S.n-1,of:S.pl.length};
@@ -996,7 +1046,7 @@ function sendResults(r){
 }
 function sendEnd(title){
   const ord=standing();
-  const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':unit(S.pl[k].drunk)+(S.pl[k].cs?` + ${S.pl[k].cs} ${S.soft?'× 20':'cul sec'}`:'')]);
+  const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>({t:'end',title,rank:ord.indexOf(k)+1,of:S.pl.length,board,game:S.game,good:pl.good,n:S.n}));
 }
 function renderDuelBoard(r){
@@ -1012,7 +1062,7 @@ addEventListener('pagehide',()=>{if(NET.peer)closeNet()});
 
 /* ---------- résultats ---------- */
 function results(){
-  S.phase='idle';audio.pause();show('results');
+  S.phase='idle';audio.pause();keepAwake(false);show('results');
   const fin=$('#final'),ver=$('#verdict'),board=$('#board');board.innerHTML='';
   if(S.game==='solo'){
     const pl=S.pl[0],key=S.diff+'-'+S.n,best=store.get('best',{}),prev=best[key]||0;
@@ -1039,7 +1089,7 @@ function results(){
     const cs=[...S.pl].sort((a,b)=>b.cs-a.cs)[0],fast=[...S.pl].sort((a,b)=>b.wins-a.wins)[0];
     fin.textContent=`Plus sobre : ${rk[0].name}`;
     ver.textContent=`${fast.wins?`${fast.name} a été le plus rapide ${plural(fast.wins,'fois')}. `:''}${cs.cs?`${cs.name} remporte le titre de roi du ${S.soft?'gainage':'cul sec'} (${cs.cs}). `:''}Pensez à boire de l'eau, et personne ne prend le volant ce soir.`;
-    board.innerHTML=rk.map(p=>`<li><b>${esc(p.name)}</b><span>${`${p.wins} manche${p.wins>1?'s':''} gagnée${p.wins>1?'s':''}`} · ${`${p.good} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}`}${p.joker?'':' · joker utilisé'}</span><em>${unit(p.drunk)}${p.cs?` + ${p.cs} ${S.soft?'× 20 pompes':'cul sec'}`:''}</em></li>`).join('');
+    board.innerHTML=rk.map(p=>`<li><b>${esc(p.name)}</b><span>${`${p.wins} manche${p.wins>1?'s':''} gagnée${p.wins>1?'s':''}`} · ${`${p.good} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}`}${p.joker?'':' · joker utilisé'}</span><em>${esc(total(p))}</em></li>`).join('');
   }
   $('#recap').innerHTML=S.rounds.map((r,i)=>{
     let side='';
@@ -1058,6 +1108,7 @@ $('#goBtn').addEventListener('click',start);
 renderGames();
 
 renderCats();renderDiffs();renderList();renderSel();setMode(S.mode);
+$('#goBtn').disabled=false;
 })();
 </script>
 <script>
@@ -1140,15 +1191,16 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!==
 async function wake(){try{if(navigator.wakeLock&&!C.wl)C.wl=await navigator.wakeLock.request('screen'),C.wl.addEventListener('release',()=>C.wl=null)}catch(e){}}
 function onData(m){
   if(!m||typeof m!=='object')return;
-  if(m.t==='err'){C.joined=false;C.left=true;return joinScreen(m.m)}
-  if(m.t==='welcome'){C.joined=true;C.tries=0;C.game=m.game;C.soft=m.soft;C.name=m.name;theme(m.game);wake();if(!m.started)lobby(m.players);else screen(top('Partie '+esc(C.code),esc(C.name))+`<p class="ctl-big">Te revoilà</p><p class="ctl-sub">La partie continue…</p>`);return}
+  if(m.t==='err'){C.joined=false;C.left=true;ls.set('ccode','');return joinScreen(m.m)}
+  if(m.t==='welcome'){C.joined=true;C.tries=0;ls.set('ccode',C.code);C.game=m.game;C.soft=m.soft;C.name=m.name;theme(m.game);wake();if(!m.started)lobby(m.players);else screen(top('Partie '+esc(C.code),esc(C.name))+`<p class="ctl-big">Te revoilà</p><p class="ctl-sub">La partie continue…</p>`);return}
   if(m.t==='lobby'){C.game=m.game;C.soft=m.soft;theme(m.game);return lobby(m.players)}
   if(m.t==='go')return screen(top('Partie '+esc(C.code),esc(C.name))+`<p class="ctl-big">C'est parti !</p><p class="ctl-sub">Écoute bien la musique.</p>`);
   if(m.t==='wait')return wait(m);
   if(m.t==='q')return question(m);
   if(m.t==='r')return result(m);
   if(m.t==='end')return end(m);
-  if(m.t==='bye'){C.joined=false;C.left=true;try{C.conn&&C.conn.close()}catch(e){}return screen(`<p class="ctl-big">Partie fermée</p><p class="ctl-sub">L'hôte a fermé la partie.</p><button class="go" id="cAgain">REJOINDRE UNE AUTRE PARTIE</button><button class="btn alt" id="cBack">Retour à l'accueil</button>`)}
+  if(m.t==='note')return screen(top('Partie '+esc(C.code),esc(C.name))+`<p class="ctl-big">${esc(m.h)}</p><p class="ctl-sub">${esc(m.m)}</p>`);
+  if(m.t==='bye'){C.joined=false;C.left=true;ls.set('ccode','');try{C.conn&&C.conn.close()}catch(e){}return screen(`<p class="ctl-big">Partie fermée</p><p class="ctl-sub">L'hôte a fermé la partie.</p><button class="go" id="cAgain">REJOINDRE UNE AUTRE PARTIE</button><button class="btn alt" id="cBack">Retour à l'accueil</button>`)}
 }
 function lobby(players){
   screen(top('Partie '+esc(C.code),GN[C.game]||'')+`<p class="ctl-big">Tu es dedans !</p><p class="ctl-sub">${esc(C.name)}<small>Attends que l'hôte lance la partie.</small></p>
@@ -1215,7 +1267,7 @@ $('#ctlBody').addEventListener('click',e=>{
   if(b.id==='cGo')return go();
   if(b.id==='cBack'){C.left=true;try{C.conn&&C.conn.close()}catch(x){}location.href=location.pathname+(new URLSearchParams(location.search).get('peer')?'?peer='+new URLSearchParams(location.search).get('peer'):'');return}
   if(b.id==='cAgain'){C.code='';return joinScreen()}
-  if(b.id==='cLeave'){C.left=true;C.joined=false;try{C.conn.send({t:'leave'})}catch(x){}setTimeout(()=>{try{C.conn&&C.conn.close()}catch(x){}},300);C.code='';return joinScreen()}
+  if(b.id==='cLeave'){C.left=true;C.joined=false;ls.set('ccode','');try{C.conn.send({t:'leave'})}catch(x){}setTimeout(()=>{try{C.conn&&C.conn.close()}catch(x){}},300);C.code='';return joinScreen()}
   if(b.id==='cJoker'){try{C.conn.send({t:'joker',i:C.lastR})}catch(x){}b.disabled=true;b.textContent='Joker demandé…';return}
   if(b.dataset.c!=null)tap(+b.dataset.c);
 });
@@ -1223,7 +1275,7 @@ $('#ctlBody').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.target.id===
 $('#ctlBody').addEventListener('input',e=>{if(e.target.id==='cCode'){const v=e.target.value.toUpperCase().replace(/[^A-Z]/g,'');if(v!==e.target.value)e.target.value=v}});
 $('#joinOpen').addEventListener('click',()=>{C.code='';joinScreen()});
 const j=new URLSearchParams(location.search).get('join');
-if(j){C.code=j.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);joinScreen()}
+if(j){C.code=j.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);joinScreen();if(C.name&&C.code.length===4&&ls.get('ccode','')===C.code)go()}
 })();
 </script>
 </body>
