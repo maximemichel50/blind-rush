@@ -100,6 +100,23 @@ PLAYLISTS = [
   ('Au-delà de l\'horizon', 'Vaiana'), ('L\'Amour est un pays sans fin', 'Pocahontas'),
   ('Je veux savoir', 'Tarzan'), ('Toujours dans mon cœur', 'Tarzan'), ('Remember Me', 'Coco'), ('La Bella Notte', 'La Belle et le Clochard'),]),
 
+ ('club', 'Boîte de nuit', '🕺', [
+  ('Mwaki', 'Zerb'), ('Houdini', 'Dua Lipa'), ('Training Season', 'Dua Lipa'), ('Espresso', 'Sabrina Carpenter'),
+  ('Miracle', 'Calvin Harris'), ('I\'m Good (Blue)', 'David Guetta'), ('(It Goes Like) Nanana', 'Peggy Gou'),
+  ('Delilah (pull me out of this)', 'Fred again..'), ('The Business', 'Tiësto'), ('10:35', 'Tiësto'),
+  ('Tití Me Preguntó', 'Bad Bunny'), ('DtMF', 'Bad Bunny'), ('Bzrp Music Sessions, Vol. 53', 'Shakira'),
+  ('Quevedo: Bzrp Music Sessions, Vol. 52', 'Bizarrap'), ('Provenza', 'Karol G'), ('Si Antes Te Hubiera Conocido', 'Karol G'),
+  ('Calm Down', 'Rema'), ('Water', 'Tyla'), ('Pookie', 'Aya Nakamura'), ('Djadja', 'Aya Nakamura'), ('Meuda', 'Tiakola'),
+  ('Bolide allemand', 'SDM'), ('Notre Dame', 'Gazo'), ('Die', 'Gazo'), ('Solitaire', 'Werenoi'), ('4 Kampé', 'Joé Dwèt Filé'),
+  ('Kongolese sous BBL', 'Theodora'), ('APT.', 'ROSÉ'), ('Hot To Go!', 'Chappell Roan'), ('Not Like Us', 'Kendrick Lamar'),
+  ('Head & Heart', 'Joel Corry'), ('Drugs From Amsterdam', 'Mau P'), ('One Kiss', 'Calvin Harris'), ('Greedy', 'Tate McRae'),
+  ('Paint The Town Red', 'Doja Cat'), ('Strangers', 'Kenya Grace'), ('Escapism.', 'RAYE'), ('LALA', 'Myke Towers'),
+  ('Last Last', 'Burna Boy'), ('Rush', 'Ayra Starr'), ('N\'y pense plus', 'Tayc'), ('La kiffance', 'Naps'),
+  ('Suavemente', 'Soolking'), ('Shake It To The Max (FLY)', 'MOLIY'), ('A Bar Song (Tipsy)', 'Shaboozey'),
+  ('Where Are You Now', 'Lost Frequencies'), ('DON\'T YOU WORRY', 'Black Eyed Peas'), ('Tchikita', 'Jul'),
+  ('Baby Don\'t Hurt Me', 'David Guetta'), ('Padam Padam', 'Kylie Minogue'), ('Flowers', 'Miley Cyrus'),
+  ('Gasolina', 'Daddy Yankee'), ('Dakiti', 'Bad Bunny'), ('Tsunami', 'DVBBS'), ('Ciel', 'GIMS'), ('Sois pas timide', 'GIMS')]),
+
  ('soiree', 'Tubes de soirée', '🪩', [
   ('Macarena', 'Los Del Rio'), ('Aserejé', 'Las Ketchup'), ('Dragostea din tei', 'O-Zone'), ('Saturday Night', 'Whigfield'),
   ('Mambo No. 5', 'Lou Bega'), ('Barbie Girl', 'Aqua'), ('Tic tic tac', 'Carrapicho'), ('Le lion est mort ce soir', 'Pow Woow'),

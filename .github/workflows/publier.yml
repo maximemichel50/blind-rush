@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       reconstruire:
-        description: "Reconstruire la base de musiques depuis Deezer (15 à 30 min)"
+        description: "Reconstruire la base de musiques depuis Deezer (30 à 60 min)"
         type: boolean
         default: false
 
@@ -37,6 +37,7 @@ jobs:
           cd tools
           python3 construire_base.py
           python3 agrandir_base.py
+          python3 discographies.py
           python3 empaqueter_base.py
           cd ..
           git config user.name "blind-rush-bot"
