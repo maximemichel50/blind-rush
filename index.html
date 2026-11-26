@@ -568,7 +568,7 @@ const THEMES={
  jazz:{n:'Ambiance club de jazz',bg:'#101a2c',ink:'#f3ead8',card:'#1e2b44',cardInk:'#f3ead8',acc:'#d4a24c',vin:'#060b16',vinInk:'#f3ead8',pat:'radial-gradient(circle at 72% 28%,rgba(212,162,76,.18),transparent 40%)',w:'JAZZ'},
  country:{n:'Ambiance saloon',bg:'#7a4a2c',ink:'#fbf1e2',card:'#fbf1e2',cardInk:'#3d2212',acc:'#f2c14e',vin:'#3d2212',vinInk:'#fbf1e2',pat:'repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 3px,transparent 3px 26px)',w:'COUNTRY'}
 };
-for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
+for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
 function applyTheme(k){
   const t=THEMES[k]||THEMES.mix,r=document.documentElement.style;
   for(const v of ['bg','ink','card','cardInk','acc','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
