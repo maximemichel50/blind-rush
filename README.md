@@ -40,7 +40,7 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 ## Repères dans `index.html`
 
 - **Logo** : un clic ramène à l'accueil depuis n'importe quel écran (`goHome()`).
-- **Accueil en étapes** : `view()` (menu, multi, lb, setup) ; menu Solo / Multijoueur / Classement mondial ; réglages une étape par écran avec `wShow()` / `wSteps()` (Solo : playlist, difficulté, manches + lancer ; Multijoueur : règles, playlist, difficulté, lancer).
+- **Accueil en étapes** : `view()` (menu, multi, lb, setup) ; menu Solo / Multijoueur / Classement mondial ; réglages une étape par écran avec `wShow()` / `wSteps()`, la 1re étape étant la fiche du mode (`GUIDE`, `renderGuide()`) (Solo : playlist, difficulté, manches + lancer ; Multijoueur : règles, playlist, difficulté, lancer).
 - **En ligne (hôte)** : objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
 - **En ligne (téléphone)** : dernier `<script>` du fichier, objet `C`, fonctions `joinScreen()`, `connect()`, `question()`, `result()`, `end()`.
 

@@ -458,6 +458,16 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
 .wtop0,.wtop{display:none}#vSetup.first .wtop0,#vSetup.first .wtop{display:block}
 .wprog{margin:18px 0 0;font:700 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}
 .wnext{display:block;margin:26px 0 0}
+/* fiche du mode */
+.guide{margin:20px 0 0;padding:20px 22px;border-radius:20px;border:1px solid var(--line);background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(6px)}
+.gtag{margin:0 0 14px;font:400 22px/1.1 Anton,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:var(--acc)}
+.gpts{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 22px}
+.gpts li{display:flex;gap:12px;align-items:flex-start}
+.gic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:19px;background:color-mix(in srgb,var(--acc) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--acc) 40%,transparent)}
+.gpts b{display:block;font-size:15px;margin-bottom:2px}.gpts li span:last-child{font-size:14px;line-height:1.45;color:color-mix(in srgb,var(--ink) 78%,transparent)}
+.guniq{margin:16px 0 0;padding-top:14px;border-top:1px solid var(--line);font-weight:700;font-size:15px}
+.guniq::before{content:"★ ";color:var(--acc)}
+@media(max-width:600px){.gpts{grid-template-columns:minmax(0,1fr)}.guide{padding:18px}}
 </style>
 </head>
 <body>
@@ -512,6 +522,7 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
 
     </div>
     <p class="wprog" id="wprog"></p>
+    <div class="wstep" data-w="rules"><div class="guide" id="guide"></div></div>
     <div class="wstep" data-w="opts">
     <h2 class="step s1"><i>01</i>Mode de jeu</h2>
     <p class="gdesc" id="gameDesc"></p>
@@ -950,6 +961,31 @@ function clubFx(){
   };
   x.clearRect(0,0,W,H);clubFx.raf=requestAnimationFrame(frame);
 }
+/* fiche de chaque mode (1re étape des réglages) : règles et ce qui le rend unique */
+const GUIDE={
+  solo:{tag:'Toi contre le chrono',pts:[
+    ['🎧','Seul, sur ton écran','Pas d\'adversaire : tu joues pour ton score.'],
+    ['⚡','La vitesse rapporte','Bonne réponse : de 300 à 1000 points selon ta rapidité, multipliés par la difficulté.'],
+    ['🔥','Les séries comptent double','3 bonnes réponses d\'affilée : points ×2. 5 d\'affilée : ×3. Une erreur remet à zéro.'],
+    ['🏆','Record et classement mondial','Ton record est gardé, et chaque playlist a son classement mondial.']],
+    uniq:'Le seul mode où tu te mesures au monde entier.'},
+  duel:{tag:'Chacun pour soi',pts:[
+    ['⚔️','De 2 à 12 joueurs','Chacun répond sur son téléphone. Le son sort de l\'écran de celui qui crée la partie.'],
+    ['⚡','Tout le monde répond en même temps','Le plus rapide marque le plus : de 300 à 1000 points, +150 au premier qui trouve.'],
+    ['➖','Les erreurs peuvent coûter','En option, un malus retire des points à chaque mauvaise réponse.'],
+    ['🎭','Le dernier a un gage','À la fin, le moins bien classé reçoit un gage.']],
+    uniq:'Le mode compétition : tu ne bats pas un chrono, tu bats tes amis.'},
+  party:{tag:'Là pour se détruire',pts:[
+    ['🍻','Le mode soirée','De 2 à 12 joueurs, chacun sur son téléphone.'],
+    ['❌','Une erreur, ça se boit','Tout le monde répond en même temps. Mauvaise réponse ou pas de réponse : tu bois, selon l\'intensité choisie.'],
+    ['📉','Plus tu es mal classé, plus tu bois','À la fin, le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.'],
+    ['🃏','Cartes spéciales et versions sans alcool','Cartes en option (Réflexe éclair, Double ou rien, Karaoké…). Version gages ou pompes pour jouer sans alcool.']],
+    uniq:'Pas de points à gagner : le but, c\'est de ne pas finir dernier.'}
+};
+function renderGuide(){
+  const g=GUIDE[S.game];if(!g||!$('#guide'))return;
+  $('#guide').innerHTML=`<p class="gtag">${esc(GAMES[S.game].n)} · ${esc(g.tag)}</p><ul class="gpts">${g.pts.map(([i,t,d])=>`<li><span class="gic">${i}</span><span><b>${esc(t)}</b>${esc(d)}</span></li>`).join('')}</ul><p class="guniq">${esc(g.uniq)}</p>`;
+}
 const ROUNDS_OPT={solo:[5,10,15,20],duel:[5,10,15,20],party:[10,15,20]};
 const INT={
   soft:{n:'Tranquille',d:'Mauvaise réponse ou pas de réponse : 1 gorgée.',wrong:1},
@@ -995,6 +1031,7 @@ function drawGage(lvl,not){const l=GAGES[Math.max(0,Math.min(2,lvl))],c=l.filter
 function segHtml(attr,vals,cur,labels){return `<span class="seg">${vals.map((v,i)=>`<button data-${attr}="${v}" aria-pressed="${v===cur}">${labels?labels[i]:v}</button>`).join('')}</span>`}
 function renderGames(){
   $('#games').innerHTML=Object.entries(GAMES).map(([k,g])=>{const t=THEMES[k==='solo'?'mix':k];return `<button class="tb" data-g="${k}" style="--ca:${t.acc}" aria-pressed="${S.game===k}">${GICON[k]}<b>${esc(g.n)}</b></button>`}).join('');
+  renderGuide();
   $('#gameDesc').innerHTML=`<b>${esc(GAMES[S.game].n)}</b> · ${esc(GAMES[S.game].d)}<small>Change de mode avec la barre en bas de l'écran.</small>`;
   const g=GAMES[S.game],o=opt();
   $('#hero').textContent=g.h;$('#lead').textContent=g.lead;
@@ -1582,8 +1619,8 @@ $('#goBtn').addEventListener('click',()=>{S.wantNet=netPref();start();S.wantNet=
 /* « Créer une partie » sur l'accueil : crée la partie en ligne tout de suite (Duel si on était en Solo) avec la playlist et la difficulté de la page */
 /* réglages en étapes : Solo = playlist, difficulté, manches + lancer ; Multijoueur = joueurs et options, playlist, difficulté, lancer */
 const W={i:0};
-const wSteps=()=>S.game==='solo'?[['pl'],['diff'],['opts','go']]:[['opts'],['pl'],['diff'],['go']];
-const W_T={opts:S=>S.game==='solo'?'Manches':'Règles du jeu',pl:()=>'Ta playlist',diff:()=>'Difficulté',go:()=>'Lancer'};
+const wSteps=()=>S.game==='solo'?[['rules'],['pl'],['diff'],['opts','go']]:[['rules'],['opts'],['pl'],['diff'],['go']];
+const W_T={rules:()=>'Les règles',opts:S=>S.game==='solo'?'Manches':'Joueurs et options',pl:()=>'Ta playlist',diff:()=>'Difficulté',go:()=>'Lancer'};
 function wShow(i){
   const st=wSteps();W.i=Math.max(0,Math.min(i,st.length-1));const cur=st[W.i];
   document.querySelectorAll('#vSetup .wstep').forEach(x=>x.classList.toggle('on',cur.includes(x.dataset.w)));
