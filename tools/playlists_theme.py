@@ -201,7 +201,7 @@ def from_playlists(key, got, seen, seenb):
         res = get(API + '/search/playlist', {'q': q, 'limit': 10}).get('data', [])
         res = [r for r in res if r.get('nb_tracks', 0) >= 25 and re.search(KW.get(key, '.'), norm(r.get('title', '')))]
         res.sort(key=lambda r: ('deezer' not in norm(r.get('user', {}).get('name', ''))))
-        pls += [r['id'] for r in res[:2] if r['id'] not in pls]
+        pls += [r['id'] for r in res[:3] if r['id'] not in pls]
     for pid in pls:
         if len(got) >= CAP: break
         time.sleep(0.15)
@@ -210,12 +210,14 @@ def from_playlists(key, got, seen, seenb):
             if not t.get('preview') or not t.get('readable', True) or t['id'] in seen: continue
             full = t['title'] + ' ' + t['artist']['name'] + ' ' + t.get('album', {}).get('title', '')
             if BAD.search(full): continue
+            if norm(t['artist']['name']) not in KNOWN: continue  # seulement des artistes connus de la grande base
             b = base(t['title']) + '|' + norm(t['artist']['name'])
             if b in seenb: continue
             seen.add(t['id']); seenb.add(b)
             got.append([t['artist']['name'], t['title_short'] or t['title'], t['id'], t.get('md5_image', ''), t.get('album', {}).get('title', '')])
 
 db = json.load(open('../db.json'))
+KNOWN = {norm(a) for a in db['a']}
 out = []
 for key, name, emo, items in PLAYLISTS:
     got, seen, seenb = [], set(), set()
