@@ -1,6 +1,6 @@
 # Blind Rush 🎧
 
-Blind test musical : 10 manches, 4 réponses, plus tu réponds vite plus tu marques.
+Blind test musical : 10 manches, 4 réponses, plus tu réponds vite plus tu marques. Seul, à deux, en soirée sur un même écran, ou en ligne avec chacun son téléphone.
 
 **Jouer :** https://maximemichel50.github.io/blind-rush/
 
@@ -17,10 +17,25 @@ Blind test musical : 10 manches, 4 réponses, plus tu réponds vite plus tu marq
 La musique tourne pendant tout le chrono, dans tous les modes. La difficulté règle le temps pour répondre (20 s, 14 s, 8 s) et l'endroit du morceau où l'extrait démarre.
 
 - **Solo** : 5 à 20 manches contre le chrono, record par difficulté et par nombre de manches.
-- **Duel** (ambiance ring) : deux joueurs sur le même écran (touches 1-4 pour le rouge, 7 8 9 0 pour le bleu). Bonne réponse 300 à 1000 pts selon la vitesse × difficulté, +150 au premier qui trouve. Option : malus de −150 × difficulté en cas d'erreur.
-- **Babinski** (« Là pour se détruire », ambiance soirée) : 2 à 8 joueurs répondent en même temps, chacun sur sa ligne A B C D. À la fin du chrono, classement de la manche : ceux qui ont trouvé (du plus rapide au plus lent), puis les mauvaises réponses, puis ceux qui n'ont pas répondu. Le 1er ne boit rien, le dernier prend la plus grosse peine (cul sec en intensité « Là pour se détruire », 5 gorgées en « Soirée », 3 en « Tranquille »), ceux du milieu une peine qui monte avec le rang. Mauvaise réponse ou pas de réponse : au moins 2 gorgées ; si personne ne trouve, tout le monde boit 2. Animation de fin de manche pour le premier et pour chaque joueur qui boit. Cartes spéciales (option) : Réflexe éclair, Double ou rien, Tournée générale, Le roi de la soirée, Karaoké. Un joker eau par joueur, version sans alcool (pompes).
+- **Duel** (ambiance ring) : deux joueurs sur le même écran (touches 1-4 pour le rouge, 7 8 9 0 pour le bleu), ou 2 à 12 joueurs en ligne. Bonne réponse 300 à 1000 pts selon la vitesse × difficulté, +150 au premier qui trouve. Option : malus de −150 × difficulté en cas d'erreur.
+- **Babinski** (« Là pour se détruire », ambiance soirée) : 2 à 8 joueurs répondent en même temps, chacun sur sa ligne A B C D (ou jusqu'à 12 en ligne, chacun sur son téléphone). À la fin du chrono, classement de la manche : ceux qui ont trouvé (du plus rapide au plus lent), puis les mauvaises réponses, puis ceux qui n'ont pas répondu. Le 1er ne boit rien, le dernier prend la plus grosse peine (cul sec en intensité « Là pour se détruire », 5 gorgées en « Soirée », 3 en « Tranquille »), ceux du milieu une peine qui monte avec le rang. Mauvaise réponse ou pas de réponse : au moins 2 gorgées ; si personne ne trouve, tout le monde boit 2. Animation de fin de manche pour le premier et pour chaque joueur qui boit. Cartes spéciales (option) : Réflexe éclair, Double ou rien, Tournée générale, Le roi de la soirée, Karaoké. Un joker eau par joueur, version sans alcool (pompes).
+
+## Jouer en ligne (façon Kahoot / WhoLiked)
+
+Pour Duel et Babinski, choisir « Chacun son téléphone » puis **Créer la partie** :
+
+1. L'écran de l'hôte affiche un **code de 4 lettres**, un lien et un QR code. La musique sort de cet appareil.
+2. Les joueurs ouvrent le lien ou scannent le QR code (ou touchent « Rejoindre une partie » sur l'accueil et tapent le code), puis choisissent un prénom. Jusqu'à 12 joueurs. L'hôte peut jouer aussi depuis son écran.
+3. Chaque manche, les 4 réponses s'affichent sur les téléphones en gros boutons de couleur (▲ ◆ ● ■). Le temps est mesuré sur le téléphone, sans le délai du réseau.
+4. Après chaque manche : classement sur l'écran de l'hôte, et sur chaque téléphone son résultat (points, ou gorgées avec l'animation du verre et le bouton joker eau).
+5. Un joueur qui perd la connexion (écran verrouillé, réseau) est reconnecté automatiquement et retrouve la partie. « Rejouer » ramène tout le monde dans la salle d'attente.
+
+Technique : connexion directe entre appareils avec [PeerJS](https://peerjs.com/) (serveur de mise en relation gratuit de PeerJS, relais TURN si les réseaux bloquent). Aucun compte, aucune donnée stockée. Pour tester sans internet : lancer un serveur PeerJS local (`npx peer --port 9000`) et ouvrir la page avec `?peer=local`.
 
 ## Repères dans `index.html`
+
+- **En ligne (hôte)** : objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
+- **En ligne (téléphone)** : dernier `<script>` du fichier, objet `C`, fonctions `joinScreen()`, `connect()`, `question()`, `result()`, `end()`.
 
 - **Modes** : objets `GAMES`, `INT` (intensités Babinski) et `CARDS`, fonctions `round()`, `reveal()` et `partyRound()` (classement et peines du mode Babinski), `playFx()` (animation de fin de manche).
 
