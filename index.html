@@ -350,6 +350,18 @@ h2:not(.step){font-family:var(--mono);text-transform:uppercase;letter-spacing:.1
 .go:active{transform:scale(.98);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 50%,transparent)}
 .tabs{background:transparent}.tab{color:var(--ink);font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
 .tab[aria-selected=true]{background:var(--grad);color:#fff}
+/* barre des modes de jeu (en bas de l'écran, façon appli) */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:flex;justify-content:center;background:#0a0a0b;border-top:1px solid #2a2a2e;padding:0 0 env(safe-area-inset-bottom)}
+.tabbar:empty,body[data-screen]:not([data-screen=home]) .tabbar{display:none}
+.tb{position:relative;flex:1;max-width:220px;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 14px;background:none;color:#8d8c92;font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;transition:color .2s}
+.tb svg{width:30px;height:30px;fill:currentColor}
+.tb b{font:inherit}
+.tb::before{content:"";position:absolute;top:-1px;left:50%;width:56px;height:4px;margin-left:-28px;border-radius:0 0 3px 3px;background:var(--ca);opacity:0;transition:opacity .2s}
+.tb[aria-pressed=true]{color:var(--ca)}.tb[aria-pressed=true]::before{opacity:1;box-shadow:0 0 14px var(--ca)}
+.tb[aria-pressed=true] svg{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--ca) 60%,transparent))}
+.tb:not([aria-pressed=true]):hover{color:#c9c8cd}
+#home{padding-bottom:110px}
+.gdesc{margin:-4px 0 12px;font-size:15px}.gdesc b{color:var(--acc);text-transform:uppercase;font-family:var(--mono);letter-spacing:.06em}.gdesc small{display:block;font-size:13px;opacity:.65}
 /* modes de jeu */
 .mode{background:var(--cp),#120f14;color:var(--ink);border-radius:20px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ca) 40%,transparent);position:relative;overflow:hidden}
 .mode::after{content:"";position:absolute;width:120px;height:120px;right:-34px;top:-34px;border-radius:50%;background:radial-gradient(circle,transparent 48%,var(--cb2) 58%,var(--ca) 66%,transparent 72%);filter:blur(3px);opacity:.75}
@@ -436,7 +448,7 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
     <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
 
     <h2 class="step s1"><i>01</i>Mode de jeu</h2>
-    <div class="modes" id="games"></div>
+    <p class="gdesc" id="gameDesc"></p>
     <div class="setup" id="setup"></div>
 
     <h2 class="step s2"><i>02</i>Ta playlist</h2>
@@ -816,6 +828,12 @@ const GAMES={
   duel:{n:'Duel',d:'À deux sur le même écran, ou à plusieurs en ligne. Le plus rapide et le plus juste gagne.',h:'Un contre un. Que le meilleur gagne.',lead:'Rouge contre bleu, sur le même écran. Chaque seconde compte, chaque erreur coûte.'},
   party:{n:'Babinski',d:'Là pour se détruire. Soirée sur un écran ou chacun son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps : ceux qui se trompent boivent. À la fin, plus tu es mal classé, plus tu bois.'}
 };
+/* icônes de la barre des modes */
+const GICON={
+  solo:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a8 8 0 0 0-8 8v6a3 3 0 0 0 3 3h1a1 1 0 0 0 1-1v-5a1 1 0 0 0-1-1H6v-2a6 6 0 0 1 12 0v2h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1h1a3 3 0 0 0 3-3v-6a8 8 0 0 0-8-8z"/></svg>',
+  duel:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 2.5 14 3.4 6.6 10.8l-1.5-1.5-1.4 1.4 2.4 2.4-3.2 3.2a1.5 1.5 0 0 0 0 2.1l.7.7a1.5 1.5 0 0 0 2.1 0l3.2-3.2 2.4 2.4 1.4-1.4-1.5-1.5L20.6 10z"/></svg>',
+  party:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h16l-7 9v6h4v3H7v-3h4v-6zm3.2 2 2 2.5h5.6l2-2.5z"/></svg>'
+};
 const ROUNDS_OPT={solo:[5,10,15,20],duel:[5,10,15,20],party:[10,15,20]};
 const INT={
   soft:{n:'Tranquille',d:'Mauvaise réponse ou pas de réponse : 1 gorgée.',wrong:1},
@@ -860,7 +878,8 @@ function drawGage(lvl,not){const l=GAGES[Math.max(0,Math.min(2,lvl))],c=l.filter
 
 function segHtml(attr,vals,cur,labels){return `<span class="seg">${vals.map((v,i)=>`<button data-${attr}="${v}" aria-pressed="${v===cur}">${labels?labels[i]:v}</button>`).join('')}</span>`}
 function renderGames(){
-  $('#games').innerHTML=Object.entries(GAMES).map(([k,g])=>{const t=THEMES[k==='solo'?'mix':k];return `<button class="mode m-${k}" data-g="${k}" style="--ca:${t.acc};--cb2:${t.acc2};--cp:${t.pat}" aria-pressed="${S.game===k}"><b>${esc(g.n)}</b><span>${esc(g.d)}</span></button>`}).join('');
+  $('#games').innerHTML=Object.entries(GAMES).map(([k,g])=>{const t=THEMES[k==='solo'?'mix':k];return `<button class="tb" data-g="${k}" style="--ca:${t.acc}" aria-pressed="${S.game===k}">${GICON[k]}<b>${esc(g.n)}</b></button>`}).join('');
+  $('#gameDesc').innerHTML=`<b>${esc(GAMES[S.game].n)}</b> · ${esc(GAMES[S.game].d)}<small>Change de mode avec la barre en bas de l'écran.</small>`;
   const g=GAMES[S.game],o=opt();
   $('#hero').textContent=g.h;$('#lead').textContent=g.lead;
   document.body.dataset.game=S.game;
@@ -1656,5 +1675,7 @@ const j=new URLSearchParams(location.search).get('join');
 if(j){C.code=j.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);joinScreen();if(C.name&&C.code.length===4&&ls.get('ccode','')===C.code)go()}
 })();
 </script>
+<!-- barre des modes de jeu, fixée en bas de l'écran (accueil seulement) -->
+<nav class="tabbar" id="games" aria-label="Mode de jeu"></nav>
 </body>
 </html>
