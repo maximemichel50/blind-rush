@@ -147,7 +147,7 @@ h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .wheel{max-width:300px;margin:8px auto}.wheel svg{display:block;width:100%;height:auto}.wrot{transition:transform 4s cubic-bezier(.15,.85,.2,1)}
 .wheelbox{text-align:center}.wheelbox h2{margin:22px 0 4px}.wheelbox .chips{justify-content:center;margin-top:8px}.wheelbox .wres{font-size:20px;font-weight:800;margin:8px 0}
 .gagebox h2{margin:22px 0 8px}.gage{background:var(--card);color:var(--cardInk);border-radius:14px;padding:12px 16px;margin:0 0 8px;box-shadow:inset 6px 0 0 var(--acc)}.gage b{font-size:18px}.gage p{margin:4px 0 8px;font-size:17px}
-.streak{display:inline-block;background:#ff5a1f;color:#fff;border-radius:999px;padding:1px 8px;font:800 .8em system-ui,sans-serif;vertical-align:middle;letter-spacing:0}.streak.x3{background:#d4145a;animation:pulse 1s infinite}
+.streak{display:inline-block;background:#ff5a1f;color:#fff;border-radius:999px;padding:1px 8px;font:800 .8em system-ui,sans-serif;vertical-align:middle;letter-spacing:0}.streak.x2b{background:#d4145a}.streak.x3{background:#d4145a;animation:pulse 1s infinite}
 @keyframes pulse{50%{transform:scale(1.12)}}
 .board li.pc0{box-shadow:inset 6px 0 0 #e63946}.board li.pc1{box-shadow:inset 6px 0 0 #2f6bff}
 .recap .p.duo{display:flex;gap:10px}.recap .p.duo i{font-style:normal}.recap .p.duo .pc0{color:#e63946}.recap .p.duo .pc1{color:#2f6bff}
@@ -712,6 +712,7 @@ const MAXP=12;
 const opt=()=>S.opt[S.game];
 /* séries : 3 bonnes réponses d'affilée = points ×2, 5 d'affilée = ×3. Une erreur remet à zéro. */
 const MULT=n=>n>=5?3:n>=3?2:1;
+const x2Tag=p=>p&&p.x2?' <b class="streak x2b">×2</b>':'';
 const multTag=n=>MULT(n)>1?`<b class="streak x${MULT(n)}">🔥 ×${MULT(n)}</b>`:'';
 /* gages (sans alcool) : du plus doux au plus fort */
 const GAGES=[
@@ -720,8 +721,8 @@ const GAGES=[
  ['Chante un refrain choisi par le groupe, debout, avec la voix à fond.','Invente une chorégraphie de 20 secondes et danse-la devant tout le monde.','Déclare ton amour à un objet de la pièce, avec beaucoup d\'émotion.','Enchaîne 3 refrains a cappella sans t\'arrêter.','Défile comme un mannequin dans toute la pièce, le groupe fait la musique.','Fais une interview de toi-même comme une star qui vient de gagner un Grammy.']
 ];
 const WHEEL={
-  alcool:[['1 gorgée'],['2 gorgées'],['3 gorgées'],['4 gorgées'],['5 gorgées'],['Cul sec']],
-  pompes:[['5 pompes'],['10 pompes'],['15 pompes'],['20 pompes'],['25 pompes'],['30 pompes']],
+  alcool:[['1 gorgée'],['2 gorgées'],['3 gorgées'],['4 gorgées'],['Cul sec'],['×2 partie','×2 à la prochaine partie (toutes ses gorgées doublées)',1]],
+  pompes:[['5 pompes'],['10 pompes'],['15 pompes'],['20 pompes'],['30 pompes'],['×2 partie','×2 à la prochaine partie (toutes ses pompes doublées)',1]],
   gages:[['Chanter','chanter un refrain choisi par le groupe'],['Mimer','mimer un titre de chanson'],['Danser','danser 15 secondes'],['Imiter','imiter un chanteur'],['10 squats','faire 10 squats en chantant'],['Déclaration','déclarer son amour à un objet de la pièce']]
 };
 function drawGage(lvl,not){const l=GAGES[Math.max(0,Math.min(2,lvl))],c=l.filter(g=>!(not||[]).includes(g));return (c.length?c:l)[Math.random()*(c.length||l.length)|0]}
@@ -791,7 +792,8 @@ function begin(p,list){
   const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
   S.pool=b.pool;S.rounds=b.rounds;S.name=p.name;S.i=0;S.fails=0;S.lastCard=null;
-  S.pl=list.map(({name,net})=>({name,net,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0,tt:0,fin:0,gage:''}));
+  S.pl=list.map(({name,net})=>({name,net,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0,tt:0,fin:0,gage:'',x2:S.game==='party'&&!!(S.x2next||[]).includes(norm(name))}));
+  S.x2next=[];
   // débloque le son dans Safari : un premier play() pendant le clic
   unlockAudio();
   keepAwake(true);
@@ -852,7 +854,7 @@ function renderPads(r){
   if(S.game==='party'){
     $('#pads').className='pads party';
     $('#pads').innerHTML=`<div class="ro">${r.choices.map((c,i)=>`<div class="roc"><span class="k">${LET[i]}</span><span><b>${esc(c.title)}</b><span>${esc(c.artist)}</span></span></div>`).join('')}</div>`+
-      `<div class="desks">${S.pl.map((p,k)=>`<div class="desk" data-desk="${k}"><span class="dn">${esc(p.name)}</span><span class="db">${LET.split('').map((l,i)=>`<button class="ans dk" data-pad="${k}" data-i="${i}" disabled aria-label="${esc(p.name)} répond ${l}">${l}</button>`).join('')}</span><span class="ds" id="ds${k}"></span></div>`).join('')}</div>`;
+      `<div class="desks">${S.pl.map((p,k)=>`<div class="desk" data-desk="${k}"><span class="dn">${esc(p.name)}${x2Tag(p)}</span><span class="db">${LET.split('').map((l,i)=>`<button class="ans dk" data-pad="${k}" data-i="${i}" disabled aria-label="${esc(p.name)} répond ${l}">${l}</button>`).join('')}</span><span class="ds" id="ds${k}"></span></div>`).join('')}</div>`;
     return;
   }
   const two=r.pads.length>1;
@@ -984,7 +986,7 @@ function partyRound(r,what){
   const anyOk=order.some(x=>x.ok);
   r.pen=order.map((x,i)=>{
     let sips=0;
-    if(!x.ok&&!S.gm)sips=Math.min((!anyOk&&r.card==='tournee'?3:I.wrong)*st,10);
+    if(!x.ok&&!S.gm)sips=Math.min((!anyOk&&r.card==='tournee'?3:I.wrong)*st,10)*(S.pl[x.p].x2?2:1);
     return {p:x.p,rank:i+1,ok:x.ok,t:x.t,choice:x.choice,sips,cs:false,joker:false};
   });
   for(const e of r.pen){const pl=S.pl[e.p];pl.drunk+=e.sips;if(e.ok){pl.good++;pl.tt+=e.t}}
@@ -999,7 +1001,7 @@ function partyRound(r,what){
 function penText(e){return S.gm?(e.ok?'+1 point':'raté'):e.cs?CS():e.sips?unit(e.sips):'rien'}
 function renderExtra(r){
   const rows=r.pen.map(e=>{const pl=S.pl[e.p];const how=e.ok?fmtT(e.t):e.choice!=null?`faux (${LET[e.choice]})`:'pas répondu';
-    return `<li class="${e.rank===1&&r.log.anyOk?'win':''} ${e.cs?'cs':''}"><span class="rk">${e.rank}</span><span class="nm"><b>${esc(pl.name)}</b><small>${how}</small></span><span class="pn">${e.joker?'verre d\'eau':esc(penText(e))}</span>${(e.sips||e.cs)&&!e.joker&&pl.joker?`<button class="btn ghost sm" data-joker="${e.p}">Joker eau</button>`:'<span></span>'}</li>`}).join('');
+    return `<li class="${e.rank===1&&r.log.anyOk?'win':''} ${e.cs?'cs':''}"><span class="rk">${e.rank}</span><span class="nm"><b>${esc(pl.name)}${x2Tag(pl)}</b><small>${how}</small></span><span class="pn">${e.joker?'verre d\'eau':esc(penText(e))}</span>${(e.sips||e.cs)&&!e.joker&&pl.joker?`<button class="btn ghost sm" data-joker="${e.p}">Joker eau</button>`:'<span></span>'}</li>`}).join('');
   let h=`<ol class="rank">${rows}</ol>`;
   if(S.toGive>0)h+=`<div class="givebox"><p>${esc(S.pl[S.giver].name)} distribue : encore <b>${unit(S.toGive)}</b>. Tape sur les joueurs.</p><div class="chips">${S.pl.map((p,i)=>i===S.giver?'':`<button class="chip" data-give="${i}">${esc(p.name)}</button>`).join('')}</div></div>`;
   if(S.vote)h+=`<div class="givebox"><p>${esc(S.pl[S.giver].name)} chante le refrain. Le groupe juge :</p><div class="row"><button class="btn y" data-vote="1">Refrain réussi</button><button class="btn" data-vote="0">Refrain raté</button></div></div>`;
@@ -1166,7 +1168,7 @@ function sendResults(r){
   const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>{
     const x=r.res.find(z=>z.p===k)||{};
-    const m={t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist,r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:S.gm,last:S.i>=S.n-1,of:S.pl.length};
+    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist,r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:S.gm,last:S.i>=S.n-1,of:S.pl.length};
     if(S.game==='duel'){m.pts=x.pts||0;m.mult=x.mult||1;m.streak=pl.streak;m.score=pl.score;m.rank=ord.indexOf(k)+1}
     else{const en=r.pen.find(z=>z.p===k);Object.assign(m,{rank:en.rank,sips:en.sips,cs:en.cs,joker:en.joker,canJoker:!!(en.sips||en.cs)&&!en.joker&&pl.joker,anyOk:r.log.anyOk,first:S.pl[r.pen[0].p].name,give:S.giver===k&&S.toGive>0?S.toGive:0,sing:S.giver===k&&S.vote})}
     return m;
@@ -1217,11 +1219,11 @@ function results(){
   if(S.game==='party'){
     /* classement final : bonnes réponses, égalité départagée au temps total ; le 1er rien, puis 1 gorgée de plus par place */
     const rk=[...S.pl].sort(pbetter),n=rk.length;
-    rk.forEach((p,i)=>{p.fin=S.gm?0:finSips(i+1);p.gage=S.gm&&i>0?drawGage(n<=2?2:Math.round((i-1)/(n-2)*2),rk.map(q=>q.gage)):''});
+    rk.forEach((p,i)=>{p.fin=S.gm?0:finSips(i+1)*(p.x2?2:1);p.gage=S.gm&&i>0?drawGage(n<=2?2:Math.round((i-1)/(n-2)*2),rk.map(q=>q.gage)):''});
     const fast=[...S.pl].sort((a,b)=>b.wins-a.wins)[0];
     fin.textContent=rk[1]&&!pbetter(rk[0],rk[1])?'Égalité parfaite en tête':`${rk[0].name} gagne`;
     ver.textContent=`${rk[0].good}/${S.n} bonnes réponses pour ${rk[0].name}. ${fast.wins?`${fast.name} a été le plus rapide ${fast.wins} fois. `:''}`+(S.gm?'Fin de partie : le 1er n\'a rien, les autres font leur gage (de plus en plus fort selon la place).':`Fin de partie : le 1er ne ${S.soft?'fait rien':'boit rien'}, puis ${unit(1)} de plus à chaque place. ${S.soft?'':'Pensez à boire de l\'eau, et personne ne prend le volant ce soir.'}`);
-    board.innerHTML=rk.map((p,i)=>`<li><b>${esc(p.name)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}${p.good?` · ${fmtT(p.tt)} au total`:''}${S.gm?'':` · ${unit(p.drunk)} pendant la partie`}${p.joker||S.gm?'':' · joker utilisé'}</span><em>${S.gm?(i?'gage':'rien'):i?(S.soft?'':'boit ')+esc(unit(p.fin)):'rien'}</em></li>`).join('');
+    board.innerHTML=rk.map((p,i)=>`<li><b>${esc(p.name)}${x2Tag(p)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}${p.good?` · ${fmtT(p.tt)} au total`:''}${S.gm?'':` · ${unit(p.drunk)} pendant la partie`}${p.joker||S.gm?'':' · joker utilisé'}</span><em>${S.gm?(i?'gage':'rien'):i?(S.soft?'':'boit ')+esc(unit(p.fin)):'rien'}</em></li>`).join('');
     S.wheel=n>1?{w:rk[0].name,wk:S.pl.indexOf(rk[0]),segs:WHEEL[S.drink],res:null,rot:0,to:null,busy:false}:null;
     renderWheel();
     renderGages();
@@ -1247,7 +1249,7 @@ function renderWheel(anim){
   if(W.res==null)h+=`<p>${esc(W.w)}, le gagnant, fait tourner la roulette.</p><button class="btn y" id="wSpin" ${W.busy?'disabled':''}>Faire tourner</button>`;
   else if(W.busy)h+=`<p class="wres">…</p>`;
   else if(W.to==null)h+=`<p class="wres">${esc(W.w)} gagne : ${esc(W.segs[W.res][0])} !</p><p>À qui le donner ?</p><div class="chips">${S.pl.map((p,i)=>i===W.wk?'':`<button class="chip" data-wto="${i}">${esc(p.name)}</button>`).join('')}</div>`;
-  else h+=`<p class="wres">${esc(W.w)} donne ${S.gm?'le gage « '+esc(wheelText(W))+' »':esc(W.segs[W.res][0].toLowerCase())} à ${esc(S.pl[W.to].name)} !</p>`;
+  else h+=`<p class="wres">${esc(W.w)} donne ${S.gm||W.segs[W.res][2]?(W.segs[W.res][2]?'':'le gage « ')+esc(wheelText(W))+(W.segs[W.res][2]?'':' »'):esc(W.segs[W.res][0].toLowerCase())} à ${esc(S.pl[W.to].name)} !</p>`;
   el.innerHTML=h;if(anim)wheelGo(el);
 }
 function spinWheel(){
@@ -1257,7 +1259,7 @@ function spinWheel(){
   renderWheel(true);if(S.online)sendEnd($('#final').textContent);
   setTimeout(()=>{W.busy=false;renderWheel();if(S.online)sendEnd($('#final').textContent)},4300);
 }
-function giveWheel(k){const W=S.wheel;if(!W||W.res==null||W.busy||W.to!=null||k===W.wk||!S.pl[k])return;W.to=k;renderWheel();if(S.online)sendEnd($('#final').textContent)}
+function giveWheel(k){const W=S.wheel;if(!W||W.res==null||W.busy||W.to!=null||k===W.wk||!S.pl[k])return;W.to=k;if(W.segs[W.res][2])S.x2next=[...(S.x2next||[]),norm(S.pl[k].name)];renderWheel();if(S.online)sendEnd($('#final').textContent)}
 $('#wheelbox').addEventListener('click',e=>{if(e.target.closest('#wSpin'))return spinWheel();const b=e.target.closest('[data-wto]');if(b)giveWheel(+b.dataset.wto)});
 /* gages de fin de partie (Duel : le dernier ; Babinski sans alcool : tout le monde sauf le 1er) */
 function renderGages(){
@@ -1424,7 +1426,7 @@ function result(m){
     else if(m.gm){big='Raté !'}
     else if(!m.anyOk){big=`Tout le monde boit ${unit(m.sips)}`;art=glass(false)}
     else{big=`Tu bois ${unit(m.sips)}`;art=glass(false)}
-    h=`${art}<p class="ctl-big">${big}</p><p class="ctl-sub">${m.anyOk?`${m.ok?`Tu es ${ord(m.rank)} sur ${m.of} cette manche`:'Tu t\'es trompé'}`:'Personne n\'a trouvé'}<small>${how}${m.anyOk&&m.rank!==1?` · ${esc(m.first)} a été le plus rapide`:''}</small></p>
+    h=`${art}<p class="ctl-big">${big}</p>${m.x2?'<p class="ctl-sub"><b class="streak x2b">×2</b> Cette partie, tu bois tout en double.</p>':''}<p class="ctl-sub">${m.anyOk?`${m.ok?`Tu es ${ord(m.rank)} sur ${m.of} cette manche`:'Tu t\'es trompé'}`:'Personne n\'a trouvé'}<small>${how}${m.anyOk&&m.rank!==1?` · ${esc(m.first)} a été le plus rapide`:''}</small></p>
       ${m.canJoker?`<button class="btn y" id="cJoker">Utiliser mon joker eau</button>`:''}
       ${m.give?`<p class="ctl-sub">Tu distribues ${unit(m.give)}<small>Dis à l'hôte à qui, il les répartit sur son écran.</small></p>`:''}
       ${m.sing?`<p class="ctl-sub">À toi de chanter le refrain !<small>Le groupe juge sur l'écran de l'hôte.</small></p>`:''}`;
@@ -1438,7 +1440,7 @@ function wheelPhone(m){
   if(W.res==null)h+=mine?`<button class="btn y" id="cSpin">Faire tourner la roulette</button>`:`<p class="ctl-sub">${esc(W.w)} fait tourner la roulette…</p>`;
   else if(W.busy)h+=`<p class="ctl-sub">…</p>`;
   else if(W.to==null)h+=`<p class="ctl-big">${esc(W.segs[W.res][0])} !</p>`+(mine?`<p class="ctl-sub">À qui tu le donnes ?</p><div class="chips">${W.who.map(([i,n])=>`<button class="chip" data-wto="${i}">${esc(n)}</button>`).join('')}</div>`:`<p class="ctl-sub">${esc(W.w)} choisit à qui le donner…</p>`);
-  else h+=`<p class="ctl-big">${m.me===W.to?'Pour toi !':esc(W.toName)}</p><p class="ctl-sub">${esc(W.w)} donne ${m.gm?'le gage « '+esc(W.txt)+' »':esc(W.segs[W.res][0].toLowerCase())} à ${m.me===W.to?'toi':esc(W.toName)}.</p>`;
+  else h+=`<p class="ctl-big">${m.me===W.to?'Pour toi !':esc(W.toName)}</p><p class="ctl-sub">${esc(W.w)} donne ${W.segs[W.res][2]?esc(W.txt):m.gm?'le gage « '+esc(W.txt)+' »':esc(W.segs[W.res][0].toLowerCase())} à ${m.me===W.to?'toi':esc(W.toName)}.</p>`;
   return h+'</div>';
 }
 function end(m){
