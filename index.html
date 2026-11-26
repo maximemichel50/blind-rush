@@ -28,6 +28,7 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px;fl
 .hud small{display:block;font-weight:600;font-size:13px;color:var(--muted)}
 h1{font:400 clamp(48px,10vw,96px)/.95 Anton,Impact,sans-serif;margin:24px 0 8px;text-wrap:balance}
 .lead{font-size:18px;max-width:34em;margin:0 0 8px}
+.sndtest{margin:0 0 18px}.sndtest .btn.sm{color:var(--ink);box-shadow:inset 0 0 0 2px var(--ink)}#sndMsg{margin:10px 0 6px;font-weight:700}#sndLog{margin:0;padding:10px;max-height:220px;overflow:auto;background:var(--card);color:var(--cardInk);border-radius:10px;font:12px/1.35 ui-monospace,monospace;white-space:pre-wrap;word-break:break-all}
 .dbinfo{font-size:14px;color:var(--muted);margin:0 0 18px}
 h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .tabs{display:inline-flex;background:var(--card);border-radius:999px;padding:4px;gap:4px;flex-wrap:wrap}
@@ -325,6 +326,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <p class="lead" id="lead">10 manches, 4 réponses. Plus tu réponds vite, plus tu marques.</p>
     <p class="dbinfo" id="dbinfo">Chargement de la base de musiques…</p>
     <p class="mood" id="mood"></p>
+    <div class="sndtest"><button class="btn sm" id="sndBtn" type="button">🔊 Tester le son</button><div id="sndOut" class="hide"><p id="sndMsg"></p><pre id="sndLog"></pre></div></div>
 
     <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Tu obtiens un code, tes amis la rejoignent depuis leur téléphone. Mode, playlist et difficulté : ceux réglés plus bas.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
     <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
@@ -511,6 +513,10 @@ S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.on
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
 const audio=$('#audio');
+/* petit journal du son, affiché par « Tester le son » pour comprendre une panne sur téléphone */
+const ALOG=window.ALOG=[];const T0=Date.now();
+function alog(m){ALOG.push(((Date.now()-T0)/1000).toFixed(1)+'s '+m);if(ALOG.length>80)ALOG.shift();const el=document.getElementById('sndLog');if(el&&!el.closest('.hide'))el.textContent=ALOG.join('\n')}
+for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedmetadata','ended','error'])audio.addEventListener(ev,()=>alog('audio '+ev+(ev==='error'&&audio.error?' code '+audio.error.code+' '+(audio.error.message||''):'')+' rs'+audio.readyState+' t'+audio.currentTime.toFixed(1)));
 
 
 /* ---------- ambiances par style ---------- */
@@ -731,10 +737,10 @@ function begin(p,list){
 }
 /* iPhone : le son doit démarrer pendant un toucher, et on demande à jouer même en mode silencieux */
 function unlockAudio(){
-  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+  try{if(navigator.audioSession){navigator.audioSession.type='playback';alog('audioSession '+navigator.audioSession.type)}}catch(e){alog('audioSession erreur')}
   try{const n=800,b=new Uint8Array(44+n),v=new DataView(b.buffer),w=(o,t)=>[...t].forEach((c,i)=>b[o+i]=c.charCodeAt(0));
     w(0,'RIFF');v.setUint32(4,36+n,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,8000,true);v.setUint32(28,8000,true);v.setUint16(32,1,true);v.setUint16(34,8,true);w(36,'data');v.setUint32(40,n,true);b.fill(128,44);
-    audio.muted=false;audio.volume=1;audio.src=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));audio.play().catch(()=>{});
+    audio.muted=false;audio.volume=1;audio.src=URL.createObjectURL(new Blob([b],{type:'audio/wav'}));window.UNLOCK=Promise.race([audio.play().then(()=>alog('déblocage ok'),e=>alog('déblocage refusé '+e.name+' '+e.message)),new Promise(r=>setTimeout(r,1200))]);
   }catch(e){}
 }
 /* garde l'écran allumé pendant la partie (sinon le chrono s'arrête quand l'écran se met en veille) */
@@ -798,12 +804,13 @@ function renderPads(r){
   $('#pads').className='pads'+(two?' two':'');
   $('#pads').innerHTML=r.pads.map((p,k)=>`<div class="pad pc${two?k:'x'}">${two?`<h4><span>${esc(S.pl[p].name)}</span><small>${k===0?'touches 1 à 4':'touches 7 8 9 0'}</small></h4>`:''}<div class="answers">${r.choices.map((c,i)=>`<button class="ans" data-pad="${k}" data-i="${i}" disabled><span class="k">${two&&k===1?'7890'[i]:i+1}</span><span><b>${esc(c.title)}</b><span>${esc(c.artist)}</span></span></button>`).join('')}</div></div>`).join('');
 }
-function loadSrc(url){
+async function loadSrc(url){
+  if(window.UNLOCK){await window.UNLOCK;window.UNLOCK=null}
   return new Promise(res=>{
     const end=v=>{clearTimeout(t);audio.removeEventListener('loadedmetadata',ok);audio.removeEventListener('error',ko);res(v)};
-    const ok=()=>end(true),ko=()=>end(false),t=setTimeout(()=>end(audio.readyState>0),8000);
+    const ok=()=>end(true),ko=()=>end(false),t=setTimeout(()=>{alog('chargement lent rs'+audio.readyState+', on tente quand même');end(!audio.error)},6000);
     audio.addEventListener('loadedmetadata',ok);audio.addEventListener('error',ko);
-    audio.pause();audio.src=url;audio.load();
+    alog('charge '+url.split('?')[0].slice(-60));audio.pause();audio.src=url;audio.load();
   });
 }
 function jsonp(url,ms=7000){return new Promise((res,rej)=>{const cb='br'+Math.random().toString(36).slice(2),s=document.createElement('script');const done=()=>{clearTimeout(t);window[cb]=()=>{};s.remove()};const t=setTimeout(()=>{done();rej()},ms);window[cb]=d=>{done();res(d)};s.onerror=()=>{done();rej()};s.src=url+'&callback='+cb;document.head.appendChild(s)})}
@@ -812,7 +819,7 @@ async function resolveUrl(t,skipDeezer){
   if(!skipDeezer&&t.url&&t.exp>Date.now()/1000+120)return t.url;
   if(!skipDeezer)try{const d=await jsonp(`https://api.deezer.com/track/${t.id}?output=jsonp`);if(d&&d.preview){t.url=d.preview;const m=/exp=(\d+)/.exec(d.preview);t.exp=m?+m[1]:Date.now()/1000+600;return t.url}}catch(e){}
   try{const d=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent(DB.a[t.ai]+' '+t.title)}&entity=song&limit=5&country=FR`);const an=norm(DB.a[t.ai]),r=(d.results||[]).find(r=>r.previewUrl&&norm(r.trackName).includes(t.b.slice(0,12))&&(norm(r.artistName).includes(an.slice(0,8))||an.includes(norm(r.artistName).slice(0,8))));if(r){t.url=r.previewUrl;t.exp=Date.now()/1000+86400;return t.url}}catch(e){}
-  return '';
+  alog('aucune adresse pour '+t.id);return '';
 }
 async function playClip(r){
   S.phase='loading';
@@ -828,7 +835,7 @@ async function playClip(r){
   const dur=isFinite(audio.duration)&&audio.duration>0?audio.duration:30;
   r.off=Math.max(0,Math.min(rand(...DIFF[S.diff].off),dur-r.limit-.5));
   try{audio.currentTime=r.off}catch(e){r.off=0}
-  try{await audio.play()}catch(e){
+  try{await audio.play();alog('lecture ok muted='+audio.muted+' vol='+audio.volume)}catch(e){alog('lecture refusée '+e.name+' '+e.message);
     S.phase='blocked';$('#status').innerHTML='Ton navigateur attend un clic pour jouer le son.<small>Appuie sur « Lancer l\'extrait ».</small>';$('#playBtn').classList.remove('hide');return;
   }
   $('#playBtn').classList.add('hide');
@@ -839,6 +846,18 @@ async function playClip(r){
   $('#status').innerHTML=S.online?'À vos téléphones !<small>Répondez sur votre écran, le plus vite possible.</small>':S.game==='party'?'Tout le monde répond !<small>Chacun tape sa lettre sur sa ligne.</small>':r.pads.length>1?'Écoutez bien…<small>Chacun répond sur son côté.</small>':'Écoute bien…<small>Qui chante ? Quel titre ?</small>';
   cancelAnimationFrame(S.raf);S.raf=requestAnimationFrame(tick);
 }
+$('#sndBtn').addEventListener('click',async()=>{
+  $('#sndOut').classList.remove('hide');const msg=$('#sndMsg');msg.textContent='Je lance un extrait…';
+  alog('--- test : '+navigator.userAgent.replace(/^Mozilla\/5\.0 /,'').slice(0,140));
+  unlockAudio();$('#sndLog').textContent=ALOG.join('\n');
+  const pool=TRACKS.filter(t=>ARTISTS[t.ai].w>=4),t=pool[Math.random()*pool.length|0]||TRACKS[0];
+  const url=await resolveUrl(t);if(!url){msg.textContent='❌ Impossible de trouver l\'extrait (internet ?).';return}
+  if(!await loadSrc(url)){msg.textContent='❌ L\'extrait ne se charge pas.';return}
+  try{audio.currentTime=0}catch(e){}
+  try{await audio.play();alog('test : lecture ok');msg.textContent=`▶️ Musique lancée : ${t.artist} – ${t.title}. Tu l'entends ?`;
+    setTimeout(()=>{alog('test : 8 s plus tard t='+audio.currentTime.toFixed(1)+' paused='+audio.paused);if(!S.phase||S.phase==='idle')audio.pause()},8000)}
+  catch(e){alog('test : refusé '+e.name+' '+e.message);msg.textContent='❌ Le téléphone a bloqué le son ('+e.name+').'}
+});
 $('#playBtn').addEventListener('click',()=>{try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}audio.play().catch(()=>{});playClip(S.rounds[S.i])});
 function setRing(p){const fg=$('#ringFg');fg.setAttribute('stroke-dashoffset',String(Math.min(100,p*100)));fg.style.stroke=p>.75?'#c81e1e':''}
 function tick(){
