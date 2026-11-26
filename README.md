@@ -27,7 +27,7 @@ La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont d
 
 ## Jouer en ligne (façon Kahoot / WhoLiked)
 
-Sur l'accueil, toucher **Jouer**, choisir Duel ou Babinski puis « Chacun son téléphone », choisir la playlist et la difficulté, puis **Créer la partie** :
+Sur l'accueil, toucher **Multijoueur**, choisir Duel ou Babinski, puis suivre les étapes (règles, playlist, difficulté) et toucher **Créer la partie**. Duel et Babinski se jouent toujours chacun sur son téléphone :
 
 1. L'écran de l'hôte affiche un **code de 4 lettres**, un lien et un QR code. La musique sort de cet appareil.
 2. Les joueurs ouvrent le lien ou scannent le QR code (ou touchent « Rejoindre une partie » sur l'accueil et tapent le code), puis choisissent un prénom. Jusqu'à 12 joueurs. L'hôte peut jouer aussi depuis son écran.
@@ -40,7 +40,7 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 ## Repères dans `index.html`
 
 - **Logo** : un clic ramène à l'accueil depuis n'importe quel écran (`goHome()`).
-- **Accueil en étapes** : fonction `wz(n)` (0 accueil, 1 mode, 2 playlist, 3 difficulté et lancement), `wzCheck()` vérifie chaque étape avant la suivante.
+- **Accueil en étapes** : `view()` (menu, multi, lb, setup) ; menu Solo / Multijoueur / Classement mondial ; réglages une étape par écran avec `wShow()` / `wSteps()` (Solo : playlist, difficulté, manches + lancer ; Multijoueur : règles, playlist, difficulté, lancer).
 - **En ligne (hôte)** : objet `NET`, fonctions `openLobby()`, `hostPeer()`, `onMsg()` (messages des téléphones), `sendQ()`, `sendResults()`, `sendEnd()`, `resync()` (reconnexion).
 - **En ligne (téléphone)** : dernier `<script>` du fichier, objet `C`, fonctions `joinScreen()`, `connect()`, `question()`, `result()`, `end()`.
 
