@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#ff5b35">
+<meta name="theme-color" content="#0c0a0c">
 <title>Blind Rush</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 /* VOICE: gig poster energy, loud but clean
    IDEA: a vinyl on a turntable — the record spins while you guess
@@ -316,9 +316,93 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
  .ans>span:last-child,.roc>span:last-child{min-width:0}
  body[data-screen=game][data-game=duel] .status small{display:none}
 }
+
+/* =================== NOUVELLE CHARTE : nuit, néons, grain =================== */
+:root{color-scheme:dark;--acc2:#ff2fb0;--mono:'Space Mono',ui-monospace,monospace;--line:rgba(255,255,255,.09);--grad:linear-gradient(100deg,var(--acc),var(--acc2))}
+body{background:var(--pat),var(--bg);background-attachment:fixed}
+.grain{position:fixed;inset:-50%;pointer-events:none;z-index:0;opacity:.16;mix-blend-mode:overlay;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.orb{position:fixed;width:min(78vw,620px);aspect-ratio:1;right:-22vw;top:-14vw;border-radius:50%;pointer-events:none;z-index:0;opacity:.55;
+ background:radial-gradient(circle,transparent 50%,color-mix(in srgb,var(--acc2) 70%,transparent) 57%,color-mix(in srgb,var(--acc) 85%,transparent) 64%,color-mix(in srgb,var(--acc) 35%,transparent) 69%,transparent 73%);filter:blur(10px);transition:background .6s;animation:orb 14s ease-in-out infinite alternate}
+@keyframes orb{to{transform:translate(-4vw,3vw) scale(1.06)}}
+body[data-screen=game] .orb{opacity:.25}
+.bgword{color:transparent;-webkit-text-stroke:1.5px var(--acc);opacity:.16}
+.logo{letter-spacing:.02em}.eq i{background:var(--grad)}
+h1{text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{color:color-mix(in srgb,var(--ink) 82%,transparent)}
+.mood,.kicker,.lbl,.pcount,.plh,.lbcode small,.hud small,.fx-k{font-family:var(--mono)!important;text-transform:uppercase;letter-spacing:.08em}
+.mood{background:transparent;color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc);font-size:12px;padding:5px 12px}
+h2.step{--sec:var(--acc);display:flex;align-items:center;gap:12px;font:700 14px/1 var(--mono);text-transform:uppercase;letter-spacing:.14em;color:var(--sec);margin:34px 0 12px}
+h2.step i{font-style:normal;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;box-shadow:inset 0 0 0 1.5px var(--sec);font-size:12px}
+h2.step::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--sec),transparent)}
+h2.step.s2{--sec:var(--acc2)}h2.step.s3{--sec:color-mix(in srgb,var(--acc) 50%,#ffd23f)}
+h2:not(.step){font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;font-size:14px;color:var(--acc)}
+/* surfaces */
+.setup,.diff,.sel,.list,.searchbox input,.err,.ans,.roc,.board li,.rank li,.recap li,.gage,.ctl-card,.np,.lbp,.lbcode,.joinbar,.turn,.tabs,.desk,.ctl input,.sentence{border:1px solid var(--line)}
+.setup,.sel,.joinbar,.lbcode{background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(6px)}
+.joinbar{border-radius:20px}.joinbar b{font-family:Anton,sans-serif;font-weight:400;font-size:19px;letter-spacing:.02em;text-transform:uppercase;color:var(--acc)}
+/* boutons : pilules en contour, texte mono */
+.btn{background:transparent;color:var(--acc);box-shadow:inset 0 0 0 1.5px var(--acc);border-radius:999px;font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.08em;padding:14px 22px}
+.btn.alt{color:var(--ink);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 40%,transparent)}
+.btn.ghost,.btn.sm{color:var(--ink)!important;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--ink) 30%,transparent)!important}
+.btn.y{background:var(--grad);color:#fff;box-shadow:0 0 24px color-mix(in srgb,var(--acc2) 45%,transparent)}
+.btn:not(:disabled):hover{filter:brightness(1.15)}
+.go{background:var(--grad);color:#fff;border-radius:999px;box-shadow:0 0 0 1px rgba(255,255,255,.15) inset,0 0 34px color-mix(in srgb,var(--acc) 55%,transparent),0 0 80px color-mix(in srgb,var(--acc2) 30%,transparent);letter-spacing:.04em}
+.go:active{transform:scale(.98);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 50%,transparent)}
+.tabs{background:transparent}.tab{color:var(--ink);font:700 13px/1 var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.tab[aria-selected=true]{background:var(--grad);color:#fff}
+/* modes de jeu */
+.mode{background:var(--cp),#120f14;color:var(--ink);border-radius:20px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ca) 40%,transparent);position:relative;overflow:hidden}
+.mode::after{content:"";position:absolute;width:120px;height:120px;right:-34px;top:-34px;border-radius:50%;background:radial-gradient(circle,transparent 48%,var(--cb2) 58%,var(--ca) 66%,transparent 72%);filter:blur(3px);opacity:.75}
+.mode b{background:linear-gradient(100deg,var(--ca),var(--cb2));-webkit-background-clip:text;background-clip:text;color:transparent;text-transform:uppercase}
+.mode[aria-pressed=true]{box-shadow:inset 0 0 0 2px var(--ca),0 0 30px color-mix(in srgb,var(--ca) 40%,transparent)}
+/* puces de playlist : chaque style a ses couleurs */
+.chip{background:color-mix(in srgb,var(--ca) 8%,#121014);color:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ca) 55%,transparent);font-weight:700}
+.chip::before{content:"";display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;background:linear-gradient(135deg,var(--ca),var(--cb2));box-shadow:0 0 8px var(--ca);vertical-align:1px}
+.chip[aria-pressed=true]{background:linear-gradient(100deg,var(--ca),var(--cb2));color:#fff;box-shadow:0 0 22px color-mix(in srgb,var(--ca) 50%,transparent)}
+.chip[aria-pressed=true]::before{background:#fff;box-shadow:none}
+.chip small{font-family:var(--mono);font-size:11px}
+.givebox .chip,.wheelbox .chip,.ctl .chip{--ca:var(--acc);--cb2:var(--acc2)}
+/* difficultés : vert, orange, rouge */
+.diff{background:#121014;border-radius:18px;position:relative;overflow:hidden}
+.diff[data-d=facile]{--dc:#19e3a0}.diff[data-d=moyen]{--dc:#ffb100}.diff[data-d=difficile]{--dc:#ff2a4a}
+.diff b{color:var(--dc);text-transform:uppercase}
+.diff[aria-pressed=true]{background:color-mix(in srgb,var(--dc) 12%,#121014);box-shadow:inset 0 0 0 2px var(--dc),0 0 26px color-mix(in srgb,var(--dc) 35%,transparent)}
+.seg{box-shadow:inset 0 0 0 1px var(--line);border-radius:999px}.seg button{color:var(--ink);font-family:var(--mono);font-size:13px}.seg button[aria-pressed=true]{background:var(--grad);color:#fff}
+.summary{font-family:var(--mono);font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+/* jeu : vinyle noir dans un anneau lumineux */
+.vinyl{background:repeating-radial-gradient(circle,#111 0 2px,#050505 2px 4px);box-shadow:0 0 0 2px #000,0 0 50px color-mix(in srgb,var(--acc2) 55%,transparent),0 0 110px color-mix(in srgb,var(--acc) 35%,transparent)}
+.ring .fg{stroke:url(#ringGrad)}.ring .bg{stroke:rgba(255,255,255,.08)}
+.timer{background:#050406;color:#fff;box-shadow:0 0 0 2px var(--acc),0 0 16px var(--acc);font-family:Anton,sans-serif}
+.label{background:var(--grad);box-shadow:0 0 0 4px #000}
+.ans{background:#141116}.ans .k{background:var(--grad);color:#fff}
+.ans:not(:disabled):hover{box-shadow:inset 0 0 0 1px var(--acc)}
+.status{font-family:Anton,sans-serif;font-weight:400;font-size:22px;letter-spacing:.02em;text-transform:uppercase}
+.status small{font-family:var(--mono);text-transform:none;letter-spacing:0;font-size:13px}
+.pop{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.hud{font-family:Anton,sans-serif;font-weight:400;font-size:20px}
+.big{text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.board li::before,.rank .rk{color:var(--acc)}.board em,.rank .pn{color:var(--ink)}
+.rank li.win{box-shadow:inset 0 0 0 2px var(--acc2),0 0 18px color-mix(in srgb,var(--acc2) 30%,transparent)}.rank li.win .pn{color:var(--acc2)}
+.gage{box-shadow:inset 4px 0 0 var(--acc2)}
+.lbcode b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fx{background:rgba(5,3,8,.9)}.fx-t{color:var(--acc)}
+/* Babinski : même charte, version boîte de nuit */
+body[data-game=party] .orb{opacity:.8;background:radial-gradient(circle,transparent 48%,rgba(39,224,255,.55) 54%,rgba(255,47,176,.9) 61%,rgba(122,60,255,.7) 67%,transparent 72%);animation:orb 6s ease-in-out infinite alternate,hue 12s linear infinite}
+@keyframes hue{to{filter:blur(10px) hue-rotate(360deg)}}
+body[data-game=party] .lights i{opacity:.34}
+body[data-game=party] h1{background:linear-gradient(100deg,#ff2fb0,#ffd23f 40%,#27e0ff 70%,#7a3cff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px rgba(255,47,176,.55));animation:neon 2.4s ease-in-out infinite}
+@keyframes neon{50%{filter:drop-shadow(0 0 34px rgba(39,224,255,.6))}}
+body[data-game=party] .setup,body[data-game=party] .ans,body[data-game=party] .desk,body[data-game=party] .roc{box-shadow:inset 0 0 0 1px rgba(255,47,176,.35),0 0 16px rgba(122,60,255,.15)}
+body[data-game=party] .go{background:linear-gradient(100deg,#ff2fb0,#7a3cff 55%,#27e0ff);animation:beat 1s ease-in-out infinite}
+@keyframes beat{50%{box-shadow:0 0 50px rgba(255,47,176,.7),0 0 100px rgba(39,224,255,.35)}}
+body[data-game=party]::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px)}
+/* Duel : ring rouge contre bleu */
+body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba(47,107,255,.7) 57%,rgba(255,59,48,.85) 64%,transparent 72%)}
+@media(prefers-reduced-motion:reduce){.orb,body[data-game=party] h1,body[data-game=party] .go{animation:none!important}}
 </style>
 </head>
 <body>
+<div class="orb" aria-hidden="true"></div><div class="grain" aria-hidden="true"></div>
 <div class="bgword" id="bgword" aria-hidden="true">WORLD</div>
 <div class="wrap">
   <header>
@@ -337,11 +421,11 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <div class="joinbar"><div><b>Tu veux lancer une partie en ligne ?</b><span>Tu obtiens un code, tes amis la rejoignent depuis leur téléphone. Mode, playlist et difficulté : ceux réglés plus bas.</span></div><button class="btn y" id="createOpen">Créer une partie</button></div>
     <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
 
-    <h2>1. Mode de jeu</h2>
+    <h2 class="step s1"><i>01</i>Mode de jeu</h2>
     <div class="modes" id="games"></div>
     <div class="setup" id="setup"></div>
 
-    <h2>2. Ta playlist</h2>
+    <h2 class="step s2"><i>02</i>Ta playlist</h2>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tabStyle" aria-selected="true">Par style</button>
       <button class="tab" role="tab" id="tabPick" aria-selected="false">Je choisis mes artistes</button>
@@ -361,7 +445,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
       </div>
     </div>
 
-    <h2>3. Difficulté</h2>
+    <h2 class="step s3"><i>03</i>Difficulté</h2>
     <div class="diffs" id="diffs"></div>
 
     <div class="launch">
@@ -377,7 +461,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <div class="turn hide" id="turn"></div>
     <div class="stage">
       <div class="deck">
-        <span class="timer" id="timer" aria-hidden="true"></span><svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="bg" cx="50" cy="50" r="46"/><circle class="fg" id="ringFg" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"/></svg>
+        <span class="timer" id="timer" aria-hidden="true"></span><svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="bg" cx="50" cy="50" r="46"/><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--acc)"/><stop offset="1" style="stop-color:var(--acc2)"/></linearGradient></defs><circle class="fg" id="ringFg" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="100" stroke-dashoffset="0"/></svg>
         <div class="vinyl" id="vinyl"><div class="label" id="label"><img id="cover" alt=""></div></div>
       </div>
     </div>
@@ -427,6 +511,32 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 <audio id="audio" preload="auto" playsinline></audio>
 
 <script>
+/* charte graphique : fond presque noir, néons rouge-orangé et rose, grain. Chaque style garde ses 2 couleurs et sa texture. */
+(()=>{const T=(n,w,bg,acc,acc2,tex,o)=>{const a=(c,x)=>`color-mix(in srgb,${c} ${x}%,transparent)`;
+  return Object.assign({n,w,bg,acc,acc2,ink:'#f7efe8',card:`color-mix(in srgb,${acc} 5%,#16131a)`,cardInk:'#f7efe8',vin:'#050406',vinInk:'#f7efe8',goInk:'#fff',kc:acc,
+   pat:`radial-gradient(circle at 92% 6%,${a(acc2,34)},transparent 34%),radial-gradient(circle at 4% 96%,${a(acc,30)},transparent 38%)`+(tex?','+tex:'')},o||{})};
+window.BR_THEMES={
+ duel:T('Ambiance ring de boxe','DUEL','#0a0a10','#ff3b30','#2f6bff','linear-gradient(115deg,rgba(255,59,48,.16) 0 50%,rgba(47,107,255,.16) 50% 100%)',{kc:'#ffcc33'}),
+ party:T('Ambiance boîte de nuit','BABINSKI','#0b0414','#ff2fb0','#7a3cff','radial-gradient(circle at 50% 110%,rgba(39,224,255,.22),transparent 45%),radial-gradient(rgba(255,255,255,.35) 1px,transparent 1.6px) 0 0/30px 30px',{kc:'#27e0ff'}),
+ mix:T('Ambiance tour du monde','WORLD','#0c0a0c','#ff4a1c','#ff2fb0',''),
+ rapfr:T('Ambiance béton','RAP FR','#0d0d10','#ff4a1c','#3d8bff','repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 9px)'),
+ rapus:T('Ambiance or et nuit','HIP-HOP','#0c0b08','#f2b630','#ff4a1c','radial-gradient(circle at 50% 0%,rgba(242,182,48,.10),transparent 50%)'),
+ variete:T('Ambiance bal populaire','CHANSON','#0a0c18','#ff3b4a','#4d6bff','linear-gradient(90deg,transparent 0 94%,rgba(255,255,255,.06) 94% 97%,rgba(255,59,74,.18) 97%)'),
+ pop:T('Ambiance chewing-gum','POP','#140810','#ff5fb8','#ffe14d','radial-gradient(rgba(255,95,184,.18) 2px,transparent 2.5px) 0 0/22px 22px'),
+ rock:T('Ambiance ampli à fond','ROCK','#120606','#ff2a1a','#ff8a00','radial-gradient(circle at 50% 115%,rgba(255,42,26,.3),transparent 60%)'),
+ y70:T('Ambiance boule à facettes','DISCO','#120a04','#ff9a1f','#ff3fa4','repeating-radial-gradient(circle at 50% 115%,transparent 0 46px,rgba(255,154,31,.07) 46px 80px)'),
+ y80:T('Ambiance synthwave','1980','#0d0620','#ff3fa4','#27e0ff','linear-gradient(rgba(39,224,255,.08) 1px,transparent 1px) 0 0/100% 34px,linear-gradient(90deg,rgba(39,224,255,.08) 1px,transparent 1px) 0 0/34px 100%'),
+ y90:T('Ambiance Memphis','1990','#061412','#19e3c8','#ffde33','repeating-linear-gradient(45deg,transparent 0 30px,rgba(25,227,200,.06) 30px 33px)'),
+ y2000:T('Ambiance Y2K','2000','#070c16','#6ec8ff','#ff2fa0','linear-gradient(160deg,rgba(110,200,255,.10),transparent 40%,rgba(255,255,255,.04) 60%,transparent)'),
+ electro:T('Ambiance club','ELECTRO','#04061a','#27e0ff','#a03cff',''),
+ latino:T('Ambiance plein soleil','LATINO','#140904','#ffb100','#ff1f7a','radial-gradient(circle at 88% 12%,rgba(255,177,0,.16) 0 70px,transparent 71px)'),
+ afro:T('Ambiance terre et or','AFRO','#140805','#ffc93c','#ff5a1f','repeating-linear-gradient(90deg,rgba(255,201,60,.05) 0 14px,transparent 14px 28px,rgba(255,90,31,.05) 28px 34px,transparent 34px 60px)'),
+ kpop:T('Ambiance idol','K-POP','#0e0918','#c7a6ff','#ff4f9a','radial-gradient(circle at 10% 20%,rgba(255,79,154,.14),transparent 30%)'),
+ rnb:T('Ambiance velours','SOUL','#12040b','#f2a08a','#e0306f','radial-gradient(ellipse at 50% 0%,rgba(242,160,138,.14),transparent 60%)'),
+ reggae:T('Ambiance roots','REGGAE','#04120a','#ffd400','#2ecc40','linear-gradient(transparent 0 93%,rgba(227,27,35,.5) 93% 95.5%,rgba(255,212,0,.5) 95.5% 98%,transparent 98%)'),
+ jazz:T('Ambiance club de jazz','JAZZ','#050a14','#d4a24c','#3d6bff','radial-gradient(circle at 72% 28%,rgba(212,162,76,.12),transparent 40%)'),
+ country:T('Ambiance saloon','COUNTRY','#120a05','#f2a14e','#d9531e','repeating-linear-gradient(0deg,rgba(242,161,78,.04) 0 3px,transparent 3px 26px)')
+};})();
 /* roulette du gagnant (Babinski) : 6 cases, autant de chances pour chacune. rot = rotation finale en degrés */
 window.wheelSvg=(segs,rot,anim)=>{const n=segs.length,C=['#ff3d9a','#27e0ff','#ffd23f','#9b5cff','#3dff9a','#ff7a1a'],e=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   let g='';for(let i=0;i<n;i++){const a0=(i/n)*2*Math.PI-Math.PI/2,a1=((i+1)/n)*2*Math.PI-Math.PI/2,am=(i+.5)*360/n;
@@ -546,32 +656,11 @@ for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedm
 
 
 /* ---------- ambiances par style ---------- */
-const THEMES={
- duel:{n:'Ambiance ring de boxe',bg:'#15151c',ink:'#f4f4f6',card:'#24242f',cardInk:'#f4f4f6',acc:'#ffcc33',vin:'#08080c',vinInk:'#f4f4f6',pat:'linear-gradient(115deg,rgba(230,57,70,.28) 0 50%,rgba(47,107,255,.28) 50% 100%)',w:'DUEL'},
- party:{n:'Ambiance soirée',bg:'#14072a',ink:'#fff3fb',card:'#26113f',cardInk:'#fff3fb',acc:'#ff3d9a',goInk:'#fff',kc:'#ffd23f',vin:'#0a0316',vinInk:'#fff3fb',pat:'radial-gradient(circle at 12% 8%,rgba(255,61,154,.38),transparent 32%),radial-gradient(circle at 88% 14%,rgba(39,224,255,.3),transparent 30%),radial-gradient(circle at 50% 105%,rgba(255,210,63,.28),transparent 42%),radial-gradient(rgba(255,255,255,.45) 1px,transparent 1.6px) 0 0/30px 30px',w:'BABINSKI'},
- mix:{n:'Ambiance tour du monde',bg:'#ff5b35',ink:'#1d0c07',card:'#fff4ea',cardInk:'#1d0c07',acc:'#ffd23f',vin:'#1d0c07',vinInk:'#fff1e6',pat:'none',w:'WORLD'},
- rapfr:{n:'Ambiance béton',bg:'#26262b',ink:'#f2f2f2',card:'#3a3a42',cardInk:'#f2f2f2',acc:'#3d8bff',goInk:'#fff',vin:'#0f0f12',vinInk:'#f2f2f2',pat:'repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 2px,transparent 2px 9px)',w:'RAP FR'},
- rapus:{n:'Ambiance or et nuit',bg:'#121212',ink:'#f5efe0',card:'#26221a',cardInk:'#f5efe0',acc:'#e8b838',vin:'#000',vinInk:'#f5efe0',pat:'radial-gradient(circle at 85% 8%,rgba(232,184,56,.22),transparent 45%)',w:'HIP-HOP'},
- variete:{n:'Ambiance bal populaire',bg:'#1f2d63',ink:'#fff8ef',card:'#fff8ef',cardInk:'#1f2d63',acc:'#ef3b4a',goInk:'#fff',vin:'#141d42',vinInk:'#fff8ef',pat:'linear-gradient(90deg,transparent 0 94%,rgba(255,255,255,.22) 94% 97%,rgba(239,59,74,.55) 97%)',w:'CHANSON'},
- pop:{n:'Ambiance chewing-gum',bg:'#ff7ac0',ink:'#2a0a1f',card:'#fff0f8',cardInk:'#2a0a1f',acc:'#fff15c',vin:'#2a0a1f',vinInk:'#fff0f8',pat:'radial-gradient(rgba(255,255,255,.35) 2px,transparent 2.5px) 0 0/22px 22px',w:'POP'},
- rock:{n:'Ambiance ampli à fond',bg:'#180707',ink:'#f6e9e4',card:'#2f1111',cardInk:'#f6e9e4',acc:'#e3261b',goInk:'#fff',vin:'#000',vinInk:'#f6e9e4',pat:'radial-gradient(circle at 50% 115%,rgba(227,38,27,.4),transparent 60%)',w:'ROCK'},
- y70:{n:'Ambiance boule à facettes',bg:'#e3a528',ink:'#3a1d0c',card:'#fff3d6',cardInk:'#3a1d0c',acc:'#d9531e',goInk:'#fff',vin:'#3a1d0c',vinInk:'#fff3d6',pat:'repeating-radial-gradient(circle at 50% 115%,transparent 0 46px,rgba(217,83,30,.2) 46px 80px)',w:'DISCO'},
- y80:{n:'Ambiance synthwave',bg:'#24104f',ink:'#ffe9fb',card:'#3a1a73',cardInk:'#ffe9fb',acc:'#ff3fa4',goInk:'#fff',vin:'#12062b',vinInk:'#ffe9fb',pat:'linear-gradient(rgba(39,224,255,.16) 1px,transparent 1px) 0 0/100% 34px,linear-gradient(90deg,rgba(39,224,255,.16) 1px,transparent 1px) 0 0/34px 100%',w:'1980'},
- y90:{n:'Ambiance Memphis',bg:'#19b5a5',ink:'#1d1036',card:'#fdfaf0',cardInk:'#1d1036',acc:'#ffde33',vin:'#1d1036',vinInk:'#fdfaf0',pat:'repeating-linear-gradient(45deg,transparent 0 30px,rgba(29,16,54,.08) 30px 33px)',w:'1990'},
- y2000:{n:'Ambiance Y2K',bg:'#a9d8ff',ink:'#0b1d3a',card:'#f4fbff',cardInk:'#0b1d3a',acc:'#ff2fa0',goInk:'#fff',vin:'#0b1d3a',vinInk:'#f4fbff',pat:'linear-gradient(160deg,rgba(255,255,255,.65),transparent 40%,rgba(255,255,255,.35) 60%,transparent)',w:'2000'},
- electro:{n:'Ambiance club',bg:'#0a0f2e',ink:'#e8f7ff',card:'#17214f',cardInk:'#e8f7ff',acc:'#27e0ff',vin:'#03061a',vinInk:'#e8f7ff',pat:'radial-gradient(ellipse at 15% 0%,rgba(39,224,255,.25),transparent 50%),radial-gradient(ellipse at 90% 100%,rgba(160,60,255,.28),transparent 50%)',w:'ELECTRO'},
- latino:{n:'Ambiance plein soleil',bg:'#ffb100',ink:'#4a0d2a',card:'#fff6e0',cardInk:'#4a0d2a',acc:'#e4007c',goInk:'#fff',vin:'#4a0d2a',vinInk:'#fff6e0',pat:'radial-gradient(circle at 88% 12%,rgba(255,255,255,.5) 0 70px,transparent 71px)',w:'LATINO'},
- afro:{n:'Ambiance terre et or',bg:'#b8471f',ink:'#fff4e2',card:'#fff4e2',cardInk:'#3b1406',acc:'#ffc93c',vin:'#3b1406',vinInk:'#fff4e2',pat:'repeating-linear-gradient(90deg,rgba(255,201,60,.13) 0 14px,transparent 14px 28px,rgba(0,0,0,.09) 28px 34px,transparent 34px 60px)',w:'AFRO'},
- kpop:{n:'Ambiance idol',bg:'#cbb8ff',ink:'#24124a',card:'#fbf8ff',cardInk:'#24124a',acc:'#ff4f9a',goInk:'#fff',vin:'#24124a',vinInk:'#fbf8ff',pat:'radial-gradient(circle at 10% 20%,rgba(255,79,154,.28),transparent 30%),radial-gradient(circle at 90% 80%,rgba(255,255,255,.55),transparent 35%)',w:'K-POP'},
- rnb:{n:'Ambiance velours',bg:'#4a0e2e',ink:'#fde8e1',card:'#661a40',cardInk:'#fde8e1',acc:'#f2b6a0',vin:'#25051a',vinInk:'#fde8e1',pat:'radial-gradient(ellipse at 50% 0%,rgba(242,182,160,.22),transparent 60%)',w:'SOUL'},
- reggae:{n:'Ambiance roots',bg:'#13723a',ink:'#fffbe8',card:'#fffbe8',cardInk:'#0d3b1f',acc:'#ffd400',vin:'#0d3b1f',vinInk:'#fffbe8',pat:'linear-gradient(transparent 0 93%,#e31b23 93% 95.5%,#ffd400 95.5% 98%,transparent 98%)',w:'REGGAE'},
- jazz:{n:'Ambiance club de jazz',bg:'#101a2c',ink:'#f3ead8',card:'#1e2b44',cardInk:'#f3ead8',acc:'#d4a24c',vin:'#060b16',vinInk:'#f3ead8',pat:'radial-gradient(circle at 72% 28%,rgba(212,162,76,.18),transparent 40%)',w:'JAZZ'},
- country:{n:'Ambiance saloon',bg:'#7a4a2c',ink:'#fbf1e2',card:'#fbf1e2',cardInk:'#3d2212',acc:'#f2c14e',vin:'#3d2212',vinInk:'#fbf1e2',pat:'repeating-linear-gradient(0deg,rgba(0,0,0,.07) 0 3px,transparent 3px 26px)',w:'COUNTRY'}
-};
+const THEMES=window.BR_THEMES;
 for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
 function applyTheme(k){
   const t=THEMES[k]||THEMES.mix,r=document.documentElement.style;
-  for(const v of ['bg','ink','card','cardInk','acc','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
+  for(const v of ['bg','ink','card','cardInk','acc','acc2','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
   r.setProperty('--goInk',t.goInk||'#1d0c07');r.setProperty('--kc',t.kc||t.acc);
   $('#bgword').textContent=t.w;$('#mood').textContent=t.n;
   const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t.bg;
@@ -590,8 +679,8 @@ $('#tabStyle').addEventListener('click',()=>setMode('style'));
 $('#tabPick').addEventListener('click',()=>{setMode('pick');$('#q').focus()});
 function renderCats(){
   $('#plsWrap').classList.toggle('hide',!PLS.length);
-  $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return `<button class="chip" data-c="${p.k}" style="--cb:${t.bg};--ci:${t.ink}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`}).join('');
-  $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--cb:${t.bg};--ci:${t.ink}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
+  $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return `<button class="chip" data-c="${p.k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`}).join('');
+  $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
 $('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
 function renderDiffs(){$('#diffs').innerHTML=Object.entries(DIFF).map(([k,d])=>`<button class="diff" data-d="${k}" aria-pressed="${S.diff===k}"><b>${d.n}</b><span>${d.d}</span></button>`).join('')}
 $('#diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=b.dataset.d;store.set('diff',S.diff);renderDiffs();summary()});
@@ -729,7 +818,7 @@ function drawGage(lvl,not){const l=GAGES[Math.max(0,Math.min(2,lvl))],c=l.filter
 
 function segHtml(attr,vals,cur,labels){return `<span class="seg">${vals.map((v,i)=>`<button data-${attr}="${v}" aria-pressed="${v===cur}">${labels?labels[i]:v}</button>`).join('')}</span>`}
 function renderGames(){
-  $('#games').innerHTML=Object.entries(GAMES).map(([k,g])=>{const t=THEMES[k==='solo'?'mix':k];return `<button class="mode m-${k}" data-g="${k}" style="--cb:${t.bg};--ci:${t.ink};--cp:${t.pat}" aria-pressed="${S.game===k}"><b>${esc(g.n)}</b><span>${esc(g.d)}</span></button>`}).join('');
+  $('#games').innerHTML=Object.entries(GAMES).map(([k,g])=>{const t=THEMES[k==='solo'?'mix':k];return `<button class="mode m-${k}" data-g="${k}" style="--ca:${t.acc};--cb2:${t.acc2};--cp:${t.pat}" aria-pressed="${S.game===k}"><b>${esc(g.n)}</b><span>${esc(g.d)}</span></button>`}).join('');
   const g=GAMES[S.game],o=opt();
   $('#hero').textContent=g.h;$('#lead').textContent=g.lead;
   document.body.dataset.game=S.game;
@@ -1289,7 +1378,7 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const plural=(n,w)=>`${n} ${w}${n>1?'s':''}`;
 const fmtT=t=>Number(t).toFixed(1).replace('.',',')+' s';
 const KQ=['▲','◆','●','■'];
-const TH={duel:{n:'Ambiance ring de boxe',bg:'#15151c',ink:'#f4f4f6',card:'#24242f',cardInk:'#f4f4f6',acc:'#ffcc33',vin:'#08080c',vinInk:'#f4f4f6',pat:'linear-gradient(115deg,rgba(230,57,70,.28) 0 50%,rgba(47,107,255,.28) 50% 100%)',w:'DUEL'},party:{n:'Ambiance soirée',bg:'#14072a',ink:'#fff3fb',card:'#26113f',cardInk:'#fff3fb',acc:'#ff3d9a',goInk:'#fff',kc:'#ffd23f',vin:'#0a0316',vinInk:'#fff3fb',pat:'radial-gradient(circle at 12% 8%,rgba(255,61,154,.38),transparent 32%),radial-gradient(circle at 88% 14%,rgba(39,224,255,.3),transparent 30%),radial-gradient(circle at 50% 105%,rgba(255,210,63,.28),transparent 42%),radial-gradient(rgba(255,255,255,.45) 1px,transparent 1.6px) 0 0/30px 30px',w:'BABINSKI'}};
+const TH={duel:BR_THEMES.duel,party:BR_THEMES.party};
 const GN={duel:'Duel en ligne',party:'Babinski'};
 const ls={get(k,d){try{return localStorage.getItem('br-'+k)??d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,v)}catch(e){}}};
 let rid=ls.get('rid','');if(!rid){rid=Math.random().toString(36).slice(2)+Date.now().toString(36);ls.set('rid',rid)}
@@ -1298,7 +1387,7 @@ const unit=n=>C.soft?plural(n,'pompe'):plural(n,'gorgée');
 const ord=n=>n===1?'1er':n+'e';
 function theme(k){
   const t=TH[k];if(!t)return;const r=document.documentElement.style;
-  for(const v of ['bg','ink','card','cardInk','acc','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
+  for(const v of ['bg','ink','card','cardInk','acc','acc2','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
   r.setProperty('--goInk',t.goInk||'#1d0c07');r.setProperty('--kc',t.kc||t.acc);
   document.body.dataset.game=k;const w=$('#bgword');if(w)w.textContent=t.w;
   const m=document.querySelector('meta[name=theme-color]');if(m)m.content=t.bg;
