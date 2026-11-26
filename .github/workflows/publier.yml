@@ -43,7 +43,8 @@ jobs:
           git config user.email "actions@users.noreply.github.com"
           git add db.json
           git commit -m "Met à jour la base de musiques" || echo "Rien de nouveau"
-          git push
+          # quelqu'un a peut-être publié pendant la reconstruction : on se met à jour avant d'envoyer
+          for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

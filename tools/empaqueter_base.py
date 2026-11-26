@@ -30,6 +30,6 @@ for main in (True,False):
             tracks.append([i,t['t'],'' if t['a']==a else t['a'],t['id'],t['c'],t['al']])
 js=json.dumps({'a':artists,'p':pop,'c':cats,'t':tracks},ensure_ascii=False,separators=(',',':'))
 print(len(artists),'artistes',len(tracks),'morceaux',round(len(js)/1024),'Ko','| connus :',sum(1 for p in pop if p>=2))
-if len(artists)<int(os.environ.get('MIN_ARTISTES','1500')) or len(tracks)<int(os.environ.get('MIN_TITRES','30000')):
+if len(artists)<int(os.environ.get('MIN_ARTISTES','1800')) or len(tracks)<int(os.environ.get('MIN_TITRES','30000')):
     sys.exit('Base trop petite : Deezer a sans doute mal répondu. db.json n\'est pas modifiée.')
 open('../db.json','w').write(js)

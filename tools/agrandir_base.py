@@ -5,8 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from styles_artistes import CATS
 from construire_base import get, top
 raw=json.load(open('raw_dz.json'))
-TARGET=int(os.environ.get('TARGET','300'))      # artistes visés par style
-MINFAN=int(os.environ.get('MINFAN','300000'))   # fans Deezer minimum pour un artiste ajouté automatiquement
+TARGET=int(os.environ.get('TARGET','450'))      # artistes visés par style
+MINFAN=int(os.environ.get('MINFAN','150000'))   # fans Deezer minimum pour un artiste ajouté automatiquement
 SANS=('y70','y80','y90','y2000')                 # styles gardés à la main
 known={r['id']:a for a,r in raw.items()}
 catmem={k:[a for a in v[1].split('|') if a in raw] for k,v in CATS.items()}
@@ -16,7 +16,7 @@ for k,(n,_) in CATS.items():
     members=catmem[k]
     if k in SANS or len(members)>=TARGET: print(k,len(members),flush=True); continue
     seeds=list(members); fresh=[]
-    for rnd in range(2):
+    for rnd in range(3):
         if len(members)>=TARGET or not seeds: break
         cand={}
         with ThreadPoolExecutor(5) as ex:
@@ -25,7 +25,7 @@ for k,(n,_) in CATS.items():
                     if x.get('nb_fan',0)<MINFAN: continue
                     c=cand.setdefault(x['id'],[x,0]); c[1]+=1
         # il faut être « proche » d'au moins 2 artistes du style (ou 3 au 2e tour), sauf les très gros artistes
-        need=2 if rnd==0 else 3
+        need=2
         ranked=sorted(cand.values(),key=lambda c:(-c[1],-c[0]['nb_fan']))
         add=[]
         for x,score in ranked:
