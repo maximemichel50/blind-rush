@@ -144,6 +144,8 @@ h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .board li{counter-increment:b;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:4px 12px;align-items:center;background:var(--card);color:var(--cardInk);border-radius:14px;padding:12px 16px}
 .board li::before{content:counter(b);grid-row:span 2;font:400 30px Anton,sans-serif;color:var(--cmuted)}
 .board b{font-size:18px}.board span{grid-column:2;font-size:14px;color:var(--cmuted)}.board em{grid-column:3;grid-row:1/span 2;font:400 26px Anton,sans-serif;font-style:normal;white-space:nowrap}
+.wheel{max-width:300px;margin:8px auto}.wheel svg{display:block;width:100%;height:auto}.wrot{transition:transform 4s cubic-bezier(.15,.85,.2,1)}
+.wheelbox{text-align:center}.wheelbox h2{margin:22px 0 4px}.wheelbox .chips{justify-content:center;margin-top:8px}.wheelbox .wres{font-size:20px;font-weight:800;margin:8px 0}
 .gagebox h2{margin:22px 0 8px}.gage{background:var(--card);color:var(--cardInk);border-radius:14px;padding:12px 16px;margin:0 0 8px;box-shadow:inset 6px 0 0 var(--acc)}.gage b{font-size:18px}.gage p{margin:4px 0 8px;font-size:17px}
 .streak{display:inline-block;background:#ff5a1f;color:#fff;border-radius:999px;padding:1px 8px;font:800 .8em system-ui,sans-serif;vertical-align:middle;letter-spacing:0}.streak.x3{background:#d4145a;animation:pulse 1s infinite}
 @keyframes pulse{50%{transform:scale(1.12)}}
@@ -414,6 +416,7 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
     <p class="big" id="final">0</p>
     <p class="lead" id="verdict"></p>
     <ol class="board" id="board"></ol>
+    <div class="wheelbox" id="wheelbox"></div>
     <div class="gagebox" id="gagebox"></div>
     <div class="row" style="justify-content:flex-start"><button class="btn y" id="againBtn">Rejouer</button><button class="btn alt" id="menuBtn">Changer de mode ou de playlist</button></div>
     <ul class="recap" id="recap"></ul>
@@ -424,6 +427,12 @@ body[data-game=party][data-screen=game] .lights i{opacity:.4;animation-duration:
 <audio id="audio" preload="auto" playsinline></audio>
 
 <script>
+/* roulette du gagnant (Babinski) : 6 cases, autant de chances pour chacune. rot = rotation finale en degrés */
+window.wheelSvg=(segs,rot,anim)=>{const n=segs.length,C=['#ff3d9a','#27e0ff','#ffd23f','#9b5cff','#3dff9a','#ff7a1a'],e=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let g='';for(let i=0;i<n;i++){const a0=(i/n)*2*Math.PI-Math.PI/2,a1=((i+1)/n)*2*Math.PI-Math.PI/2,am=(i+.5)*360/n;
+    g+=`<path d="M0 0L${(100*Math.cos(a0)).toFixed(2)} ${(100*Math.sin(a0)).toFixed(2)}A100 100 0 0 1 ${(100*Math.cos(a1)).toFixed(2)} ${(100*Math.sin(a1)).toFixed(2)}Z" fill="${C[i%6]}" stroke="#fff" stroke-width="2"/><text transform="rotate(${am-90}) translate(60 0)" text-anchor="middle" dominant-baseline="middle" font-size="${segs[i][0].length>9?10:13}" font-weight="800" fill="#1d0c07">${e(segs[i][0])}</text>`}
+  return `<div class="wheel"><svg viewBox="-105 -112 210 217" aria-hidden="true"><g class="wrot" style="transform:rotate(${anim?0:rot}deg)" data-rot="${rot}">${g}<circle r="14" fill="#fff"/></g><path d="M-9 -111L9 -111L0 -91Z" fill="#fff" stroke="#1d0c07" stroke-width="2"/></svg></div>`};
+window.wheelGo=root=>{const w=root&&root.querySelector('.wrot');if(!w)return;requestAnimationFrame(()=>requestAnimationFrame(()=>{w.style.transform=`rotate(${w.dataset.rot}deg)`}))};
 /* petit journal du son, affiché par « Tester le son » pour comprendre une panne sur téléphone */
 window.ALOG=[];window.alogT0=Date.now();
 window.alog=function(m){const ALOG=window.ALOG,T0=window.alogT0;ALOG.push(((Date.now()-T0)/1000).toFixed(1)+'s '+m);if(ALOG.length>80)ALOG.shift();const el=document.getElementById('sndLog');if(el&&!el.closest('.hide'))el.textContent=ALOG.join('\n')};
@@ -710,6 +719,11 @@ const GAGES=[
  ['Chante le refrain de la dernière chanson de la partie.','Mime un titre de chanson : les autres doivent deviner.','Fais 10 squats en chantant.','Danse 15 secondes sur une musique choisie par le groupe.','Imite un chanteur ou une chanteuse choisi par le groupe.','Parle comme un robot jusqu\'à la fin de la prochaine partie.'],
  ['Chante un refrain choisi par le groupe, debout, avec la voix à fond.','Invente une chorégraphie de 20 secondes et danse-la devant tout le monde.','Déclare ton amour à un objet de la pièce, avec beaucoup d\'émotion.','Enchaîne 3 refrains a cappella sans t\'arrêter.','Défile comme un mannequin dans toute la pièce, le groupe fait la musique.','Fais une interview de toi-même comme une star qui vient de gagner un Grammy.']
 ];
+const WHEEL={
+  alcool:[['1 gorgée'],['2 gorgées'],['3 gorgées'],['4 gorgées'],['5 gorgées'],['Cul sec']],
+  pompes:[['5 pompes'],['10 pompes'],['15 pompes'],['20 pompes'],['25 pompes'],['30 pompes']],
+  gages:[['Chanter','chanter un refrain choisi par le groupe'],['Mimer','mimer un titre de chanson'],['Danser','danser 15 secondes'],['Imiter','imiter un chanteur'],['10 squats','faire 10 squats en chantant'],['Déclaration','déclarer son amour à un objet de la pièce']]
+};
 function drawGage(lvl,not){const l=GAGES[Math.max(0,Math.min(2,lvl))],c=l.filter(g=>!(not||[]).includes(g));return (c.length?c:l)[Math.random()*(c.length||l.length)|0]}
 
 function segHtml(attr,vals,cur,labels){return `<span class="seg">${vals.map((v,i)=>`<button data-${attr}="${v}" aria-pressed="${v===cur}">${labels?labels[i]:v}</button>`).join('')}</span>`}
@@ -1125,6 +1139,8 @@ function onMsg(c,m){
   const k=S.online?S.pl.findIndex(p=>p.net===e):-1;
   if(m.t==='a'&&k>=0&&m.i===S.i)pick(k,+m.c,+m.e);
   if(m.t==='joker'&&k>=0&&m.i===S.i&&S.phase==='reveal')useJoker(S.rounds[S.i],k);
+  if(m.t==='spin'&&S.wheel&&k===S.wheel.wk)spinWheel();
+  if(m.t==='give'&&S.wheel&&k===S.wheel.wk)giveWheel(+m.to);
   if(m.t==='leave'){e.on=false;e.left=true;c.__e=null;try{c.close()}catch(x){}afterLeave(e,k)}
 }
 function onClose(c){const e=c.__e;if(!e||e.conn!==c)return;e.on=false;e.conn=null;afterLeave(e,S.online?S.pl.findIndex(p=>p.net===e):-1)}
@@ -1159,7 +1175,8 @@ function sendResults(r){
 function sendEnd(title){
   const ord=standing();
   const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':`${S.pl[k].good} ✓ · ${S.gm?(S.pl[k].gage?'gage':'rien'):S.pl[k].fin?unit(S.pl[k].fin):'rien'}`]);
-  netEach((pl,k)=>({t:'end',title,rank:ord.indexOf(k)+1,of:S.pl.length,board,game:S.game,good:pl.good,n:S.n,soft:S.soft,gm:S.gm,fin:pl.fin,gage:pl.gage,tt:+pl.tt.toFixed(1)}));
+  netEach((pl,k)=>({t:'end',title,rank:ord.indexOf(k)+1,of:S.pl.length,board,game:S.game,good:pl.good,n:S.n,soft:S.soft,gm:S.gm,fin:pl.fin,gage:pl.gage,tt:+pl.tt.toFixed(1),me:k,
+    wheel:S.wheel?{w:S.wheel.w,wk:S.wheel.wk,segs:S.wheel.segs,res:S.wheel.res,rot:S.wheel.rot,to:S.wheel.to,busy:S.wheel.busy,toName:S.wheel.to!=null?S.pl[S.wheel.to].name:'',txt:S.wheel.res!=null?wheelText(S.wheel):'',who:S.pl.map((p,i)=>[i,p.name]).filter(([i])=>i!==S.wheel.wk)}:null}));
 }
 function renderDuelBoard(r){
   const ord=standing();
@@ -1205,8 +1222,10 @@ function results(){
     fin.textContent=rk[1]&&!pbetter(rk[0],rk[1])?'Égalité parfaite en tête':`${rk[0].name} gagne`;
     ver.textContent=`${rk[0].good}/${S.n} bonnes réponses pour ${rk[0].name}. ${fast.wins?`${fast.name} a été le plus rapide ${fast.wins} fois. `:''}`+(S.gm?'Fin de partie : le 1er n\'a rien, les autres font leur gage (de plus en plus fort selon la place).':`Fin de partie : le 1er ne ${S.soft?'fait rien':'boit rien'}, puis ${unit(1)} de plus à chaque place. ${S.soft?'':'Pensez à boire de l\'eau, et personne ne prend le volant ce soir.'}`);
     board.innerHTML=rk.map((p,i)=>`<li><b>${esc(p.name)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}${p.good?` · ${fmtT(p.tt)} au total`:''}${S.gm?'':` · ${unit(p.drunk)} pendant la partie`}${p.joker||S.gm?'':' · joker utilisé'}</span><em>${S.gm?(i?'gage':'rien'):i?(S.soft?'':'boit ')+esc(unit(p.fin)):'rien'}</em></li>`).join('');
+    S.wheel=n>1?{w:rk[0].name,wk:S.pl.indexOf(rk[0]),segs:WHEEL[S.drink],res:null,rot:0,to:null,busy:false}:null;
+    renderWheel();
+    renderGages();
   }
-  renderGages();
   $('#recap').innerHTML=S.rounds.map((r,i)=>{
     let side='';
     if(S.game==='solo'){const x=r.res&&r.res[0];side=`<span class="p">${x&&x.ok?'+'+x.pts:'0'}<small>${x&&x.t!=null?fmtT(x.t):'temps écoulé'}</small></span>`}
@@ -1216,9 +1235,30 @@ function results(){
     const ok=r.res&&r.res.some(x=>x.ok);
     return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${esc(r.ans.title)}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
   }).join('');
-  if(S.game!=='party')renderGages();
+  if(S.game!=='party'){S.wheel=null;renderWheel();renderGages()}
   if(S.online)sendEnd(fin.textContent);
 }
+/* roulette du gagnant : le 1er la fait tourner, puis choisit à qui donner ce qu'il a gagné */
+function wheelText(W){const sg=W.segs[W.res];return sg[1]||sg[0].toLowerCase()}
+function renderWheel(anim){
+  const W=S.wheel,el=$('#wheelbox');if(!W){el.innerHTML='';return}
+  let h=`<h2>🎡 La roulette de ${esc(W.w)}</h2>`;
+  h+=wheelSvg(W.segs,W.rot,anim);
+  if(W.res==null)h+=`<p>${esc(W.w)}, le gagnant, fait tourner la roulette.</p><button class="btn y" id="wSpin" ${W.busy?'disabled':''}>Faire tourner</button>`;
+  else if(W.busy)h+=`<p class="wres">…</p>`;
+  else if(W.to==null)h+=`<p class="wres">${esc(W.w)} gagne : ${esc(W.segs[W.res][0])} !</p><p>À qui le donner ?</p><div class="chips">${S.pl.map((p,i)=>i===W.wk?'':`<button class="chip" data-wto="${i}">${esc(p.name)}</button>`).join('')}</div>`;
+  else h+=`<p class="wres">${esc(W.w)} donne ${S.gm?'le gage « '+esc(wheelText(W))+' »':esc(W.segs[W.res][0].toLowerCase())} à ${esc(S.pl[W.to].name)} !</p>`;
+  el.innerHTML=h;if(anim)wheelGo(el);
+}
+function spinWheel(){
+  const W=S.wheel;if(!W||W.res!=null||W.busy)return;
+  W.res=Math.random()*W.segs.length|0;W.busy=true;
+  W.rot=360*6+360-(W.res+.5)*360/W.segs.length+(Math.random()*30-15)*(6/W.segs.length);
+  renderWheel(true);if(S.online)sendEnd($('#final').textContent);
+  setTimeout(()=>{W.busy=false;renderWheel();if(S.online)sendEnd($('#final').textContent)},4300);
+}
+function giveWheel(k){const W=S.wheel;if(!W||W.res==null||W.busy||W.to!=null||k===W.wk||!S.pl[k])return;W.to=k;renderWheel();if(S.online)sendEnd($('#final').textContent)}
+$('#wheelbox').addEventListener('click',e=>{if(e.target.closest('#wSpin'))return spinWheel();const b=e.target.closest('[data-wto]');if(b)giveWheel(+b.dataset.wto)});
 /* gages de fin de partie (Duel : le dernier ; Babinski sans alcool : tout le monde sauf le 1er) */
 function renderGages(){
   const list=standing().map(k=>[k,S.pl[k]]).filter(([,p])=>p.gage);
@@ -1391,15 +1431,27 @@ function result(m){
   }
   screen(top(`Manche ${m.i+1}/${m.n}`,esc(C.name))+`<div class="ctl-res">${h}${was}</div>${list}<p class="ctl-sub"><small>${m.last?'Dernière manche : résultats dans un instant.':'La prochaine manche arrive.'}</small></p>`);
 }
+function wheelPhone(m){
+  const W=m.wheel,mine=m.me===W.wk,anim=W.res!=null&&W.busy&&C.wSpun!==W.rot;
+  if(anim)C.wSpun=W.rot;C.wAnim=anim;
+  let h=`<div class="wheelbox"><p class="kicker" style="text-align:center">🎡 La roulette de ${esc(W.w)}</p>${wheelSvg(W.segs,W.rot,anim)}`;
+  if(W.res==null)h+=mine?`<button class="btn y" id="cSpin">Faire tourner la roulette</button>`:`<p class="ctl-sub">${esc(W.w)} fait tourner la roulette…</p>`;
+  else if(W.busy)h+=`<p class="ctl-sub">…</p>`;
+  else if(W.to==null)h+=`<p class="ctl-big">${esc(W.segs[W.res][0])} !</p>`+(mine?`<p class="ctl-sub">À qui tu le donnes ?</p><div class="chips">${W.who.map(([i,n])=>`<button class="chip" data-wto="${i}">${esc(n)}</button>`).join('')}</div>`:`<p class="ctl-sub">${esc(W.w)} choisit à qui le donner…</p>`);
+  else h+=`<p class="ctl-big">${m.me===W.to?'Pour toi !':esc(W.toName)}</p><p class="ctl-sub">${esc(W.w)} donne ${m.gm?'le gage « '+esc(W.txt)+' »':esc(W.segs[W.res][0].toLowerCase())} à ${m.me===W.to?'toi':esc(W.toName)}.</p>`;
+  return h+'</div>';
+}
 function end(m){
   if(m.soft!=null)C.soft=m.soft;
   screen(top('Partie '+esc(C.code),esc(C.name))+`${m.rank===1?confetti():''}<p class="kicker" style="text-align:center">${esc(m.title)}</p><p class="ctl-big">${m.rank===1?'Victoire !':`${ord(m.rank)} sur ${m.of}`}</p>
   <p class="ctl-sub">${`${m.good} bonne${m.good>1?'s':''} réponse${m.good>1?'s':''}`} sur ${m.n}<small>Attends que l'hôte relance une partie.</small></p>
   ${m.game==='party'&&!m.gm?`${m.fin?glass(false):''}<p class="ctl-big">${m.fin?`Tu bois ${unit(m.fin)}`:'Tu ne bois rien !'}</p><p class="ctl-sub"><small>Fin de partie : le 1er rien, puis ${unit(1)} de plus à chaque place.</small></p>`:''}
   ${m.gage?`<div class="ctl-card"><span>🎭 Ton gage</span><b>${esc(m.gage)}</b></div>`:''}
+  ${m.wheel?wheelPhone(m):''}
   <ol class="rank">${m.board.map(([n,v],i)=>`<li class="${n===C.name?'win':''}"><span class="rk">${i+1}</span><span class="nm"><b>${esc(n)}</b></span><span class="pn">${esc(v)}</span><span></span></li>`).join('')}</ol>
   ${m.game==='party'&&!m.gm&&!m.soft?`<p class="warn">Pensez à boire de l'eau, et personne ne prend le volant ce soir.</p>`:''}
   <button class="btn alt" id="cLeave">Quitter la partie</button>`);
+  if(C.wAnim)wheelGo($('#ctlBody'));
 }
 $('#ctlBody').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
@@ -1408,6 +1460,8 @@ $('#ctlBody').addEventListener('click',e=>{
   if(b.id==='cBack'){C.left=true;try{C.conn&&C.conn.close()}catch(x){}location.href=location.pathname+(new URLSearchParams(location.search).get('peer')?'?peer='+new URLSearchParams(location.search).get('peer'):'');return}
   if(b.id==='cAgain'){C.code='';return joinScreen()}
   if(b.id==='cLeave'){C.left=true;C.joined=false;ls.set('ccode','');try{C.conn.send({t:'leave'})}catch(x){}setTimeout(()=>{try{C.conn&&C.conn.close()}catch(x){}},300);C.code='';return joinScreen()}
+  if(b.id==='cSpin'){try{C.conn.send({t:'spin'})}catch(x){}b.disabled=true;return}
+  if(b.dataset.wto!=null){try{C.conn.send({t:'give',to:+b.dataset.wto})}catch(x){}b.closest('.chips').querySelectorAll('button').forEach(x=>x.disabled=true);return}
   if(b.id==='cJoker'){try{C.conn.send({t:'joker',i:C.lastR})}catch(x){}b.disabled=true;b.textContent='Joker demandé…';return}
   if(b.dataset.c!=null){if(C.snd&&PA.paused&&C.q&&C.q.u)phonePlay(C.q,true);tap(+b.dataset.c)}
 });
