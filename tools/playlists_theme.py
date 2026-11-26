@@ -192,7 +192,7 @@ KW = {
  'top50': r'top50|topfrance|top100|hitsdumoment|top',
  'ete2010': r'201[0-4]',
  'disney': r'disney',
- 'films': r'film|movie|cinema|bandeoriginale|bandesoriginales|soundtrack|bo',
+ 'films': r'film|movie|cinema|bandeoriginale|bandesoriginales|soundtrack',
 }
 def from_playlists(key, got, seen, seenb):
     pls = []
