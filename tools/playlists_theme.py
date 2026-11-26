@@ -295,6 +295,20 @@ for key, name, emo, items in PLAYLISTS:
     if len(got) >= 20: out.append([key, name, emo, got])
 if len(out) < len(PLAYLISTS) // 2:
     sys.exit('Deezer a sans doute mal répondu : db.json n\'est pas modifiée.')
+# Films et séries : une seule catégorie (demande de Max), les deux listes mélangées
+def merge_films_series(out):
+    keys = [x[0] for x in out]
+    if 'films' not in keys and 'series' not in keys: return out
+    a = next((x[3] for x in out if x[0] == 'films'), []); b = next((x[3] for x in out if x[0] == 'series'), [])
+    mix, ids = [], set()
+    for i in range(max(len(a), len(b))):
+        for L in (a, b):
+            if i < len(L) and L[i][2] not in ids: ids.add(L[i][2]); mix.append(L[i])
+    pos = min(i for i, k in enumerate(keys) if k in ('films', 'series'))
+    rest = [x for x in out if x[0] not in ('films', 'series')]
+    rest.insert(pos, ['films', 'Films et séries', '🎬', mix])
+    return rest
+out = merge_films_series(out)
 db['l'] = out
 open('../db.json', 'w').write(json.dumps(db, ensure_ascii=False, separators=(',', ':')))
 print(len(out), 'playlists écrites dans db.json')
