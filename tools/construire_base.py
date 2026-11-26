@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from styles_artistes import CATS
 CA=os.path.expanduser('~/.ccr/ca-bundle.crt')
 S=requests.Session(); S.verify=CA if os.path.exists(CA) else True
-NB=int(os.environ.get('TITRES','30'))  # titres gardés par artiste
+NB=int(os.environ.get('TITRES','50'))  # titres gardés par artiste
 def norm(s): return re.sub(r'[^a-z0-9]','',unicodedata.normalize('NFD',s.lower()).encode('ascii','ignore').decode())
 BAD=re.compile(r'\b(live|karaok[eé]|instrumental|remix|acapella|a cappella|medley|interlude|intro|outro|skit|sped up|slowed|version|demo|acoustic|acoustique|unplugged|reprise|nightcore)\b',re.I)
 def clean(t):

@@ -70,3 +70,9 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 - Une modification = un commit avec un message clair (« Ajoute le style Métal », « Corrige le chrono »…).
 - Toujours récupérer la dernière version avant de modifier (l'autre a peut-être changé des choses).
 - Après chaque modification, tester la page publiée (1 à 2 minutes de délai).
+
+## Classement mondial (mode Solo)
+- À la fin d'une partie Solo, le score est enregistré avec un pseudo (demandé une seule fois).
+- Un classement par playlist / style, ou par artiste choisi (1 à 3 artistes), et par nombre de manches. Bouton « Classement mondial de cette playlist » sur l'accueil.
+- Pas de Duel ni de Babinski dans le classement.
+- Stockage : messages gardés sur les 3 relais publics déjà utilisés pour le jeu en ligne, plus une copie sur chaque appareil qui remet les scores si un relais les perd.

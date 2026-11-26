@@ -8,8 +8,8 @@ from styles_artistes import CATS
 from construire_base import get, clean, base, BAD
 F='raw_big.json' if os.path.exists('raw_big.json') else 'raw_dz.json'
 raw=json.load(open(F))
-DISCO=int(os.environ.get('DISCO','150'))       # titres maximum par artiste choisi
-BIGFAN=int(os.environ.get('BIGFAN','3000000')) # « plus grands artistes du monde » : au moins 3 millions de fans Deezer
+DISCO=int(os.environ.get('DISCO','220'))       # titres maximum par artiste choisi
+BIGFAN=int(os.environ.get('BIGFAN','1000000')) # « plus grands artistes du monde » : au moins 1 million de fans Deezer
 MAXALB=int(os.environ.get('MAXALB','60'))      # albums / singles regardés au maximum par artiste
 RAPFR=set(CATS['rapfr'][1].split('|'))
 pick=[a for a,r in raw.items() if (a in RAPFR and not r.get('auto')) or r.get('fans',0)>=BIGFAN]
