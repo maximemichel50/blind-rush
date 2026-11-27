@@ -599,6 +599,8 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
     </div>
     <div class="wstep" data-w="diff">
     <h2 class="step s3"><i>03</i>Difficulté</h2>
+    <div class="prow askrow"><span class="lbl">On devine</span><span id="askSeg"></span></div>
+    <p class="hint" id="askHint"></p>
     <div class="diffs" id="diffs"></div>
 
     </div>
@@ -841,6 +843,7 @@ S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.on
 S.teams=store.get('teams',false);S.hostTm=0;S.tmOn=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
+S.ask=store.get('ask','titre');
 S.link=store.get('link',null);if(S.link&&store.get('mode','')==='link')S.mode='link';
 const audio=$('#audio');
 for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedmetadata','ended','error'])audio.addEventListener(ev,()=>alog('audio '+ev+(ev==='error'&&audio.error?' code '+audio.error.code+' '+(audio.error.message||''):'')+' rs'+audio.readyState+' t'+audio.currentTime.toFixed(1)));
@@ -927,6 +930,35 @@ function renderCats(){
   $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return reco(p.k,`<button class="chip" data-c="${p.k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`)}).join('');
   $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
 $('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
+/* ---------- mode Frise : on devine l'année de sortie du son ---------- */
+const ASK={titre:'🎵 Le titre',annee:'📅 L\'année (Frise)'};
+const frise=()=>S.ask==='annee';
+const RA=r=>r.yc||r.ans; /* la bonne réponse de la manche (l'année en mode Frise) */
+function renderAsk(){$('#askSeg').innerHTML=segHtml('ask',Object.keys(ASK),S.ask,Object.values(ASK));$('#askHint').textContent=frise()?'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.':''}
+$('#askSeg').addEventListener('click',e=>{const b=e.target.closest('[data-ask]');if(!b)return;S.ask=b.dataset.ask;store.set('ask',S.ask);renderAsk();summary()});
+/* année de première sortie : la plus ancienne date trouvée au moins 2 fois sur Apple Music (les compilations sont plus récentes),
+   sinon la date de l'album Deezer ; 0 si on ne sait pas */
+function yearOf(t){
+  if(t.yrP)return t.yrP;
+  return t.yrP=(async()=>{
+    const ys=[];
+    try{const an=norm(t.an||t.artist),d=await jsonp(`https://itunes.apple.com/search?term=${encodeURIComponent((t.an||t.artist)+' '+t.title)}&entity=song&limit=50&country=FR`);
+      for(const r of d.results||[])if(r.releaseDate&&norm(r.trackName).includes(t.b.slice(0,12))&&(norm(r.artistName).includes(an.slice(0,8))||an.includes(norm(r.artistName).slice(0,8))))ys.push(+r.releaseDate.slice(0,4))}catch(e){}
+    let dz=0;try{const d=await jsonp(`https://api.deezer.com/track/${t.id}?output=jsonp`);dz=+(String(d.release_date||'').slice(0,4))||0;if(d.preview&&!t.url){t.url=d.preview;const m=/exp=(\d+)/.exec(d.preview);t.exp=m?+m[1]:Date.now()/1000+600}}catch(e){}
+    ys.sort((a,b)=>a-b);const now=new Date().getFullYear(),ok=y=>y>=1930&&y<=now;
+    let y=ys.length>=3?ys.find((v,i)=>v===ys[i+1]):ys[0];if(!y&&ys.length)y=ys[0];
+    if(dz&&ok(dz)&&(!y||dz<y))y=dz;
+    return t.yr=ok(y)?y:0;
+  })();
+}
+/* 4 années : la bonne et 3 autres, plus proches quand la difficulté monte */
+function yearChoices(y){
+  const g={facile:6,moyen:3,difficile:2,hardcore:1}[S.diff]||3,now=new Date().getFullYear(),out=[y];
+  for(let tries=0;out.length<4&&tries<500;tries++){const c=y+(Math.random()<.5?-1:1)*(g+(Math.random()*g*4|0));if(c>=1950&&c<=now&&out.every(o=>Math.abs(o-c)>=g))out.push(c)}
+  for(let c=y-g;out.length<4;c-=g)if(c>=1900&&out.every(o=>Math.abs(o-c)>=1))out.push(c);
+  return out.sort((a,b)=>a-b).map(v=>({title:String(v),artist:'',yr:v,id:'y'+v})); /* dans l'ordre, comme une frise */
+}
+function setYear(r){r.choices=yearChoices(r.ans.yr);r.yc=r.choices.find(c=>c.yr===r.ans.yr)}
 function renderDiffs(){$('#diffs').innerHTML=Object.entries(DIFF).map(([k,d])=>`<button class="diff" data-d="${k}" aria-pressed="${S.diff===k}"><b>${d.n}</b><span>${d.d}</span></button>`).join('')}
 $('#diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=b.dataset.d;store.set('diff',S.diff);renderDiffs();summary()});
 
@@ -968,7 +1000,7 @@ function summary(){
   const p=playlist(),el=$('#summary');
   if(!p){el.innerHTML=S.mode==='link'?'Charge d\'abord ta playlist.<small>Ou repasse sur « Par style ».</small>':'Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
 
-  el.innerHTML=`${esc(GAMES[S.game].n)}${online()||netPref()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
+  el.innerHTML=`${esc(GAMES[S.game].n)}${online()||netPref()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}${frise()?' · 📅 Frise':''}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
 }
 function showErr(m){const e=$('#err');e.textContent=m;e.classList.remove('hide')}
 function hideErr(){$('#err').classList.add('hide')}
@@ -1246,7 +1278,9 @@ function begin(p,list){
   S.n=opt().n;
   const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
-  S.pool=b.pool;S.rounds=b.rounds;S.name=p.name;histAdd(b.rounds);S.i=0;S.fails=0;S.lastCard=null;
+  S.frise=frise();
+  if(S.frise){for(const r of b.rounds){delete r.yc}(async()=>{for(const r of b.rounds)await yearOf(r.ans)})()}
+  S.pool=b.pool;S.rounds=b.rounds;S.name=p.name+(S.frise?' (Frise)':'');histAdd(b.rounds);S.i=0;S.fails=0;S.lastCard=null;
   S.tmOn=!!(S.online&&tmOn());
   S.pl=list.map(({name,net,tm})=>({name,net,tm:tm|0,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0,tt:0,fin:0,gage:'',x2:S.game==='party'&&!!(S.x2next||[]).includes(norm(name))}));
   S.x2next=[];
@@ -1279,6 +1313,7 @@ function drawCard(){
 function round(){
   const r=S.rounds[S.i],D=DIFF[S.diff];
   r.limit=D.limit;r.stake=1;r.card=null;
+  if(S.frise&&!r.yc){if(r.ans.yr)setYear(r);else r.choices=[]}
   if(S.game==='solo')r.pads=[0];
   if(S.game==='duel')r.pads=[0,1];
   if(S.game==='party'){r.card=drawCard();S.lastCard=r.card;if(r.card==='eclair')r.limit=6;if(r.card==='double')r.stake=2;r.pads=S.pl.map((_,i)=>i)}
@@ -1339,6 +1374,17 @@ async function resolveUrl(t,skipDeezer){
 }
 async function playClip(r){
   S.phase='loading';
+  if(S.frise&&!r.yc){
+    $('#status').innerHTML='Je cherche l\'année du son…';
+    for(let n=0;n<8&&!r.yc;n++){
+      const y=await yearOf(r.ans);if(S.rounds[S.i]!==r)return;
+      if(y){setYear(r);break}
+      const used=new Set(S.rounds.map(x=>x.ans)),alt=shuffle(S.pool).find(t=>!used.has(t)&&t.yr!==0);if(!alt)break;
+      r.ans=alt;$('#cover').src=alt.cover||'';
+    }
+    if(!r.yc)r.choices=makeChoices(r.ans,S.pool); /* année introuvable : cette manche, on devine le titre */
+    renderPads(r);
+  }
   let url=await resolveUrl(r.ans),ok=url?await loadSrc(url):false;
   if(!ok){url=await resolveUrl(r.ans,true);ok=url?await loadSrc(url):false}
   if(!ok){
@@ -1404,11 +1450,11 @@ function reveal(){
   if(S.phase!=='guess')return;
   S.phase='reveal';cancelAnimationFrame(S.raf);$('#timer').textContent='';
   const r=S.rounds[S.i],D=DIFF[S.diff];
-  const ok=S.pad.map(p=>p.choice!==null&&r.choices[p.choice]===r.ans);
-  S.pad.forEach((p,k)=>document.querySelectorAll(`.ans[data-pad="${k}"]`).forEach((b,i)=>{b.disabled=true;b.classList.remove('locked');b.classList.add(r.choices[i]===r.ans?'right':i===p.choice?'wrong':'dim')}));
-  if(S.game==='party'||S.online)document.querySelectorAll('.roc').forEach((c,i)=>c.classList.add(r.choices[i]===r.ans?'right':'dim'));
+  const ok=S.pad.map(p=>p.choice!==null&&r.choices[p.choice]===RA(r));
+  S.pad.forEach((p,k)=>document.querySelectorAll(`.ans[data-pad="${k}"]`).forEach((b,i)=>{b.disabled=true;b.classList.remove('locked');b.classList.add(r.choices[i]===RA(r)?'right':i===p.choice?'wrong':'dim')}));
+  if(S.game==='party'||S.online)document.querySelectorAll('.roc').forEach((c,i)=>c.classList.add(r.choices[i]===RA(r)?'right':'dim'));
   $('#label').classList.add('show');
-  const what=`${esc(r.ans.title)} — ${esc(r.ans.artist)}`;
+  const what=`${esc(r.ans.title)} — ${esc(r.ans.artist)}${r.yc?` (${r.yc.yr})`:''}`;
   r.res=S.pad.map((p,k)=>({p:p.p,ok:ok[k],t:p.t,choice:p.choice,pts:0}));
   let html='';
   if(S.game==='solo'){
@@ -1580,7 +1626,7 @@ $('#lbCopy').addEventListener('click',async()=>{
 });
 $('#lbCancel').addEventListener('click',()=>{closeNet();show('home')});
 /* salon : changer de playlist, de difficulté ou de manches sans quitter la partie */
-function lbModeText(){const p=playlist();$('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n} · ${opt().n} manches`}
+function lbModeText(){const p=playlist();$('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n}${frise()?' · Frise':''} · ${opt().n} manches`}
 function renderLbChg(){
   const chip=(k,n,e)=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-lc="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.mode!=='pick'&&S.cat===k}">${e?e+' ':''}${esc(n)}</button>`};
   $('#lbChg').innerHTML=`<h3 class="plh">Playlists à thème</h3><div class="chips">${PLS.map(p=>reco(p.k,chip(p.k,p.n,p.e))).join('')}</div><h3 class="plh">Styles</h3><div class="chips">${CATS.map(([k,n])=>chip(k,n)).join('')}</div>`+
@@ -1654,11 +1700,11 @@ function standing(){
 }
 function sendResults(r){
   if(!S.online)return;
-  const ci=r.choices.indexOf(r.ans),ord=standing();
+  const ci=r.choices.indexOf(RA(r)),ord=standing();
   const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>{
     const x=r.res.find(z=>z.p===k)||{};
-    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist,r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:S.gm,last:S.i>=S.n-1,of:S.pl.length};
+    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist+(r.yc?` · ${r.yc.yr}`:''),r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:S.gm,last:S.i>=S.n-1,of:S.pl.length};
     if(S.game==='duel'){m.pts=x.pts||0;m.mult=x.mult||1;m.streak=pl.streak;m.score=pl.score;m.rank=ord.indexOf(k)+1;if(S.tmOn){m.teams=tmSc();m.tm=pl.tm}}
     else{const en=r.pen.find(z=>z.p===k);Object.assign(m,{rank:en.rank,sips:en.sips,cs:en.cs,joker:en.joker,canJoker:!!(en.sips||en.cs)&&!en.joker&&pl.joker,anyOk:r.log.anyOk,first:S.pl[r.pen[0].p].name,give:S.giver===k&&S.toGive>0?S.toGive:0,sing:S.giver===k&&S.vote})}
     return m;
@@ -1683,7 +1729,8 @@ addEventListener('pagehide',()=>{if(NET.peer)closeNet()});
 
 /* ---------- classement mondial (Solo uniquement) ---------- */
 const UID=(()=>{let u=store.get('uid','');if(!u){u=Math.random().toString(36).slice(2,12);store.set('uid',u)}return u})();
-function lbKey(){ // un classement par playlist / style ou par artiste choisi, et par nombre de manches
+function lbKey(){const b=lbKey0();if(b&&S.frise){b.k+='-f';b.name+=' (Frise)'}return b}
+function lbKey0(){ // un classement par playlist / style ou par artiste choisi, et par nombre de manches
   const n=opt().n,cl=x=>String(x).replace(/[^a-z0-9]/gi,'_').slice(0,40);
   if(S.mode==='link'){const L=lkReady();return L?{k:'d-'+cl(L.id)+'-'+n,name:L.name,n}:null}
   if(S.mode==='pick'){if(!S.valid.length||S.valid.length>3)return null;return {k:'a-'+S.valid.map(i=>cl(ARTISTS[i].k)).sort().join('_')+'-'+n,name:S.valid.map(i=>ARTISTS[i].n).join(', '),n}}
@@ -1775,7 +1822,7 @@ function results(){
     else if(S.game==='duel')side=`<span class="p duo">${(r.res||[]).map((x,k)=>`<i class="pc${k}">${x.pts>0?'+':''}${x.pts}</i>`).join('')}</span>`;
     if(S.game==='party')side=`<span class="p small">${r.pen?esc(S.gm?r.pen.filter(e=>e.ok).map(e=>S.pl[e.p].name).join(' · ')||'—':r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
     const ok=r.res&&r.res.some(x=>x.ok);
-    return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${esc(r.ans.title)}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
+    return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${esc(r.ans.title)}${r.yc?` · ${r.yc.yr}`:''}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
   }).join('');
   if(S.game!=='party'){S.wheel=null;renderWheel();renderGages()}
   if(S.online)sendEnd(fin.textContent);
@@ -1862,7 +1909,7 @@ $('#createOpen').addEventListener('click',()=>{
 });
 renderGames();
 
-renderCats();renderDiffs();renderList();renderSel();setMode(S.mode);
+renderCats();renderAsk();renderDiffs();renderList();renderSel();setMode(S.mode);
 $('#goBtn').disabled=false;
 })();
 </script>
