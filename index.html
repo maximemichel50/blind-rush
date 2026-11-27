@@ -6,6 +6,9 @@
 <meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0c0a0c">
 <title>Blind Rush</title>
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Anton&family=Archivo+Black&family=Bungee&family=Monoton&family=Permanent+Marker&display=swap" rel="stylesheet">
 <style>
@@ -103,6 +106,20 @@ h2{font:800 17px/1.2 var(--fb);margin:24px 0 10px}
 .ans b{display:block;line-height:1.25}.ans span{font-size:14px;color:var(--cmuted)}
 .ans.right{background:var(--ok);color:#fff}.ans.wrong{background:var(--ko);color:#fff}.ans.right span,.ans.wrong span{color:#fff}
 .ans.dim{opacity:.45}
+.ans.right,.ans.right:disabled{background:#17b45a!important;color:#fff!important;opacity:1!important;box-shadow:0 0 0 3px #3dff9a,0 0 28px rgba(61,255,154,.55);animation:ansOk .5s cubic-bezier(.2,1.6,.4,1)}
+.ans.wrong,.ans.wrong:disabled{background:#e0242f!important;color:#fff!important;opacity:1!important;box-shadow:0 0 0 3px #ff6b6b;animation:ansKo .45s ease}
+@keyframes ansOk{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
+@keyframes ansKo{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+.ansfx{position:fixed;inset:0;z-index:65;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;animation:afxIn 1.6s ease both}
+.ansfx.ok{background:radial-gradient(circle at 50% 50%,rgba(23,180,90,.55),rgba(23,180,90,.12) 60%,transparent 75%);box-shadow:inset 0 0 0 10px #3dff9a}
+.ansfx.ko{background:radial-gradient(circle at 50% 50%,rgba(224,36,47,.55),rgba(224,36,47,.12) 60%,transparent 75%);box-shadow:inset 0 0 0 10px #ff3b3b}
+.ansfx i{font-style:normal;display:grid;place-items:center;width:150px;height:150px;border-radius:50%;font:900 96px/1 var(--fb);color:#fff;animation:cardPop .6s cubic-bezier(.2,1.6,.4,1) both}
+.ansfx.ok i{background:#17b45a}.ansfx.ko i{background:#e0242f}
+.ansfx b{font:var(--fdw) clamp(30px,9vw,76px)/1 var(--fd);white-space:nowrap;text-transform:uppercase;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6)}
+.ansfx span{font-size:18px;font-weight:700;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.7)}
+@keyframes afxIn{0%{opacity:0}10%{opacity:1}75%{opacity:1}100%{opacity:0}}
+body.flash-ok #ctlBody{box-shadow:inset 0 0 0 8px #3dff9a}body.flash-ko #ctlBody{box-shadow:inset 0 0 0 8px #ff3b3b}
+.cres{display:flex;gap:6px;justify-content:center;margin:8px 0 0}.cres i{font-style:normal;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.08);font:700 14px var(--mono);color:var(--cmuted,#b9aeb5)}.cres i.on{background:var(--acc);color:#111}.cres i.past{opacity:.4;text-decoration:line-through}
 .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
 .btn{background:var(--vin);color:var(--vinInk);padding:13px 22px;border-radius:12px;font-weight:800;min-height:48px}
 .btn.alt{background:transparent;box-shadow:inset 0 0 0 2px var(--ink);color:var(--ink)}
@@ -1169,7 +1186,12 @@ const ACC=window.ACC=(()=>{
     const off=!R.connected();setTimeout(()=>R.destroy(),300);return {off,acc:got};
   }
   let pushT=0;
-  async function push(){if(!me)return;const a=me;try{await brLoad('mqtt')}catch(e){return}
+  /* avant d'envoyer : on relit la copie des relais et on fusionne (rien n'est perdu entre deux appareils) */
+  async function push(){if(!me)return;try{await brLoad('mqtt')}catch(e){return}
+    const rr=await fetchRemote(me.p);if(!me)return;
+    if(rr.acc&&rr.acc.h!==me.h)return; /* ce pseudo appartient à quelqu'un d'autre : on n'écrit rien */
+    if(rr.acc){const m=merge(me,rr.acc);if(JSON.stringify(m)!==JSON.stringify(me)){me=m;save();changed()}}
+    const a=me;
     const R=relay(),s=JSON.stringify(a);R.on('open',()=>{});R.on('up',()=>{});
     await new Promise(res=>{let n=0;setTimeout(res,6000);for(const c of R.clients)c.on('connect',()=>{c.publish(topic(a.p),s,{qos:1,retain:true},()=>{if(++n>=R.clients.length)res()})})});
     setTimeout(()=>R.destroy(),500)}
@@ -1181,7 +1203,7 @@ const ACC=window.ACC=(()=>{
   return {
     key,me:()=>me,on:f=>subs.push(f),
     async create(p,pin,seed){p=String(p||'').trim().slice(0,16);if(key(p).length<2)return 'Choisis un pseudo d\'au moins 2 lettres ou chiffres.';if(!pinOk(pin))return 'Le code secret doit faire 4 chiffres.';
-      const h=await hash(p,pin),r=await fetchRemote(p);if(r.off)return 'Pas de connexion internet. Réessaie dans un instant.';
+      const h=await hash(p,pin);let r=await fetchRemote(p);if(!r.acc&&!r.off)r=await fetchRemote(p); /* 2e lecture : on n'écrase jamais un compte qui existe */if(r.off)return 'Pas de connexion internet. Réessaie dans un instant.';
       if(r.acc&&r.acc.h!==h)return 'Ce pseudo est déjà pris. Choisis-en un autre (ou connecte-toi si c\'est le tien).';
       me=r.acc?merge(r.acc,null):Object.assign(blank(p,h,(seed&&seed.id)||Math.random().toString(36).slice(2,12)),seed&&seed.best?{best:seed.best}:{});
       me.at=Date.now();save();changed();push();return ''},
@@ -1234,10 +1256,17 @@ const ARTISTS=DB.a.map((n,i)=>({i,n,k:norm(n),tracks:[],w:[1,2,4,8][POP[i]??3]})
 const base=s=>norm(String(s).replace(/\s*[([][^)\]]*[)\]]/g,''))||norm(s);
 const TRACKS=DB.t.map(([ai,title,disp,id,md5,album])=>{
   const t={ai,title,artist:disp||DB.a[ai],id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0};
+  t.rk=ARTISTS[ai].tracks.length; /* place du son dans le classement Deezer de l'artiste (0 = le plus écouté) */
   ARTISTS[ai].tracks.push(t);return t;
 });
 const ARTIDX=new Map();ARTISTS.forEach(a=>{if(!ARTIDX.has(a.k)||a.tracks.length>ARTIDX.get(a.k).tracks.length)ARTIDX.set(a.k,a)});
 const CATS=[['mix','Mix monde',ARTISTS.map(a=>a.i)],...DB.c];
+/* place d'un son dans le classement Deezer de son artiste (sons des playlists : retrouvé dans la grande base ; 999 = inconnu) */
+const rkOf=t=>{if(t.rk!=null)return t.rk;const a=ARTIDX.get(norm(t.an||t.artist));let r=999;if(a){const j=a.tracks.findIndex(x=>x.id===t.id||x.b===t.b);if(j>=0)r=j}return t.rk=r};
+/* quels sons selon la difficulté (d'après le classement Deezer de chaque artiste) :
+   Facile et Moyen = ses sons les plus écoutés ; Difficile et Hardcore = moins connus, sans tomber dans le trop pointu */
+const BAND={facile:[0,3,0,10],moyen:[0,5,0,15],difficile:[4,30,6,40],hardcore:[4,30,6,40]}; /* [début, fin] par style, puis [début, fin] avec 1 à 7 artistes choisis */
+let GSH=new Set(); /* les titres déjà montrés pendant la partie : les mauvaises réponses ne reviennent pas d'une manche à l'autre */
 /* playlists à thème (clé "l" de db.json, faite par tools/playlists_theme.py) : une liste de morceaux, pas d'artistes */
 const PLS=(DB.l||[]).map(([k,n,e,ts])=>({k:'pl:'+k,n,e,tracks:ts.map(([an,title,id,md5,album,w])=>({ai:-1,an,pl:true,title,artist:an,id,album,w:w||'',b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0}))}));
 $('#dbinfo').textContent=`Base intégrée : ${fmt(TRACKS.length)} morceaux de ${fmt(ARTISTS.length)} artistes, du monde entier.`;
@@ -1356,10 +1385,15 @@ function renderCats(){
   $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
 $('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
 /* ---------- mode Frise : on devine l'année de sortie du son ---------- */
-const ASK={titre:'🎵 Le titre',annee:'📅 L\'année (Frise)'};
+const ASK={titre:'🎵 Le titre',annee:'📅 L\'année (Frise)',cres:'⏱️ 2 s, 4 s… (Crescendo)'};
+/* Crescendo (idée de Max) : 2 s de musique ; pas trouvé ou mauvaise réponse, on réécoute 4 s, puis 6, 8, jusqu'à 10 s. Moins tu écoutes, plus tu marques. */
+const CRES=[2,4,6,8,10],CRES_P=[1000,800,600,400,250],CRES_W={facile:6,moyen:5,difficile:4,hardcore:8};
+const cresOn=()=>S.ask==='cres'&&S.game==='solo';
 const frise=()=>S.ask==='annee';
 const RA=r=>r.yc||r.wc||r.ans; /* la bonne réponse de la manche (l'année en mode Frise) */
-function renderAsk(){$('#askSeg').innerHTML=segHtml('ask',Object.keys(ASK),S.ask,Object.values(ASK));$('#askHint').textContent=frise()?'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.':''}
+function renderAsk(){if(S.ask==='cres'&&S.game!=='solo')S.ask='titre';const ks=Object.keys(ASK).filter(k=>k!=='cres'||S.game==='solo');
+  $('#askSeg').innerHTML=segHtml('ask',ks,S.ask,ks.map(k=>ASK[k]));
+  $('#askHint').textContent=frise()?'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.':S.ask==='cres'?'Crescendo : tu n\'entends que 2 secondes. Pas trouvé, ou mauvaise réponse ? Le son repart pour 4 s, puis 6, 8, jusqu\'à 10 s. Moins tu as écouté, plus tu marques.':''}
 $('#askSeg').addEventListener('click',e=>{const b=e.target.closest('[data-ask]');if(!b)return;S.ask=b.dataset.ask;store.set('ask',S.ask);renderAsk();summary()});
 /* année de première sortie : la plus ancienne date trouvée au moins 2 fois sur Apple Music (les compilations sont plus récentes),
    sinon la date de l'album Deezer ; 0 si on ne sait pas */
@@ -1425,7 +1459,7 @@ function summary(){
   const p=playlist(),el=$('#summary');
   if(!p){el.innerHTML=S.mode==='link'?'Charge d\'abord ta playlist.<small>Ou repasse sur « Par style ».</small>':'Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
 
-  el.innerHTML=`${esc(GAMES[S.game].n)}${online()||netPref()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}${frise()?' · 📅 Frise':''}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
+  el.innerHTML=`${esc(GAMES[S.game].n)}${online()||netPref()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}${frise()?' · 📅 Frise':''}${cresOn()?' · ⏱️ Crescendo':''}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
 }
 function showErr(m){const e=$('#err');e.textContent=m;e.classList.remove('hide')}
 function hideErr(){$('#err').classList.add('hide')}
@@ -1456,9 +1490,9 @@ function buildRounds(ids,n){
   // peu d'artistes (mode artiste) : ses 30 titres les plus écoutés, pour varier sans tomber dans les sons trop niches
   // Hardcore : pas les plus gros tubes, mais les suivants (jusqu'au 20e, ou 45e en mode artiste), pas du trop niche non plus
   // Facile et Moyen : seulement les plus gros tubes (les 2 premiers, ou les 12 premiers en mode artiste)
-  const few=arts.length<8,easy=EASY();
-  let groups=arts.map(a=>{const T=a.tracks;return few?T.slice(0,easy?12:30):T});
-  const pool=groups.flat();
+  const few=arts.length<8,easy=EASY(),B=BAND[S.diff]||BAND.moyen,[lo,hi]=few?B.slice(2):B.slice(0,2);GSH=new Set();
+  let groups=arts.map(a=>{const T=a.tracks,g=T.slice(lo,hi);return g.length?g:T.slice(0,hi)});
+  const pool=arts.flatMap(a=>a.tracks);
   const pickPass=(fresh,cap,newArt)=>{const answers=[],used=new Set(),per=new Map();
     const queues=groups.map((g,j)=>newArt&&HART.has(arts[j].k)?[]:shuffle(g.slice(0,cap)));
     while(answers.length<n&&queues.some(q=>q.length)){
@@ -1466,7 +1500,7 @@ function buildRounds(ids,n){
     }
     return answers};
   // peu d'artistes (mode artiste) : on pioche dans toute leur discographie, sinon ce sont toujours les mêmes sons
-  const cap=few?1e9:easy?2:TOPN;
+  const cap=1e9;
   let answers=pickPass(true,cap,true);
   if(answers.length<n)answers=pickPass(true,cap,false);
   if(answers.length<n)answers=pickPass(false,cap);
@@ -1481,9 +1515,13 @@ function buildList(list,n){
     for(const t of shuffle(src)){if(answers.length>=n)break;const a=norm(t.artist);if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id))||(newArt&&HART.has(a))||(per.get(a)||0)>=cap)continue;used.add(t.id);used.add(t.b);per.set(a,(per.get(a)||0)+1);answers.push(t)}
     return answers};
   // d'abord les sons d'artistes connus (si la playlist en a assez) ; en Facile et Moyen, d'abord les plus grandes stars
+  GSH=new Set();
   const wOf=t=>(ARTIDX.get(norm(t.an))||{}).w||0,known=list.filter(t=>wOf(t)>=4),star=list.filter(t=>wOf(t)>=8);
   const srcs=known.length>=list.length*.4&&known.length>=n*4?[known,list]:[list];
   if(EASY()&&star.length>=n*2)srcs.unshift(star);
+  /* d'abord les sons à la bonne place dans le classement Deezer de leur artiste (s'il y en a assez dans la playlist) */
+  {const [lo,hi]=(BAND[S.diff]||BAND.moyen).slice(0,2),band=list.filter(t=>{const r=rkOf(t);return r>=lo&&r<hi}),bk=band.filter(t=>wOf(t)>=4);
+   if(bk.length>=n*3)srcs.unshift(bk);else if(band.length>=n*3)srcs.unshift(band)}
   let answers=[];
   for(const src of srcs){
     // 1 son par artiste, et des artistes qu'on n'a pas eus aux parties d'avant ; sinon on relâche petit à petit
@@ -1500,7 +1538,8 @@ function buildList(list,n){
 const wkey=w=>norm(String(w).replace(/\d+/g,''));
 function workChoices(ans,pool){
   const mk=w=>({title:w,artist:'',w:1,id:'w'+norm(w)}),me=wkey(ans.w),seen=new Set([me]),out=[mk(ans.w)];
-  for(const t of freshFirst(shuffle(pool.filter(t=>t.w)))){if(out.length>=4)break;const k=wkey(t.w);if(seen.has(k))continue;seen.add(k);out.push(mk(t.w))}
+  for(const t of fresh2(shuffle(pool.filter(t=>t.w)).map(t=>Object.assign(t,{}))).sort((a,b)=>GSH.has('w'+wkey(a.w))-GSH.has('w'+wkey(b.w)))){if(out.length>=4)break;const k=wkey(t.w);if(seen.has(k))continue;seen.add(k);out.push(mk(t.w))}
+  for(const c of out)GSH.add('w'+wkey(c.title));
   return out;
 }
 function roundOf(ans,pool){
@@ -1510,22 +1549,27 @@ function roundOf(ans,pool){
 /* 3 mauvaises réponses, jamais un titre qui ressemble à la bonne réponse.
    À partir de Moyen : d'autres titres du même artiste (il faut trouver le bon titre).
    En Facile, ou si l'artiste n'a pas assez de titres : d'autres artistes, de notoriété proche. */
-function makeChoices(ans,pool){
+function makeChoices(ans,pool){const ch=makeChoices0(ans,pool);for(const c of ch)GSH.add(c.b);return ch}
+/* ordre de préférence : pas encore montré pendant la partie et pas aux parties d'avant, puis pas montré pendant la partie, puis le reste */
+const fresh2=a=>{const x=[],y=[],z=[];for(const t of a)(GSH.has(t.b)?z:HDEC.has(t.id)?y:x).push(t);return [...x,...y,...z]};
+function makeChoices0(ans,pool){
   const pick=[],ok=t=>t.b!==ans.b&&!pick.some(p=>p.b===t.b);
   if(ans.pl){ // playlist à thème : à partir de Moyen, d'abord les titres du même artiste dans la playlist
     const an=norm(ans.an),same=shuffle(pool.filter(t=>norm(t.an)===an)),other=shuffle(pool.filter(t=>norm(t.an)!==an));
     // Moyen et Difficile : on complète avec la discographie de l'artiste dans la grande base (4 titres du même artiste)
     const da=ARTIDX.get(an),dn=15,disc=da?[...freshFirst(shuffle(da.tracks.slice(0,dn))),...shuffle(da.tracks.slice(dn))]:[];
-    for(const t of S.diff!=='facile'?[...freshFirst(same),...disc,...freshFirst(other)]:[...freshFirst(other),...freshFirst(same)])if(pick.length<3&&ok(t))pick.push(t);
+    for(const t of S.diff!=='facile'?fresh2([...shuffle(same),...disc]).concat(fresh2(shuffle(other))):[...fresh2(shuffle(other)),...fresh2(shuffle(same))])if(pick.length<3&&ok(t))pick.push(t);
     return shuffle([ans,...pick]);
   }
-  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,tn=12,top=shuffle(mine.slice(0,tn)),rest=shuffle(mine.slice(tn));for(const t of [...freshFirst(top),...rest])if(pick.length<3&&ok(t))pick.push(t)}
+  /* même artiste : des titres de notoriété proche de la bonne réponse, jamais les mêmes d'une manche à l'autre */
+  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,r0=ans.rk|0,near=mine.filter(t=>Math.abs((t.rk|0)-r0)<=Math.max(12,r0)),rest=mine.filter(t=>!near.includes(t));for(const t of [...fresh2(shuffle(near)),...fresh2(shuffle(rest))])if(pick.length<3&&ok(t)&&!GSH.has(t.b))pick.push(t);for(const t of fresh2(shuffle(mine)))if(pick.length<3&&ok(t))pick.push(t)}
   const wmax=Math.max(...pool.slice(0,400).map(t=>ARTISTS[t.ai].w),1);
   for(let tries=0;pick.length<3&&tries<3000;tries++){
     const t=pool[Math.random()*pool.length|0];
     if(tries<1500&&t.ai===ans.ai)continue;
     if(tries<800&&Math.random()*wmax>ARTISTS[t.ai].w)continue;
     if(tries<1000&&HDEC.has(t.id))continue;
+    if(tries<2000&&GSH.has(t.b))continue;
     if(ok(t))pick.push(t);
   }
   if(pick.length<3)for(const t of shuffle(pool))if(pick.length<3&&ok(t))pick.push(t);
@@ -1728,7 +1772,7 @@ function begin(p,list){
   S.n=opt().n;
   const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
-  S.frise=frise();
+  S.frise=frise();S.cres=cresOn()&&!S.online;
   if(S.frise){for(const r of b.rounds){delete r.yc;delete r.wc}(async()=>{for(const r of b.rounds)await yearOf(r.ans)})()}
   S.pool=b.pool;S.rounds=b.rounds;S.name=p.name+(S.frise?' (Frise)':'');histAdd(b.rounds);S.i=0;S.fails=0;S.lastCard=null;
   S.miN=0;S.lastMi=null;S.accSaved=false;S.lbSent=false;S.lbk=null;
@@ -1763,7 +1807,7 @@ function drawCard(){
 }
 function round(){
   const r=S.rounds[S.i],D=DIFF[S.diff];
-  r.limit=D.limit;r.stake=1;r.card=null;
+  r.limit=S.cres?10:D.limit;r.stake=1;r.card=null;r.step=0;
   if(S.frise&&!r.yc){if(r.ans.yr)setYear(r);else r.choices=[]}
   if(S.game==='solo')r.pads=[0];
   if(S.game==='duel')r.pads=[0,1];
@@ -1778,10 +1822,11 @@ function round(){
   setRing(0);$('#timer').textContent='';
   const nx=S.rounds[S.i+1];if(nx)resolveUrl(nx.ans).then(u=>{if(u){const p=new Audio();p.preload='auto';p.src=u}});
   $('#status').innerHTML='Chargement de l\'extrait…';
-  if(r.card||r.mi){S.phase='intro';r.card?cardFx(r.card):cardFx(null,MI[r.mi],'⚡ Défi surprise');const i0=S.i;setTimeout(()=>{if(S.i===i0&&S.rounds[S.i]===r)playClip(r)},2800)}else playClip(r);
+  if(r.card||r.mi){S.phase='intro';r.card?cardFx(r.card):cardFx(null,MI[r.mi],'⚡ Défi surprise',DEFI_MS);const i0=S.i;setTimeout(()=>{if(S.i===i0&&S.rounds[S.i]===r)playClip(r)},r.card?2800:DEFI_MS+100)}else playClip(r);
 }
 /* ---------- missions : un défi tiré au hasard, annoncé au début de sa manche (option « Missions » des réglages) ---------- */
 const MI=window.BR_MISSIONS;
+const DEFI_MS=5000; /* l'annonce d'un défi reste 5 s à l'écran (Max : on n'avait pas le temps de lire) */
 /* ---------- missions (idée de Max) : un score à faire en une seule partie, sur un artiste précis ou une catégorie ----------
    Comptent en Solo et en Duel (le joueur qui a le compte). Réussies = gardées sur le compte ; les stickers viendront plus tard. */
 const GOALS=[
@@ -1822,7 +1867,7 @@ const miOn=()=>!!opt()&&opt().miss!==false;
 function miPool(r){
   const multi=S.pl.length>1,ty=TYPED(r),ks=['vite'];
   if(!ty&&r.limit>=8)ks.push('eclair');
-  if(r.limit>=8)ks.push('sangfroid');
+  if(r.limit>=8&&!S.cres)ks.push('sangfroid');
   if(S.i>=2)ks.push('serie');
   if(S.diff==='difficile'||S.diff==='hardcore')ks.push('sniper');
   if(multi)ks.push('seul','premier');
@@ -1836,6 +1881,7 @@ function drawMission(r){
 }
 function miCheck(k,x,r){
   if(!x.ok)return false;
+  if(S.cres&&k==='sangfroid')return x.t>=8;
   const okAt=(i,p)=>{const q=S.rounds[i];return !!(q&&q.res&&q.res.some(y=>y.p===p&&y.ok))};
   if(k==='eclair')return x.t<3;
   if(k==='vite')return x.t<5;
@@ -1858,9 +1904,10 @@ function miReveal(r){
   if(won&&S.game!=='party')setTimeout(()=>bonusFx(M.e+' Défi réussi',solo?M.n:r.mw.slice(0,2).map(p=>S.pl[p].name).join(' · ')),300);
 }
 /* annonce en grand d'une manche spéciale */
-function cardFx(k,C0,lab){const el=$('#cardfx'),C=C0||CARDS[k];let sp='';for(let i=0;i<14;i++){const a=i/14*Math.PI*2,d=110+Math.random()*90;sp+=`<i class="cfx-spark" style="--dx:${(Math.cos(a)*d).toFixed(0)}px;--dy:${(Math.sin(a)*d).toFixed(0)}px;background:${['#ffd23f','#ff3ad6','#fff','#9b3dff'][i%4]}"></i>`}
-  el.innerHTML=`<div class="cfx-rays"></div>${sp}<div class="cfx-card"><div class="cfx-front">${C.e||'🃏'}</div><div class="cfx-back"></div></div><small>${esc(lab||'🃏 Manche spéciale')}</small><b>${esc(C.n)}</b><span>${esc(C.d)}</span>`;el.classList.remove('hide','on');void el.offsetWidth;el.classList.add('on');clearTimeout(cardFx.t);cardFx.t=setTimeout(()=>el.classList.add('hide'),2700)}
+function cardFx(k,C0,lab,ms){ms=ms||2700;const el=$('#cardfx'),C=C0||CARDS[k];el.style.animationDuration=ms+'ms';let sp='';for(let i=0;i<14;i++){const a=i/14*Math.PI*2,d=110+Math.random()*90;sp+=`<i class="cfx-spark" style="--dx:${(Math.cos(a)*d).toFixed(0)}px;--dy:${(Math.sin(a)*d).toFixed(0)}px;background:${['#ffd23f','#ff3ad6','#fff','#9b3dff'][i%4]}"></i>`}
+  el.innerHTML=`<div class="cfx-rays"></div>${sp}<div class="cfx-card"><div class="cfx-front">${C.e||'🃏'}</div><div class="cfx-back"></div></div><small>${esc(lab||'🃏 Manche spéciale')}</small><b>${esc(C.n)}</b><span>${esc(C.d)}</span>`;el.classList.remove('hide','on');void el.offsetWidth;el.classList.add('on');clearTimeout(cardFx.t);cardFx.t=setTimeout(()=>el.classList.add('hide'),ms)}
 /* petit éclat au centre quand une série fait passer les points à ×2 ou ×3 */
+function ansFx(ok,sub){const el=document.createElement('div');el.className='ansfx '+(ok?'ok':'ko');el.setAttribute('aria-hidden','true');el.innerHTML=`<i>${ok?'✓':'✗'}</i><b>${ok?'Bonne réponse !':'Raté !'}</b>${sub?`<span>${esc(sub)}</span>`:''}`;document.body.appendChild(el);try{navigator.vibrate&&navigator.vibrate(ok?40:[60,60,60])}catch(e){}setTimeout(()=>el.remove(),1650)}
 function bonusFx(t,sub){const el=document.createElement('div');el.className='bonusfx';el.setAttribute('aria-hidden','true');el.innerHTML=`${sub?`<small>${esc(sub)}</small>`:''}${esc(t)}`;document.body.appendChild(el);setTimeout(()=>el.remove(),1500)}
 function renderTurn(r){
   const el=$('#turn');el.className='turn';
@@ -1944,6 +1991,7 @@ async function playClip(r){
   }
   $('#playBtn').classList.add('hide');
   S.phase='guess';S.t0=performance.now();
+  if(S.cres){r.st0=S.t0;r.paused=false;cresInfo(r,'Écoute bien… 2 secondes !')}
   for(const b of document.querySelectorAll('.ans,.tybox input,.tybox button'))b.disabled=false;
   {const ti=document.querySelector('.tybox input');if(ti)try{ti.focus({preventScroll:true})}catch(e){}}
   $('#vinyl').classList.add('spin');
@@ -1964,9 +2012,35 @@ $('#sndBtn').addEventListener('click',async()=>{
   catch(e){alog('test : refusé '+e.name+' '+e.message);msg.textContent='❌ Le téléphone a bloqué le son ('+e.name+').'}
 });
 $('#playBtn').addEventListener('click',()=>{try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}audio.play().catch(()=>{});playClip(S.rounds[S.i])});
+/* ---------- Crescendo ---------- */
+function cresInfo(r,msg){
+  $('#status').innerHTML=`${esc(msg)}<span class="cres">${CRES.map((c,j)=>`<i class="${j===r.step?'on':j<r.step?'past':''}">${c} s</i>`).join('')}</span>`;
+}
+function cresTick(){
+  const r=S.rounds[S.i],L=CRES[r.step],W=CRES_W[S.diff]||5,el=(performance.now()-r.st0)/1000;
+  setRing(el/(L+W));$('#timer').textContent=el<L?'🎧':Math.max(0,Math.ceil(L+W-el));
+  if(el>=L&&!r.paused){r.paused=true;audio.pause();cresInfo(r,r.typed?'À toi ! Tape le titre.':'À toi ! Qui chante ? Quel titre ?')}
+  if(el>=L+W)return cresMore(r,'Pas trouvé ?');
+  S.raf=requestAnimationFrame(tick);
+}
+function cresMore(r,why){
+  cancelAnimationFrame(S.raf);r.step++;
+  if(r.step>=CRES.length){S.phase='guess';return reveal()}
+  try{audio.currentTime=r.off||0}catch(e){}
+  audio.play().catch(()=>{});r.st0=performance.now();r.paused=false;
+  if(r.typed)document.querySelectorAll('.tybox input,.tybox button').forEach(b=>{b.disabled=false;if(b.tagName==='INPUT'){b.value='';try{b.focus({preventScroll:true})}catch(e){}}});
+  cresInfo(r,`${why} On réécoute : ${CRES[r.step]} secondes !`);
+  S.raf=requestAnimationFrame(tick);
+}
+function cresWrong(r,i){
+  const b=document.querySelector(`.ans[data-pad="0"][data-i="${i}"]`);if(b){b.disabled=true;b.classList.add('wrong')}
+  try{navigator.vibrate&&navigator.vibrate([60,60,60])}catch(e){}
+  cresMore(r,'Non !');
+}
 function setRing(p){const fg=$('#ringFg');fg.setAttribute('stroke-dashoffset',String(Math.min(100,p*100)));fg.style.stroke=p>.75?'#c81e1e':''}
 function tick(){
   if(S.phase!=='guess')return;
+  if(S.cres)return cresTick();
   const r=S.rounds[S.i],el=(performance.now()-S.t0)/1000;
   setRing(el/r.limit);$('#timer').textContent=Math.max(0,Math.ceil(r.limit-el));
   if(audio.paused&&!audio.ended)audio.play().catch(()=>{});
@@ -1976,9 +2050,11 @@ function tick(){
 function pick(k,i,te){
   if(S.phase!=='guess')return;
   const pad=S.pad[k];if(!pad||pad.choice!==null||!(i>=0&&i<4))return;
+  if(S.cres){const r=S.rounds[S.i];if(r.choices[i]!==RA(r))return cresWrong(r,i);pick.cr=CRES[r.step]}
   const meas=(performance.now()-S.t0)/1000;
   // en ligne : temps mesuré sur le téléphone (sans le délai du réseau), jamais plus que le temps vu par l'hôte
   pad.choice=i;pad.t=te!=null&&isFinite(te)?Math.min(meas,Math.max(0,te)):meas;
+  if(S.cres)pad.t=pick.cr; /* Crescendo : le temps compté = les secondes de musique écoutées */
   document.querySelectorAll(`.ans[data-pad="${k}"]`).forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add('locked')});
   document.querySelectorAll(`.tybox[data-pad="${k}"] input,.tybox[data-pad="${k}"] button`).forEach(b=>b.disabled=true);
   if(S.online){const c=$('#np'+k),d=$('#ds'+k);if(c)c.classList.add('in');if(d)d.textContent='a répondu'}
@@ -2001,6 +2077,7 @@ const fmtT=t=>t.toFixed(1).replace('.',',')+' s';
 function reveal(){
   if(S.phase!=='guess')return;
   S.phase='reveal';cancelAnimationFrame(S.raf);$('#timer').textContent='';
+  if(S.cres&&audio.paused)audio.play().catch(()=>{});
   const r=S.rounds[S.i],D=DIFF[S.diff];
   const ok=S.pad.map(p=>p.choice!==null&&r.choices[p.choice]===RA(r));
   S.pad.forEach((p,k)=>document.querySelectorAll(`.ans[data-pad="${k}"]`).forEach((b,i)=>{b.disabled=true;b.classList.remove('locked');b.classList.add(r.choices[i]===RA(r)?'right':i===p.choice?'wrong':'dim')}));
@@ -2013,10 +2090,11 @@ function reveal(){
   let html='';
   if(S.game==='solo'){
     const pl=S.pl[0],x=r.res[0];
-    if(x.ok){pl.streak++;pl.good++;x.mult=MULT(pl.streak);x.pts=Math.round((300+700*Math.max(0,1-x.t/r.limit))*D.mult*x.mult)}else pl.streak=0;
+    if(x.ok){pl.streak++;pl.good++;x.mult=MULT(pl.streak);x.pts=Math.round((S.cres?CRES_P[r.step|0]:300+700*Math.max(0,1-x.t/r.limit))*D.mult*x.mult)}else pl.streak=0;
     pl.score+=x.pts;
-    if(x.ok&&(pl.streak===3||pl.streak===5))bonusFx(`🔥 ×${x.mult}`,`Série de ${pl.streak}`);
-    html=x.ok?`<span class="pop">+${fmt(x.pts)} pts ${multTag(pl.streak)}</span><small>Répondu en ${fmtT(x.t)}${pl.streak>=2?` · série de ${pl.streak}`:''}${x.mult>1?` · points ×${x.mult}`:pl.streak===2?' · encore 1 et c\'est ×2':''}</small>`:x.t==null?`Temps écoulé !<small>C'était ${what}</small>`:`Raté !<small>C'était ${what}</small>`;
+    if(x.ok&&(pl.streak===3||pl.streak===5))setTimeout(()=>bonusFx(`🔥 ×${x.mult}`,`Série de ${pl.streak}`),1500);
+    ansFx(x.ok,x.ok?`+${fmt(x.pts)} pts`:x.t==null?'Temps écoulé':'');
+    html=x.ok?`<span class="pop">+${fmt(x.pts)} pts ${multTag(pl.streak)}</span><small>${S.cres?`Trouvé avec ${CRES[r.step|0]} secondes d'écoute`:'Répondu en '+fmtT(x.t)}${pl.streak>=2?` · série de ${pl.streak}`:''}${x.mult>1?` · points ×${x.mult}`:pl.streak===2?' · encore 1 et c\'est ×2':''}</small>`:x.t==null?`${S.cres?'Pas trouvé, même avec 10 s !':'Temps écoulé !'}<small>C'était ${what}</small>`:`Raté !<small>C'était ${what}</small>`;
   }
   if(S.game==='duel'){
     const firsts=r.res.filter(x=>x.ok).sort((a,b)=>a.t-b.t);
@@ -2288,7 +2366,7 @@ addEventListener('pagehide',()=>{if(NET.peer)closeNet()});
 /* ---------- classement mondial (Solo uniquement) ---------- */
 const UID=(()=>{let u=store.get('uid','');if(!u){u=Math.random().toString(36).slice(2,12);store.set('uid',u)}return u})();
 const uid=()=>{const a=ACC.me();return a&&a.id||UID}; /* avec un compte : le même joueur sur tous ses appareils */
-function lbKey(){const b=lbKey0();if(b&&S.frise){b.k+='-f';b.name+=' (Frise)'}return b}
+function lbKey(){const b=lbKey0();if(b&&S.frise){b.k+='-f';b.name+=' (Frise)'}if(b&&cresOn()){b.k+='-c';b.name+=' (Crescendo)'}return b}
 function lbKey0(){ // un classement par playlist / style ou par artiste choisi, et par nombre de manches
   const n=opt().n,cl=x=>String(x).replace(/[^a-z0-9]/gi,'_').slice(0,40);
   if(S.mode==='link'){const L=lkReady();return L?{k:'d-'+cl(L.id)+'-'+n,name:L.name,n}:null}
@@ -2325,7 +2403,7 @@ function accPl(){const a=ACC.me();if(!a||!S.pl)return -1;if(S.game==='solo')retu
 /* fin de partie : enregistrée sur le compte (une seule fois par partie) */
 function accSave(){
   const k=accPl();if(k<0||S.accSaved)return;S.accSaved=true;const pl=S.pl[k];
-  if(S.game==='solo')ACC.best(S.diff+'-'+S.n+(S.frise?'-f':''),Math.round(pl.score));
+  if(S.game==='solo')ACC.best(S.diff+'-'+S.n+(S.frise?'-f':'')+(S.cres?'-c':''),Math.round(pl.score));
   const ord=S.game==='solo'?[0]:standing();
   ACC.game({m:S.game,s:Math.round(pl.score||0),g:pl.good,r:S.n,d:S.diff,pl:String(S.name||'').slice(0,40),rk:ord.indexOf(k)+1,of:S.pl.length,mi:pl.mi|0});
 }
@@ -2340,7 +2418,7 @@ function results(){
   const fin=$('#final'),ver=$('#verdict'),board=$('#board');board.innerHTML='';
   $('#lbbox').classList.add('hide');
   if(S.game==='solo'){
-    const pl=S.pl[0],key=S.diff+'-'+S.n+(S.frise?'-f':''),acc=ACC.me(),prev=acc?acc.best[key]||0:0;
+    const pl=S.pl[0],key=S.diff+'-'+S.n+(S.frise?'-f':'')+(S.cres?'-c':''),acc=ACC.me(),prev=acc?acc.best[key]||0:0;
     fin.textContent=fmt(pl.score)+' pts';
     const g=pl.good,ratio=g/S.n,v=ratio===1?'Sans faute. Encyclopédie vivante.':ratio>=.8?'Très grosse oreille.':ratio>=.5?'Pas mal, encore un effort sur la vitesse.':ratio>=.3?'Il y a du potentiel. On remet ça ?':'Les bacs t\'ont eu cette fois. Revanche ?';
     ver.textContent=`${g}/${S.n} en ${DIFF[S.diff].n.toLowerCase()} · ${S.name}. ${v}${!acc?' Sans compte, ce score n\'est pas enregistré.':pl.score>prev&&prev?' Nouveau record !':prev&&pl.score<=prev?` Record : ${fmt(prev)} pts.`:''}${S.miN?` Défis : ${pl.mi|0}/${S.miN} réussi${(pl.mi|0)>1?'s':''}.`:''}`;
@@ -2465,7 +2543,7 @@ function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['lb',
 document.querySelectorAll('.gi[data-icon]').forEach(i=>{i.innerHTML=i.dataset.icon==='multi'?GICON.duel:GICON[i.dataset.icon]});
 $('#home').addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');
-  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
+  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();renderAsk();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
   const b=e.target.closest('[data-back]');if(b)return view(b.dataset.back);
   if(e.target.closest('[data-join]'))$('#joinOpen').click();
 });
@@ -2521,7 +2599,7 @@ $('#vAcc').addEventListener('click',async e=>{
   }
 });
 $('#vAcc').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();$('#accGo').click()}});
-window.BR_T={wShow,goalPlay,GOALS,accOpen,ftLoad,ARTIDX}; /* pour les tests automatiques */
+window.BR_T={wShow,goalPlay,GOALS,accOpen,ftLoad,ARTIDX,buildRounds,buildList,PLS,CATS,rkOf}; /* pour les tests automatiques */
 ACC.on(()=>{accBtn();if(!$('#vAcc').classList.contains('hide')&&!AV.busy)renderAcc();if(document.body.dataset.view==='setup')renderGames()});
 accBtn();
 /* ---------- mode Feat : chacun à son tour cite un artiste qui a fait un feat avec l'artiste choisi ----------
@@ -2621,7 +2699,7 @@ function ftTurn(newRound){
   const p=F.pl[F.cur],pat=F.mode==='patate';
   /* mission : tirée au hasard au début d'un tour (pas au tout premier), 3 au plus par partie ; annoncée en grand, le chrono attend l'annonce */
   F.turns++;F.mi=F.miOn&&F.turns>2&&F.miN<3&&Math.random()<.2;
-  if(F.mi){F.miN++;cardFx(null,{...MI.feat,d:`${p.name} : ${MI.feat.d.replace('À ton tour, t','T')}`},'⚡ Défi surprise');F.t0+=2700;if(F.bomb)F.bomb+=2700}
+  if(F.mi){F.miN++;cardFx(null,{...MI.feat,d:`${p.name} : ${MI.feat.d.replace('À ton tour, t','T')}`},'⚡ Défi surprise',DEFI_MS);F.t0+=DEFI_MS;if(F.bomb)F.bomb+=DEFI_MS}
   ftScreen(`<p class="kicker">Feat · ${pat?`Patate chaude · manche ${F.round}`:'Normal'}</p>
   <p class="ftbig">${esc(F.art.n)}</p>
   <ul class="ftpl">${F.pl.map((q,k)=>`<li class="${k===F.cur?'cur':''}${q.out?' out':''}">${esc(q.name)}${pat?'':` · ${q.pts}`}</li>`).join('')}</ul>
@@ -2830,6 +2908,7 @@ function glass(cs){return `<svg class="glass${cs?' gcs':''}" viewBox="0 0 120 16
 function confetti(){let h='';const c=['#ff3d9a','#27e0ff','#ffd23f','#9b5cff','#3dff9a'];for(let i=0;i<36;i++)h+=`<i style="left:${Math.random()*100}%;background:${c[i%5]};animation-delay:${(Math.random()*.6).toFixed(2)}s;animation-duration:${(1.4+Math.random()*1.2).toFixed(2)}s"></i>`;return `<div class="confetti">${h}</div>`}
 function result(m){
   const again=C.lastR===m.i;C.lastR=m.i;
+  if(!again){const B=document.body;B.classList.remove('flash-ok','flash-ko');void B.offsetWidth;B.classList.add(m.ok?'flash-ok':'flash-ko');clearTimeout(result.t);result.t=setTimeout(()=>B.classList.remove('flash-ok','flash-ko'),1800);try{navigator.vibrate&&navigator.vibrate(m.ok?40:[60,60,60])}catch(e){}}
   const how=m.ok?'Bonne réponse en '+fmtT(m.tm):m.c!=null?'Mauvaise réponse':'Pas de réponse';
   const was=`<div class="ctl-card"><span>C'était</span><b>${esc(m.ans[0])}</b><span>${esc(m.ans[1])}</span></div>`;
   const list=`<ol class="rank">${m.top.map(([n,v],i)=>`<li class="${n===C.name?'win':''}"><span class="rk">${i+1}</span><span class="nm"><b>${esc(n)}</b></span><span class="pn">${esc(v)}</span><span></span></li>`).join('')}</ol>`;
