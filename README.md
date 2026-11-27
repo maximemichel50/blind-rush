@@ -74,8 +74,15 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 - Toujours récupérer la dernière version avant de modifier (l'autre a peut-être changé des choses).
 - Après chaque modification, tester la page publiée (1 à 2 minutes de délai).
 
+## Comptes joueurs (facultatifs)
+- Bouton « 👤 Se connecter » en haut à droite de l'accueil. Un compte = un pseudo + un code secret à 4 chiffres. On peut tout jouer sans compte, mais seuls les comptes enregistrent leurs scores (classement mondial, records), leurs missions et leurs défis.
+- On reste connecté sur l'appareil (`localStorage` « br-acct »). Le compte est aussi copié sur les relais MQTT (message gardé sur `blindrush-mm50/v2/acct/<pseudo>`) pour le retrouver sur un autre appareil ; seule une empreinte du code est envoyée. Code : objet `window.ACC` dans le 2e `<script>` (`create`, `login`, `logout`, `update`, `game`, `best`, `goal`, `mission`).
+- Le compte garde : `g` (parties jouées par mode), `best` (records Solo), `hist` (40 dernières parties), `go` (missions), `mi` (défis réussis), `st` (stickers, à venir).
+- **Missions** : un score à faire en une seule partie, sur un artiste seul ou une catégorie (liste `GOALS`), en Solo ou en Duel. Page Mon compte : toucher une mission la prépare. Vérifiées en fin de partie par `goalAfter()`.
+- **Défis surprise** (case à cocher dans les réglages de chaque mode, et dans Feat) : tirés au hasard (`drawMission()`, environ 1 pour 5 manches, au moins 1 par partie), annoncés en grand au début de leur manche (`cardFx`), vérifiés par `miCheck()`. Liste : `window.BR_MISSIONS`. En ligne, chaque téléphone garde ses défis sur son propre compte.
+
 ## Classement mondial (mode Solo)
-- À la fin d'une partie Solo, le score est enregistré avec un pseudo (demandé une seule fois).
+- À la fin d'une partie Solo, le score est enregistré sous le pseudo du compte. Sans compte, on voit le classement mais le score n'y entre pas (bouton « Créer mon compte et enregistrer ce score »).
 - Un classement par playlist / style, ou par artiste choisi (1 à 3 artistes), et par nombre de manches. Bouton « Classement mondial de cette playlist » sur l'accueil.
 - Pas de Duel ni de Babinski dans le classement.
 - Stockage : messages gardés sur les 3 relais publics déjà utilisés pour le jeu en ligne, plus une copie sur chaque appareil qui remet les scores si un relais les perd.
