@@ -840,6 +840,33 @@ body[data-deco=feat] h1{color:#ffd23f!important}
 .mback{grid-column:1;grid-row:1;width:44px;height:44px;border-radius:50%;border:0;background:rgba(255,255,255,.1);color:#fff;font:500 30px/1 var(--fb);padding:0 0 4px;cursor:pointer}
 .mback:hover{background:rgba(255,255,255,.2)}
 @media (prefers-reduced-motion:reduce){.bigchoice.cards .emo{animation:none}}
+/* écran de réglages unique (2026-11-27) */
+#vSetup .mhead{margin-bottom:6px}
+#vSetup .menuh{font-size:clamp(34px,9vw,56px)}
+.slead{margin:0 0 18px;font-size:16px;opacity:.85}
+#vSetup.sub .slead{display:none}
+.srows{display:grid;gap:10px;margin:0 0 14px}
+.srow{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;padding:14px 16px;text-align:left;color:#fff;cursor:pointer;background:rgba(12,12,12,.82);border:1px solid rgba(255,255,255,.14);border-radius:3px;font:inherit}
+.srow:hover{border-color:rgba(255,255,255,.4)}
+.srow>i{font-style:normal;font-size:24px;text-align:center}
+.srow small{display:block;font:600 11px/1.2 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.55)}
+.srow b{display:block;margin-top:3px;font:600 20px/1.1 var(--fd,inherit);text-transform:uppercase;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srow em{font:600 12px/1 var(--mono);font-style:normal;text-transform:uppercase;letter-spacing:.08em;color:var(--acc)}
+.srow.flash{animation:sflash .6s ease-out}
+@keyframes sflash{0%{border-color:var(--acc);box-shadow:0 0 0 2px var(--acc)}100%{box-shadow:0 0 0 0 transparent}}
+#vSetup .setup{margin:0}
+#vSetup .launch{margin-top:16px;flex-direction:column;align-items:stretch;gap:10px}
+#vSetup .launch .go{width:100%}
+#vSetup .launch .summary{display:none}
+#vSetup .lbbtn{margin-top:0}
+.tog span small{display:block;font-weight:400;opacity:.7;margin-top:2px}
+.howto{margin:22px 0 8px;border-top:1px solid rgba(255,255,255,.14)}
+.howto>summary{cursor:pointer;list-style:none;padding:16px 0 6px;font:600 13px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.75)}
+.howto>summary::-webkit-details-marker{display:none}
+.howto>summary::before{content:'＋ '}.howto[open]>summary::before{content:'－ '}
+.howto .guide{margin-top:8px}.howto .rules{margin-top:14px}.howto .sndtest{margin:14px 0 0}
+#vSetup .wstep h2.step{margin-top:6px}
+#vSetup .wnext{width:100%;margin-top:18px;position:sticky;bottom:12px;z-index:5}
 </style>
 </head>
 <body>
@@ -865,7 +892,6 @@ body[data-deco=feat] h1{color:#ffd23f!important}
   <section id="home">
     <div class="view" id="vMenu">
       <h1 class="menuh">Devine le son.<br>Avant les autres.</h1>
-      <p class="lead">Choisis comment tu joues. Tout le reste se règle à l'étape suivante.</p>
       <div class="bigchoice cards">
         <button class="mode big" data-go="solo" style="--ca:#ff4a1c;--g1:#ff7a1a;--g2:#e0125e;--ff:Anton,sans-serif;--fs:30"><i class="emo" aria-hidden="true">⏱️</i><b>Solo</b><span>Toi contre le chrono. Ton score entre au classement mondial.</span><i class="np" aria-hidden="true">👤 1</i></button>
         <button class="mode big" data-go="multi" style="--ca:#2f6bff;--g1:#3d7bff;--g2:#8a2cff;--ff:'Archivo Black',sans-serif;--fs:14"><i class="emo" aria-hidden="true">🎧</i><b>Multi<br>joueur</b><span>Duel ou Babinski, chacun sur son téléphone.</span><i class="np" aria-hidden="true">👤 2+</i></button>
@@ -898,25 +924,32 @@ body[data-deco=feat] h1{color:#ffd23f!important}
     <div class="view hide" id="vAcc"></div>
     <div class="view hide" id="vWho"></div>
     <div class="view hide" id="vSetup">
-    <button class="btn ghost back" id="backSetup" data-back="menu">← Retour</button>
-    <div class="wtop0"><h1 id="hero">Devine le son. Avant les autres.</h1>
-    <p class="lead" id="lead">10 manches, 4 réponses. Plus tu réponds vite, plus tu marques.</p>
-    <p class="mood" id="mood"></p>
-    </div><div class="wtop">
-    <div class="sndtest"><button class="btn sm" id="sndBtn" type="button">🔊 Tester le son</button><div id="sndOut" class="hide"><p id="sndMsg"></p><pre id="sndLog"></pre></div></div>
-
-
+    <div class="mhead"><button class="mback" id="backSetup" data-back="menu" aria-label="Retour">‹</button><h1 class="menuh" id="hero">Solo</h1></div>
+    <p class="lead slead" id="lead"></p>
+    <p class="mood hide" id="mood"></p>
+    <p class="wprog hide" id="wprog"></p>
+    <div class="wstep" data-w="main">
+    <div class="srows">
+      <button class="srow" type="button" data-sub="pl"><i aria-hidden="true">🎵</i><span><small>Playlist</small><b id="sPl">Mix monde</b></span><em>Changer ›</em></button>
+      <button class="srow" type="button" data-sub="diff"><i aria-hidden="true">🎚️</i><span><small>Difficulté</small><b id="sDf">Moyen</b></span><em>Changer ›</em></button>
     </div>
-    <p class="wprog" id="wprog"></p>
-    <div class="wstep" data-w="rules"><div class="guide" id="guide"></div></div>
-    <div class="wstep" data-w="opts">
-    <h2 class="step s1"><i>01</i>Mode de jeu</h2>
-    <p class="gdesc" id="gameDesc"></p>
+    <p class="gdesc hide" id="gameDesc"></p>
     <div class="setup" id="setup"></div>
-
+    <div class="launch">
+      <button class="go" id="goBtn" disabled>CHARGEMENT…</button>
+      <p class="summary" id="summary"></p>
+      <button class="btn alt lbbtn" id="lbBtn">🏆 Classement mondial de cette playlist</button>
+      <div class="lbbox hide" id="lbHome"></div>
+      <button class="btn y netbtn hide" id="createOpen">📱 Créer une partie en ligne</button>
+    </div>
+    <details class="howto" id="howto"><summary>Comment on joue ?</summary>
+      <div class="guide" id="guide"></div>
+      <p class="rules" id="rules"></p>
+      <div class="sndtest"><button class="btn sm" id="sndBtn" type="button">🔊 Tester le son</button><div id="sndOut" class="hide"><p id="sndMsg"></p><pre id="sndLog"></pre></div></div>
+    </details>
     </div>
     <div class="wstep" data-w="pl">
-    <h2 class="step s2"><i>02</i>Ta playlist</h2>
+    <h2 class="step s2">Ta playlist</h2>
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tabStyle" aria-selected="true">Par style</button>
       <button class="tab" role="tab" id="tabPick" aria-selected="false">Je choisis mes artistes</button>
@@ -944,24 +977,13 @@ body[data-deco=feat] h1{color:#ffd23f!important}
 
     </div>
     <div class="wstep" data-w="diff">
-    <h2 class="step s3"><i>03</i>Difficulté</h2>
+    <h2 class="step s3">Difficulté</h2>
     <div class="prow askrow hide"><span class="lbl">On devine</span><span id="askSeg"></span></div>
     <p class="hint" id="askHint"></p>
     <div class="diffs" id="diffs"></div>
-
-    </div>
-    <div class="wstep" data-w="go">
-    <div class="launch">
-      <button class="go" id="goBtn" disabled>CHARGEMENT…</button>
-      <button class="btn y netbtn" id="createOpen">📱 Ou créer une partie en ligne (chacun son téléphone)</button>
-      <p class="summary" id="summary"></p>
-      <button class="btn alt lbbtn" id="lbBtn">🏆 Classement mondial de cette playlist</button>
-      <div class="lbbox hide" id="lbHome"></div>
-    </div>
-    <p class="rules" id="rules"></p>
     </div>
     <div class="err hide" id="err" role="alert"></div>
-    <button class="go wnext" id="wNext">SUIVANT →</button>
+    <button class="go wnext hide" id="wNext">VALIDER ✓</button>
     </div>
   </section>
 
@@ -1296,12 +1318,12 @@ function titleOk(txt,t){
   return false;
 }
 const store={get(k,d){try{const v=localStorage.getItem('br-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,JSON.stringify(v))}catch(e){}}};
-const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
+const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:store.get('cat','mix'),diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
 S.where=store.get('where','net');S.drink=store.get('drink','alcool');if(S.drink==='pompes')S.drink='gages';S.soft=false;S.gm=S.drink!=='alcool';S.nog=S.drink==='rien';
 S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.online=false;
 S.teams=store.get('teams',false);S.hostTm=0;S.tmOn=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
-if(S.valid.length)S.mode='pick';
+if(S.valid.length&&store.get('mode','pick')==='pick')S.mode='pick';
 S.ask=store.get('ask','titre');
 S.link=store.get('link',null);if(S.link&&store.get('mode','')==='link')S.mode='link';
 const audio=$('#audio');
@@ -1327,7 +1349,7 @@ function themeKey(){
 }
 
 /* ---------- accueil ---------- */
-function setMode(m){S.mode=m;store.set('mode',m);$('#tabStyle').setAttribute('aria-selected',m==='style');$('#tabPick').setAttribute('aria-selected',m==='pick');$('#tabLink').setAttribute('aria-selected',m==='link');$('#pStyle').classList.toggle('hide',m!=='style');$('#pPick').classList.toggle('hide',m!=='pick');$('#pLink').classList.toggle('hide',m!=='link');if(m==='link')lkShow();summary()}
+function setMode(m){S.mode=m;store.set('mode',m);$('#tabStyle').setAttribute('aria-selected',m==='style');$('#tabPick').setAttribute('aria-selected',m==='pick');$('#tabLink').setAttribute('aria-selected',m==='link');$('#pStyle').classList.toggle('hide',m!=='style');$('#pPick').classList.toggle('hide',m!=='pick');$('#pLink').classList.toggle('hide',m!=='link');if(m==='link')lkShow();summary();try{$('#wNext').classList.toggle('hide',W.sub!=='pl'||m==='style')}catch(e){}}
 $('#tabLink').addEventListener('click',()=>{setMode('link');if(!S.link)$('#lkIn').focus()});
 /* ---------- jouer avec sa propre playlist (lien Deezer, Spotify ou Apple Music) ----------
    Deezer : on lit la playlist directement. Spotify et Apple Music ne laissent pas lire leurs playlists depuis un site :
@@ -1388,7 +1410,7 @@ function renderCats(){
   $('#plsWrap').classList.toggle('hide',!PLS.length);
   $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return reco(p.k,`<button class="chip" data-c="${p.k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`)}).join('');
   $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
-$('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
+$('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;store.set('cat',S.cat);renderCats();summary();if(W.sub==='pl')setTimeout(wBack,180)});
 /* ---------- mode Frise : on devine l'année de sortie du son ---------- */
 const ASK={titre:'🎵 Le titre',annee:'📅 L\'année (Frise)',cres:'⏱️ 2 s, 4 s… (Crescendo)'};
 /* Crescendo (idée de Max) : 2 s de musique ; pas trouvé ou mauvaise réponse, on réécoute 4 s, puis 6, 8, jusqu'à 10 s. Moins tu écoutes, plus tu marques. */
@@ -1427,7 +1449,7 @@ function yearChoices(y){
 }
 function setYear(r){r.choices=yearChoices(r.ans.yr);r.yc=r.choices.find(c=>c.yr===r.ans.yr)}
 function renderDiffs(){$('#diffs').innerHTML=Object.entries(DIFF).map(([k,d])=>`<button class="diff" data-d="${k}" aria-pressed="${S.diff===k}"><b>${d.n}</b><span>${d.d}</span></button>`).join('')}
-$('#diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=b.dataset.d;store.set('diff',S.diff);renderDiffs();summary()});
+$('#diffs').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(!b)return;S.diff=b.dataset.d;store.set('diff',S.diff);renderDiffs();summary();if(W.sub==='diff')setTimeout(wBack,180)});
 
 function renderList(){
   const q=norm($('#q').value);
@@ -1454,7 +1476,7 @@ $('#validate').addEventListener('click',()=>{
   if(!S.pick.length)return showErr('Ajoute au moins un artiste avant de valider.');
   const need=Math.max(ROUNDS,opt().n);
   if(n<need)return showErr(`Ta sélection n'a que ${plural(n,'titre')}. Il en faut au moins ${need} pour ${opt().n} manches : ajoute un ou deux artistes.`);
-  hideErr();S.valid=[...S.pick];store.set('valid',S.valid);renderSel();summary();$('#goBtn').focus();
+  hideErr();S.valid=[...S.pick];store.set('valid',S.valid);renderSel();summary();if(W.sub==='pl')setTimeout(wBack,250);
 });
 function playlist(){
   if(S.mode==='link'){const L=lkReady();return L?{list:L.tracks,name:L.name}:null}
@@ -1463,7 +1485,7 @@ function playlist(){
   const c=CATS.find(c=>c[0]===S.cat)||CATS[0];return {ids:c[2],name:c[1]};
 }
 function summary(){
-  applyTheme(themeKey());const lh=document.getElementById("lbHome");if(lh)lh.classList.add("hide");
+  applyTheme(themeKey());if(typeof sRows==='function'&&$('#sPl'))try{sRows()}catch(e){}const lh=document.getElementById("lbHome");if(lh)lh.classList.add("hide");
   const p=playlist(),el=$('#summary');
   if(!p){el.innerHTML=S.mode==='link'?'Charge d\'abord ta playlist.<small>Ou repasse sur « Par style ».</small>':'Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
 
@@ -1599,9 +1621,9 @@ const GAMES={
 };
 /* modes à part (choisis par une carte de l'accueil) : Crescendo et Frise, seul ou à plusieurs */
 const MODEX={
-  cres:{n:'Crescendo',h:'Crescendo. 2 secondes pour trouver.',lead:'Tu n\'entends que 2 secondes. Pas trouvé ? Le son repart pour 4 s, puis 6, 8, jusqu\'à 10 s. Moins tu as écouté, plus tu marques.',
+  cres:{n:'Crescendo',d:'2 secondes de son, puis 4, 6… jusqu\'à 10.',h:'Crescendo. 2 secondes pour trouver.',lead:'Tu n\'entends que 2 secondes. Pas trouvé ? Le son repart pour 4 s, puis 6, 8, jusqu\'à 10 s. Moins tu as écouté, plus tu marques.',
     tag:'2 s, 4 s… 10 s',pts:[['🎚️','2 secondes pour commencer','Le son s\'arrête après 2 secondes. Si personne ne trouve, il repart du début pour 4 s, puis 6, 8 et 10 s.'],['🏅','Moins tu écoutes, plus tu marques','Trouvé à 2 s : 1000 points. À 4 s : 800. À 6 s : 600. À 8 s : 400. À 10 s : 250 (× la difficulté).'],['❌','Seul : une erreur relance le son','Ta mauvaise réponse se grise et le son repart plus longtemps. À plusieurs : une seule réponse par manche, le plus tôt possible.'],['📱','Seul ou à plusieurs','Seul avec le classement mondial, ou jusqu\'à 12 chacun sur son téléphone.']],uniq:'Le mode pour les vraies oreilles : tout se joue dans les premières notes.'},
-  annee:{n:'Frise',h:'Frise. De quelle année est ce son ?',lead:'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.',
+  annee:{n:'Frise',d:'Devine l\'année de sortie du son.',h:'Frise. De quelle année est ce son ?',lead:'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.',
     tag:'Devine l\'année',pts:[['📅','L\'année de sortie','Pas le titre : tu choisis l\'année du son parmi 4.'],['🎯','De plus en plus serré','Facile : années très éloignées. Difficile : à 1 ou 2 ans près.'],['⚡','La vitesse rapporte','Comme en Solo et en Duel : plus tu réponds vite, plus tu marques.'],['📱','Seul ou à plusieurs','Seul avec son classement à part, ou jusqu\'à 12 chacun sur son téléphone.']],uniq:'Pour ceux qui savent dater un tube à l\'oreille.'}
 };
 /* icônes de la barre des modes */
@@ -1729,12 +1751,12 @@ function renderGames(){
   renderGuide();
   $('#gameDesc').innerHTML=`<b>${esc(GAMES[S.game].n)}</b> · ${esc(GAMES[S.game].d)}<small>Change de mode avec la barre en bas de l'écran.</small>`;
   const g=GAMES[S.game],o=opt();
-  {const X=MODEX[S.ask];$('#hero').textContent=X?X.h:g.h;$('#lead').textContent=X?X.lead:g.lead}
+  {const X=MODEX[S.ask];$('#hero').textContent=X?X.n:g.n;$('#lead').textContent=X?X.d+(S.game==='solo'?' Seul, contre le chrono.':' À plusieurs, chacun sur son téléphone.'):g.d}
   document.body.dataset.game=S.game;
   let h=`<div class="prow"><span class="lbl">Manches</span>${segHtml('nr',ROUNDS_OPT[S.game],o.n)}</div>`;
   const net=online()||netPref();
   const where=''; /* le jeu en ligne se lance avec « Créer une partie » en haut de l'accueil */
-  const netHint=`<p class="hint">Tu crées la partie et tu obtiens un code. Tes amis la rejoignent depuis leur téléphone (jusqu'à ${MAXP} joueurs) et répondent dessus, façon Kahoot. Le son sort de cet appareil.</p>`;
+  const netHint=`<p class="hint">Tes amis rejoignent avec un code, sur leur téléphone (jusqu'à ${MAXP}). Le son sort de cet appareil.</p>`;
   if(S.game==='duel')h=where+(net?netHint:`<div class="duo"><label class="red">Joueur rouge<input id="p1" maxlength="18" placeholder="Rouge" autocomplete="off" value="${esc(S.duel[0])}"></label><span class="vs">VS</span><label class="blue">Joueur bleu<input id="p2" maxlength="18" placeholder="Bleu" autocomplete="off" value="${esc(S.duel[1])}"></label></div>`)+h+`<label class="tog"><input type="checkbox" id="malus" ${o.malus?'checked':''}><span>Malus en cas d'erreur (−150 points × difficulté)</span></label>`;
   if(S.game==='party')h=where+(net?netHint:`<div class="prow"><input id="pName" maxlength="18" placeholder="Prénom d'un joueur" autocomplete="off" aria-label="Prénom d'un joueur"><button class="btn" id="pAdd">Ajouter</button><span class="pcount" id="pCount"></span></div><div class="tags" id="pTags"></div>`)+h+
     `<div class="prow"><span class="lbl">Version</span>${segHtml('drink',['alcool','gages','rien'],S.drink,['🍺 Avec alcool','🎭 Sans alcool : gages','😇 Soft : aucun malus'])}</div>`+
@@ -1743,7 +1765,7 @@ function renderGames(){
       :`<label class="tog"><input type="checkbox" id="perRound" ${o.pr?'checked':''}><span>Gorgées à chaque manche ratée (sinon, seulement à la fin)</span></label>`+(!o.pr?`<p class="hint">Personne ne boit pendant la partie. Bonne réponse : 1 point. À la fin : le 1er rien, le 2e 2 gorgées, le 3e 3, et ainsi de suite (égalité départagée au temps de réponse).</p>`:`<div class="prow"><span class="lbl">Intensité</span>${segHtml('int',Object.keys(INT),o.int,Object.values(INT).map(x=>x.n))}</div><p class="hint" id="intHint">Bonne réponse : tu ne ${S.soft?'fais rien':'bois rien'}. ${esc(S.soft?INT[o.int].d.replace(/gorgées?/,m=>m.replace('gorgée','pompe')):INT[o.int].d)} À la fin de la partie : le 1er rien, le 2e ${unit(1)}, le 3e ${unit(2)}… (égalité départagée au temps de réponse).</p>`))+
     `<label class="tog"><input type="checkbox" id="cards" ${o.cards?'checked':''}><span>Cartes spéciales (Réflexe éclair${RG()?'':', Double ou rien, Karaoké…'})</span></label>`+
     (S.drink==='alcool'?`<p class="warn">Jeu réservé aux adultes. Buvez avec modération, gardez de l'eau sur la table et personne ne prend le volant. Chaque joueur a un joker eau par partie pour échapper à une peine.</p>`:'');
-  h+=`<label class="tog"><input type="checkbox" id="miss" ${o.miss!==false?'checked':''}><span>⚡ Défis surprise : des défis tombent au hasard pendant la partie, annoncés au début de leur manche${ACC.me()?(S.game==='solo'||net?'':` (ils comptent pour ton compte si un joueur s'appelle « ${esc(ACC.me().p)} »)`):' (crée un compte pour garder ceux que tu réussis)'}</span></label>`;
+  h+=`<label class="tog"><input type="checkbox" id="miss" ${o.miss!==false?'checked':''}><span>⚡ Défis surprise<small>Des défis tombent au hasard pendant la partie.${ACC.me()?(S.game==='solo'||net?'':` Ils comptent pour ton compte si un joueur s'appelle « ${esc(ACC.me().p)} ».`):' Crée un compte pour garder ceux que tu réussis.'}</small></span></label>`;
   $('#setup').innerHTML=h;
   if(S.game==='party'&&!net)renderParty();
   $('#goBtn').textContent=net?'CRÉER LA PARTIE':'LANCER LA PARTIE';
@@ -1883,7 +1905,7 @@ function goalPlay(id){
   S.game='solo';store.set('game','solo');S.ask='titre';
   if(g.t==='a'){S.pick=[g.ai];S.valid=[g.ai];store.set('pick',S.pick);store.set('valid',S.valid);setMode('pick');renderList();renderSel()}
   else{S.cat=g.k;setMode('style');renderCats()}
-  renderAsk();renderGames();summary();show('home');$('#backSetup').dataset.back='menu';view('setup');wShow(2);
+  renderAsk();renderGames();summary();show('home');$('#backSetup').dataset.back='menu';view('setup');wShow(0);
 }
 const miOn=()=>!!opt()&&opt().miss!==false;
 function miPool(r){
@@ -2537,27 +2559,30 @@ $('#menuBtn').addEventListener('click',async()=>{if(NET.peer&&!NET.peer.destroye
 $('#goBtn').addEventListener('click',()=>{S.wantNet=netPref();start();S.wantNet=false});
 /* « Créer une partie » sur l'accueil : crée la partie en ligne tout de suite (Duel si on était en Solo) avec la playlist et la difficulté de la page */
 /* réglages en étapes : Solo = playlist, difficulté, manches + lancer ; Multijoueur = joueurs et options, playlist, difficulté, lancer */
-const W={i:0};
-const wSteps=()=>S.game==='solo'?[['rules'],['pl'],['diff'],['opts','go']]:[['rules'],['opts'],['pl'],['diff'],['go']];
-const W_T={rules:()=>'Les règles',opts:S=>S.game==='solo'?'Manches':'Joueurs et options',pl:()=>'Ta playlist',diff:()=>'Difficulté',go:()=>'Lancer'};
+const W={i:0,sub:null};
+/* réglages sur un seul écran (choix de Max, 2026-11-27) : playlist et difficulté s'ouvrent en sous-page et reviennent tout seuls */
 function wShow(i){
-  const st=wSteps();W.i=Math.max(0,Math.min(i,st.length-1));const cur=st[W.i];
-  document.querySelectorAll('#vSetup .wstep').forEach(x=>x.classList.toggle('on',cur.includes(x.dataset.w)));
-  let n=0;for(const k of ['opts','pl','diff']){const h=document.querySelector(`.wstep[data-w=${k}] h2.step`);if(!h)continue;const pos=st.findIndex(g=>g.includes(k));h.querySelector('i').textContent=String(pos+1).padStart(2,'0')}
-  $('#vSetup').classList.toggle('first',W.i===0);
-  $('#wprog').textContent=`Étape ${W.i+1} sur ${st.length} · ${cur.map(k=>W_T[k](S)).join(' et ')}`;
-  $('#wNext').classList.toggle('hide',W.i===st.length-1);
-  hideErr();
-  $('#backSetup').textContent=W.i?'← Étape précédente':'← Retour';
+  W.sub=typeof i==='string'?i:null;W.i=W.sub?1:0;const cur=W.sub||'main';
+  document.querySelectorAll('#vSetup .wstep').forEach(x=>x.classList.toggle('on',x.dataset.w===cur));
+  $('#vSetup').classList.toggle('sub',!!W.sub);
+  $('#wNext').classList.toggle('hide',W.sub!=='pl'||S.mode==='style');
+  hideErr();sRows();
   window.scrollTo(0,0);
 }
+function wBack(){if(!W.sub)return;const k=W.sub;wShow(0);const r=document.querySelector(`.srow[data-sub=${k}]`);if(r){r.classList.remove('flash');void r.offsetWidth;r.classList.add('flash')}}
+function sRows(){
+  const p=playlist();if($('#sPl'))$('#sPl').textContent=p?p.name:'À choisir';
+  if($('#sDf'))$('#sDf').textContent=DIFF[S.diff].n;
+  const H=$('#hero');if(H){const X=MODEX[S.ask];H.textContent=X?X.n:GAMES[S.game].n}
+  const b=$('#backSetup');if(b)b.setAttribute('aria-label',W.sub?'Retour aux réglages':'Retour');
+}
+$('#vSetup').addEventListener('click',e=>{const r=e.target.closest('[data-sub]');if(r)wShow(r.dataset.sub)});
 $('#wNext').addEventListener('click',()=>{
-  const cur=wSteps()[W.i];
-  if(cur.includes('pl')&&!playlist())return showErr(S.mode==='link'?'Colle le lien de ta playlist puis appuie sur « Charger », ou passe sur « Par style ».':'Choisis tes artistes puis appuie sur « Valider la sélection », ou passe sur « Par style ».')
-  if(cur.includes('opts')&&S.game==='party'&&!netPref()&&S.party.length<2)return showErr('Ajoute au moins 2 joueurs pour le mode Babinski.')
-  wShow(W.i+1);
+  if(W.sub==='pl'&&S.mode==='pick'&&S.pick.length&&!(S.valid.length===S.pick.length&&S.valid.every(i=>S.pick.includes(i)))){$('#validate').click();return}
+  if(W.sub==='pl'&&!playlist())return showErr(S.mode==='link'?'Colle le lien de ta playlist puis appuie sur « Charger », ou passe sur « Par style ».':'Choisis tes artistes puis appuie sur « Valider la sélection », ou passe sur « Par style ».')
+  wBack();
 });
-$('#backSetup').addEventListener('click',e=>{if(W.i>0){e.stopPropagation();wShow(W.i-1)}},true);
+$('#backSetup').addEventListener('click',e=>{if(W.sub){e.stopPropagation();wBack()}},true);
 /* page Classement mondial (depuis l'accueil) */
 const LBP={cat:null,n:10};
 function lbPage(){
@@ -2579,7 +2604,7 @@ $('#home').addEventListener('click',e=>{
     if(k==='cres'||k==='frise'){const M=MODEX[k==='cres'?'cres':'annee'];$('#vWho').innerHTML=`<div class="mhead"><button class="mback" data-back="menu" aria-label="Retour">‹</button><h1 class="menuh">${esc(M.n)}</h1></div><p class="lead">${esc(M.lead)}</p><div class="bigchoice cards">
       <button class="mode big" data-go="solo" data-ask="${k==='cres'?'cres':'annee'}" style="--ca:#ff4a1c;--g1:#ff7a1a;--g2:#e0125e;--ff:Anton,sans-serif;--fs:30"><i class="emo" aria-hidden="true">👤</i><b>Seul</b><span>Toi contre le chrono, avec le classement mondial.</span><i class="np" aria-hidden="true">👤 1</i></button>
       <button class="mode big" data-go="duel" data-ask="${k==='cres'?'cres':'annee'}" style="--ca:#2f6bff;--g1:#3d7bff;--g2:#8a2cff;--ff:'Archivo Black',sans-serif;--fs:14"><i class="emo" aria-hidden="true">📱</i><b>À plu<br>sieurs</b><span>Chacun sur son téléphone, jusqu'à 12.</span><i class="np" aria-hidden="true">👤 2+</i></button></div>`;return view('who')}
-    S.ask=g.dataset.ask||'titre';store.set('ask',S.ask);renderAsk();if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();renderAsk();summary();$('#backSetup').dataset.back=g.dataset.ask?'who':k==='solo'?'menu':'multi';view('setup');return wShow(0)}
+    S.ask=g.dataset.ask||'titre';store.set('ask',S.ask);renderAsk();if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();renderAsk();summary();$('#backSetup').dataset.back=g.dataset.ask?'who':k==='solo'?'menu':'multi';view('setup');{const sk='seen-'+(g.dataset.ask||k),ho=$('#howto');ho.open=!store.get(sk,false);store.set(sk,true)}return wShow(0)}
   const b=e.target.closest('[data-back]');if(b)return view(b.dataset.back);
   if(e.target.closest('[data-join]'))$('#joinOpen').click();
 });
