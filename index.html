@@ -841,11 +841,11 @@ body[data-deco=feat] h1{color:#ffd23f!important}
 .mback:hover{background:rgba(255,255,255,.2)}
 @media (prefers-reduced-motion:reduce){.bigchoice.cards .emo{animation:none}}
 /* amis */
-.frbox .lkrow{margin:0 0 10px}.frl li{cursor:pointer}.frl li>i{font:600 20px/1 var(--fd,inherit);font-style:normal}
+.frbox .lkrow{margin:0 0 10px}.frh{margin:14px 0 8px;font:600 12px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.6)}.frq em{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.okm{color:#3dff9a}.frl li{cursor:pointer}.frl li>i{font:600 20px/1 var(--fd,inherit);font-style:normal}
 .lbfr{margin:18px 0 0}
-.invt{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:10px;width:min(560px,calc(100% - 24px));padding:12px 14px;background:#141414;border:1px solid var(--acc,#ff3d12);border-radius:3px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:invin .3s ease-out}
+.invt{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:200;display:flex;align-items:center;gap:10px;width:min(560px,calc(100% - 24px));padding:12px 14px;background:#141414;border:1px solid var(--acc,#ff3d12);border-radius:3px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:invin .3s ease-out}
 .invt span{flex:1;font-size:15px;line-height:1.3}.invt .btn{flex:none}
-@keyframes invin{from{transform:translate(-50%,-20px);opacity:0}}
+@keyframes invin{from{transform:translate(-50%,20px);opacity:0}}
 /* écran de réglages unique (2026-11-27) */
 #vSetup .mhead{margin-bottom:6px}
 #vSetup .menuh{font-size:clamp(34px,9vw,56px)}
@@ -1199,7 +1199,7 @@ const ACC=window.ACC=(()=>{
     if(a.mi&&typeof a.mi==='object'){b.mi.n=+a.mi.n|0;if(a.mi.by&&typeof a.mi.by==='object')for(const k in a.mi.by)b.mi.by[String(k).slice(0,20)]=+a.mi.by[k]|0;if(Array.isArray(a.mi.log))b.mi.log=a.mi.log.filter(x=>x&&typeof x==='object').slice(-60)}
     if(a.go&&typeof a.go==='object')for(const k in a.go){const g=a.go[k];if(g&&typeof g==='object')b.go[String(k).slice(0,30)]={b:+g.b||0,ok:+g.ok||0}}
     if(Array.isArray(a.st))b.st=a.st.slice(0,500);
-    if(a.fr&&typeof a.fr==='object')for(const k of Object.keys(a.fr).slice(0,200)){const f=a.fr[k];if(f&&typeof f==='object'&&typeof f.p==='string'&&key(k))b.fr[key(k)]={p:f.p.slice(0,16),t:+f.t||0,on:f.on?1:0}}
+    if(a.fr&&typeof a.fr==='object')for(const k of Object.keys(a.fr).slice(0,200)){const f=a.fr[k];if(f&&typeof f==='object'&&typeof f.p==='string'&&key(k))b.fr[key(k)]={p:f.p.slice(0,16),t:+f.t||0,on:f.on?1:0,st:f.st==='ok'?'ok':'out'}}
     return b};
   /* deux copies du même compte (deux appareils) : on garde tout ce qui a été gagné des deux côtés */
   const merge=(a,b)=>{if(!a)return b;if(!b)return a;const n=fix(a.at>=b.at?a:b);
@@ -1244,12 +1244,30 @@ const ACC=window.ACC=(()=>{
   const invSeen=()=>{try{return JSON.parse(localStorage.getItem('br-inv-seen')||'[]')}catch(e){return []}};
   function inboxOn(){
     const k=me?key(me.p):'';if(k===inboxFor)return;if(inbox){inbox.destroy();inbox=null}inboxFor=k;if(!k)return;
-    brLoad('mqtt').then(()=>{if(inboxFor!==k)return;const R=inbox=relay(),t=NS+'inv/'+k;R.sub(t);
+    REQ.clear();for(const f of reqSubs)try{f()}catch(e){}
+    brLoad('mqtt').then(()=>{if(inboxFor!==k)return;const R=inbox=relay(),t=NS+'inv/'+k,fq=NS+'freq/'+k+'/';R.sub(t);R.sub(fq+'+');
+      /* on renvoie les demandes encore en attente (au cas où un relais les aurait perdues) */
+      R.on('open',()=>{if(me)for(const [fk,f] of Object.entries(me.fr))if(f.on&&f.st==='out')sendF(fk,'ask')});
+      R.on('msg',(tt,d)=>{if(tt.startsWith(fq))return onReq(tt.slice(fq.length),d)});
       R.on('msg',(tt,d)=>{if(tt!==t||!d||typeof d.code!=='string'||typeof d.from!=='string')return;if(Date.now()-(+d.at||0)>INV_MS)return;
         const id=d.code+'|'+d.at;if(invSeen().includes(id))return;
         const inv={id,code:d.code.slice(0,8),from:d.from.slice(0,16),game:String(d.game||'').slice(0,12),at:+d.at};
         for(const f of invSubs)try{f(inv)}catch(e){}})}).catch(()=>{});
   }
+  /* demandes d'amis : chacun a sa boîte freq/<moi>/<lui> (message gardé). ask = demande, ok = acceptée, no = refusée, rm = retiré */
+  const REQ=new Map(),reqSubs=[];
+  const pubRet=(t,obj)=>{const s=obj?JSON.stringify(obj):'';const R=inbox&&!inbox.destroyed&&inbox.connected()?inbox:null;
+    if(R){for(const c of R.clients)if(c.connected)c.publish(t,s,{qos:1,retain:true});return}
+    brLoad('mqtt').then(()=>{const T=relay();for(const c of T.clients)c.on('connect',()=>c.publish(t,s,{qos:1,retain:true}));setTimeout(()=>T.destroy(),6000)}).catch(()=>{})};
+  const sendF=(to,op)=>{if(me)pubRet(NS+'freq/'+to+'/'+key(me.p),{op,from:me.p,at:Date.now()})};
+  const clearF=fk=>{if(me)pubRet(NS+'freq/'+key(me.p)+'/'+fk,null)};
+  const setF=(fk,p,on,st)=>{me.fr[fk]={p,t:Date.now(),on:on?1:0,st};me.at=Date.now();save();changed();later()};
+  function onReq(fk,d){if(!me||!d||typeof d.from!=='string'||key(d.from)!==fk)return;const f=me.fr[fk],p=d.from.slice(0,16);
+    if(d.op==='ask'){if(f&&f.on&&f.st==='ok'){sendF(fk,'ok');clearF(fk);return}
+      if(f&&f.on&&f.st==='out'){setF(fk,p,1,'ok');sendF(fk,'ok');clearF(fk);return} /* on s'était demandé tous les deux */
+      if(!REQ.has(fk)){REQ.set(fk,{k:fk,p,at:+d.at||0});for(const g of reqSubs)try{g({k:fk,p})}catch(e){}}return}
+    if(d.op==='ok'){if(f&&f.on&&f.st==='out')setF(fk,f.p,1,'ok');clearF(fk);return}
+    if(d.op==='no'||d.op==='rm'){if(f&&f.on)setF(fk,f.p,0,f.st);REQ.delete(fk);for(const g of reqSubs)try{g()}catch(e){}clearF(fk)}}
   subs.push(inboxOn);setTimeout(inboxOn,1200);
   return {
     key,me:()=>me,on:f=>subs.push(f),
@@ -1265,13 +1283,19 @@ const ACC=window.ACC=(()=>{
       me=r.acc;save();changed();return ''},
     logout(){me=null;save();changed()},
     /* ---- amis ---- */
-    friends(){return me?Object.entries(me.fr).filter(([,f])=>f.on).map(([k,f])=>({k,p:f.p,t:f.t})).sort((x,y)=>x.p.localeCompare(y.p,'fr')):[]},
+    friends(){return me?Object.entries(me.fr).filter(([,f])=>f.on&&f.st==='ok').map(([k,f])=>({k,p:f.p,t:f.t})).sort((x,y)=>x.p.localeCompare(y.p,'fr')):[]},
+    pending(){return me?Object.entries(me.fr).filter(([,f])=>f.on&&f.st!=='ok').map(([k,f])=>({k,p:f.p,t:f.t})):[]},
+    requests(){return me?[...REQ.values()].filter(r=>!(me.fr[r.k]&&me.fr[r.k].on&&me.fr[r.k].st==='ok')):[]},
+    onRequest(f){reqSubs.push(f)},
+    accept(fk){const r=REQ.get(fk);if(!me||!r)return;REQ.delete(fk);setF(fk,r.p,1,'ok');sendF(fk,'ok');clearF(fk)},
+    refuse(fk){if(!me)return;REQ.delete(fk);sendF(fk,'no');clearF(fk);changed()},
     async addFriend(p){if(!me)return 'Connecte-toi d\'abord.';p=String(p||'').trim();const k=key(p);if(k.length<2)return 'Tape le pseudo de ton ami.';
-      if(k===key(me.p))return 'C\'est ton propre pseudo !';if(me.fr[k]&&me.fr[k].on)return 'Il est déjà dans tes amis.';
+      if(k===key(me.p))return 'C\'est ton propre pseudo !';if(me.fr[k]&&me.fr[k].on)return me.fr[k].st==='ok'?'Il est déjà dans tes amis.':'Demande déjà envoyée : il doit l\'accepter.';
+      if(REQ.has(k)){this.accept(k);return ''}
       const r=await fetchRemote(p);if(r.off)return 'Pas de connexion internet. Réessaie dans un instant.';
       if(!r.acc)return 'Aucun compte avec ce pseudo. Vérifie l\'orthographe.';
-      this.update(a=>{a.fr[k]={p:r.acc.p,t:Date.now(),on:1}});return ''},
-    rmFriend(k){this.update(a=>{if(a.fr[k])a.fr[k]={p:a.fr[k].p,t:Date.now(),on:0}})},
+      this.update(a=>{a.fr[k]={p:r.acc.p,t:Date.now(),on:1,st:'out'}});sendF(k,'ask');return ''},
+    rmFriend(k){const was=me&&me.fr[k];this.update(a=>{if(a.fr[k])a.fr[k]={p:a.fr[k].p,t:Date.now(),on:0,st:a.fr[k].st}});if(was)sendF(k,'rm')},
     /* le compte d'un ami tel qu'il est sur les relais (sans son empreinte de code) */
     async profile(p){const r=await fetchRemote(p);if(!r.acc)return {off:r.off};const a=r.acc;delete a.h;return {acc:a}},
     async invite(p,code,game){if(!me)return false;try{await brLoad('mqtt')}catch(e){return false}
@@ -2653,7 +2677,7 @@ view('menu');window.brView=view;
 /* ---------- page Mon compte (facultatif) ---------- */
 const AV={tab:'new',from:'menu',busy:false};
 function accBtn(){const a=ACC.me(),b=$('#accBtn');b.classList.toggle('on',!!a);b.querySelector('span').textContent=a?a.p:'Se connecter'}
-function accOpen(from){AV.from=from||'menu';AV.tab='new';AV.fv=null;AV.ferr='';show('home');view('acc');renderAcc()}
+function accOpen(from){AV.from=from||'menu';AV.tab='new';AV.fv=null;AV.ferr='';AV.fok='';show('home');view('acc');renderAcc()}
 function renderAcc(err){
   const a=ACC.me(),el=$('#vAcc'),back=`<div class="mhead"><button class="mback" id="accBack" aria-label="Retour">‹</button><h1 class="menuh">Mon compte</h1></div>`;
   if(a&&AV.fv)return renderFriend();
@@ -2676,8 +2700,10 @@ function renderAcc(err){
       <div class="tiles"><div><b>${a.g.n}</b><small>parties</small></div><div><b>${Object.values(a.go).filter(g=>g.ok).length}/${GOALS.length}</b><small>missions</small></div><div><b>${best?fmt(best):'—'}</b><small>record solo</small></div></div>
       <h3>👥 Mes amis</h3>
       <div class="frbox"><div class="searchbox lkrow"><input id="frIn" maxlength="16" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Pseudo d'un ami" aria-label="Pseudo d'un ami"><button class="btn y" id="frAdd"${AV.fbusy?' disabled':''}>${AV.fbusy?'…':'Ajouter'}</button></div>
-      <div class="err${AV.ferr?'':' hide'}" role="alert">${esc(AV.ferr||'')}</div>
-      ${ACC.friends().length?`<ul class="mis frl">${ACC.friends().map(f=>`<li data-fr="${esc(f.k)}"><i>${esc(f.p.slice(0,1).toUpperCase())}</i><span><b>${esc(f.p)}</b><small>Voir son compte, l'inviter à jouer</small></span><em>Voir ›</em></li>`).join('')}</ul>`:`<p class="hint">Ajoute le pseudo de tes amis (ils doivent avoir un compte) : tu verras leurs records, leurs missions et leurs futurs stickers, et tu pourras les inviter dans ta partie en un clic.</p>`}</div>
+      <div class="err${AV.ferr?'':' hide'}" role="alert">${esc(AV.ferr||'')}</div>${AV.fok&&!AV.ferr?`<p class="hint okm">${esc(AV.fok)}</p>`:''}
+      ${ACC.requests().length?`<h4 class="frh">Demandes reçues</h4><ul class="mis frq">${ACC.requests().map(r=>`<li><i>${esc(r.p.slice(0,1).toUpperCase())}</i><span><b>${esc(r.p)}</b><small>veut être ton ami</small></span><em><button class="btn y sm" data-fok="${esc(r.k)}">Accepter</button><button class="btn ghost sm" data-fno="${esc(r.k)}">Refuser</button></em></li>`).join('')}</ul>`:''}
+      ${ACC.pending().length?`<h4 class="frh">Demandes envoyées</h4><ul class="mis frq">${ACC.pending().map(f=>`<li class="no"><i>${esc(f.p.slice(0,1).toUpperCase())}</i><span><b>${esc(f.p)}</b><small>En attente : il doit accepter</small></span><em><button class="btn ghost sm" data-fcx="${esc(f.k)}">Annuler</button></em></li>`).join('')}</ul>`:''}
+      ${ACC.friends().length?`<ul class="mis frl">${ACC.friends().map(f=>`<li data-fr="${esc(f.k)}"><i>${esc(f.p.slice(0,1).toUpperCase())}</i><span><b>${esc(f.p)}</b><small>Voir son compte, l'inviter à jouer</small></span><em>Voir ›</em></li>`).join('')}</ul>`:`<p class="hint">Envoie une demande avec le pseudo de tes amis (ils doivent avoir un compte et accepter) : tu verras leurs records, leurs missions et leurs futurs stickers, et tu pourras les inviter dans ta partie en un clic.</p>`}</div>
       <h3>🎯 Missions</h3>
       <p class="hint">Un score à faire en une seule partie, sur un artiste ou une catégorie (en Solo ou en Duel). Touche une mission pour la jouer.</p>
       <ul class="mis goals">${GOALS.map(g=>{const st=a.go[g.id]||{b:0,ok:0};return `<li class="${st.ok?'done':''}" data-goal="${g.id}"><i>${st.ok?'✅':g.e}</i><span><b>${esc(g.n)}</b><small>${esc(goalText(g))}${st.b&&!st.ok?` Ton meilleur : ${fmt(st.b)}.`:''}</small></span><em>${st.ok?'réussie':'Jouer ›'}</em></li>`}).join('')}</ul>
@@ -2723,12 +2749,17 @@ $('#lobby').addEventListener('click',e=>{const b=e.target.closest('[data-inv]');
 /* invitation reçue : bandeau en haut de l'écran, sauf pendant une partie (il attend la fin) */
 const INVQ=[];
 ACC.onInvite(inv=>{if(!INVQ.some(x=>x.id===inv.id))INVQ.push(inv);invShow()});
+ACC.onRequest(r=>{if(r&&!INVQ.some(x=>x.rq===r.k))INVQ.push({rq:r.k,from:r.p,at:Date.now(),id:'rq'+r.k});
+  for(let i=INVQ.length-1;i>=0;i--)if(INVQ[i].rq&&!ACC.requests().some(q=>q.k===INVQ[i].rq))INVQ.splice(i,1);
+  invShow();if(document.body.dataset.view==='acc'&&!AV.fv&&document.body.dataset.screen==='home')renderAcc()});
 function invShow(){const el=$('#invT'),inv=INVQ[0];
-  if(!inv||document.body.dataset.screen==='game'||document.body.dataset.screen==='ctl'||Date.now()-inv.at>15*60*1000){if(inv&&Date.now()-inv.at>15*60*1000){INVQ.shift();return invShow()}el.classList.add('hide');return}
+  if(!inv||document.body.dataset.screen==='game'||document.body.dataset.screen==='ctl'||(!inv.rq&&Date.now()-inv.at>15*60*1000)){if(inv&&!inv.rq&&Date.now()-inv.at>15*60*1000){INVQ.shift();return invShow()}el.classList.add('hide');return}
+  if(inv.rq){el.innerHTML=`<span>👥 <b>${esc(inv.from)}</b> veut être ton ami</span><button class="btn y sm" id="rqOk">Accepter</button><button class="btn ghost sm" id="rqNo">Refuser</button>`;el.classList.remove('hide');return}
   const GN={duel:'Duel',party:'Babinski',solo:'Duel'};
   el.innerHTML=`<span>🎮 <b>${esc(inv.from)}</b> t'invite dans sa partie${GN[inv.game]?' de '+GN[inv.game]:''}</span><button class="btn y sm" id="invGo">Rejoindre</button><button class="btn ghost sm" id="invNo" aria-label="Refuser">✕</button>`;el.classList.remove('hide')}
 setInterval(invShow,3000);
 $('#invT').addEventListener('click',e=>{const inv=INVQ[0];if(!inv)return;
+  if(inv.rq){if(e.target.closest('#rqOk'))ACC.accept(inv.rq);else if(e.target.closest('#rqNo'))ACC.refuse(inv.rq);else return;INVQ.shift();invShow();if(document.body.dataset.view==='acc'&&!AV.fv)renderAcc();return}
   if(e.target.closest('#invNo')){ACC.invDone(inv);INVQ.shift();return invShow()}
   if(e.target.closest('#invGo')){ACC.invDone(inv);const u=new URL(location.pathname,location.origin);u.searchParams.set('join',inv.code);u.searchParams.set('inv','1');const q=new URLSearchParams(location.search).get('peer');if(q)u.searchParams.set('peer',q);location.href=u.href}});
 $('#accBtn').addEventListener('click',()=>accOpen('menu'));
@@ -2738,9 +2769,12 @@ $('#vAcc').addEventListener('click',async e=>{
   if(e.target.closest('#accOut')){ACC.logout();AV.fv=null;return renderAcc()}
   if(e.target.closest('#frBack')){AV.fv=null;renderAcc();return window.scrollTo(0,0)}
   const fr=e.target.closest('[data-fr]');if(fr)return openFriend(fr.dataset.fr);
+  const fo=e.target.closest('[data-fok]'),fn=e.target.closest('[data-fno]'),fc=e.target.closest('[data-fcx]');
+  const rqGone=k=>{for(let i=INVQ.length-1;i>=0;i--)if(INVQ[i].rq===k)INVQ.splice(i,1);invShow()};
+  if(fo){ACC.accept(fo.dataset.fok);rqGone(fo.dataset.fok);return renderAcc()}if(fn){ACC.refuse(fn.dataset.fno);rqGone(fn.dataset.fno);return renderAcc()}if(fc){ACC.rmFriend(fc.dataset.fcx);return renderAcc()}
   if(e.target.closest('#frInv')&&AV.fv){const p=AV.fv.p;AV.fv.msg='Création de la partie…';renderAcc();return invFriend(p)}
   if(e.target.closest('#frRm')&&AV.fv){ACC.rmFriend(AV.fv.k);AV.fv=null;return renderAcc()}
-  if(e.target.closest('#frAdd')&&!AV.fbusy){const v=$('#frIn').value;AV.fbusy=true;AV.ferr='';renderAcc();const er=await ACC.addFriend(v);AV.fbusy=false;AV.ferr=er;renderAcc();if(er){const i=$('#frIn');if(i){i.value=v;i.focus()}}return}
+  if(e.target.closest('#frAdd')&&!AV.fbusy){const v=$('#frIn').value;AV.fbusy=true;AV.ferr='';renderAcc();const er=await ACC.addFriend(v);AV.fbusy=false;AV.ferr=er;AV.fok=er?'':'Demande envoyée ✓ Ton ami doit l\'accepter.';renderAcc();if(er){const i=$('#frIn');if(i){i.value=v;i.focus()}}return}
   const gl=e.target.closest('[data-goal]');if(gl)return goalPlay(gl.dataset.goal);
   if(e.target.closest('#accGo')&&!AV.busy){
     const pv=$('#accP').value.trim(),pin=$('#accPin').value.trim();AV.p=pv;AV.busy=true;renderAcc();
