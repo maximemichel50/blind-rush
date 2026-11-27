@@ -69,6 +69,7 @@ jobs:
           pip3 install requests
           cd tools
           python3 ajouter_artistes.py
+          python3 playlists_artistes.py
           cd ..
           git config user.name "blind-rush-bot"
           git config user.email "actions@users.noreply.github.com"
