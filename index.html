@@ -385,6 +385,8 @@ h2:not(.step){font-family:var(--mono);text-transform:uppercase;letter-spacing:.1
 .chip[aria-pressed=true]{background:linear-gradient(100deg,var(--ca),var(--cb2));color:#fff;box-shadow:0 0 22px color-mix(in srgb,var(--ca) 50%,transparent)}
 .chip[aria-pressed=true]::before{background:#fff;box-shadow:none}
 .chip small{font-family:var(--mono);font-size:11px}
+.chips:has(.reco){align-items:flex-start} /* les voisins gardent leur hauteur */
+.reco{display:inline-flex;flex-direction:column;align-items:center;gap:4px}.reco em{font:700 11px/1 var(--mono);font-style:normal;text-transform:uppercase;letter-spacing:.1em;color:#ffd23f;text-shadow:0 0 10px rgba(255,210,63,.5)}
 .givebox .chip,.wheelbox .chip,.ctl .chip{--ca:var(--acc);--cb2:var(--acc2)}
 /* difficultés : vert, orange, rouge */
 .diff{background:#121014;border-radius:18px;position:relative;overflow:hidden}
@@ -835,7 +837,7 @@ $('#tabStyle').addEventListener('click',()=>setMode('style'));
 $('#tabPick').addEventListener('click',()=>{setMode('pick');$('#q').focus()});
 function renderCats(){
   $('#plsWrap').classList.toggle('hide',!PLS.length);
-  $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return `<button class="chip" data-c="${p.k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`}).join('');
+  $('#pls').innerHTML=PLS.map(p=>{const t=THEMES[p.k]||THEMES.mix;return reco(p.k,`<button class="chip" data-c="${p.k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===p.k}">${p.e} ${esc(p.n)}<small>${p.tracks.length}</small></button>`)}).join('');
   $('#cats').innerHTML=CATS.map(([k,n,ids])=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-c="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.cat===k}">${esc(n)}<small>${ids.length}</small></button>`}).join('')}
 $('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;S.cat=b.dataset.c;renderCats();summary()});
 function renderDiffs(){$('#diffs').innerHTML=Object.entries(DIFF).map(([k,d])=>`<button class="diff" data-d="${k}" aria-pressed="${S.diff===k}"><b>${d.n}</b><span>${d.d}</span></button>`).join('')}
@@ -1021,6 +1023,9 @@ function renderGuide(){
   const g=GUIDE[S.game];if(!g||!$('#guide'))return;
   $('#guide').innerHTML=`<p class="gtag">${esc(GAMES[S.game].n)} · ${esc(g.tag)}</p><ul class="gpts">${g.pts.map(([i,t,d])=>`<li><span class="gic">${i}</span><span><b>${esc(t)}</b>${esc(d)}</span></li>`).join('')}</ul><p class="guniq">${esc(g.uniq)}</p>`;
 }
+/* playlist mise en avant : « Conseillé » affiché sous son bouton */
+const RECO='pl:top50';
+const reco=(k,html)=>k===RECO?`<span class="reco">${html}<em>★ Conseillé</em></span>`:html;
 const ROUNDS_OPT={solo:[5,10,15,20],duel:[5,10,15,20],party:[10,15,20]};
 const INT={
   soft:{n:'Tranquille',d:'Mauvaise réponse ou pas de réponse : 1 gorgée.',wrong:1},
@@ -1452,7 +1457,7 @@ $('#lbCancel').addEventListener('click',()=>{closeNet();show('home')});
 function lbModeText(){const p=playlist();$('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n} · ${opt().n} manches`}
 function renderLbChg(){
   const chip=(k,n,e)=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-lc="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.mode!=='pick'&&S.cat===k}">${e?e+' ':''}${esc(n)}</button>`};
-  $('#lbChg').innerHTML=`<h3 class="plh">Playlists à thème</h3><div class="chips">${PLS.map(p=>chip(p.k,p.n,p.e)).join('')}</div><h3 class="plh">Styles</h3><div class="chips">${CATS.map(([k,n])=>chip(k,n)).join('')}</div>`+
+  $('#lbChg').innerHTML=`<h3 class="plh">Playlists à thème</h3><div class="chips">${PLS.map(p=>reco(p.k,chip(p.k,p.n,p.e))).join('')}</div><h3 class="plh">Styles</h3><div class="chips">${CATS.map(([k,n])=>chip(k,n)).join('')}</div>`+
     `<div class="prow"><span class="lbl">Difficulté</span>${segHtml('ld',Object.keys(DIFF),S.diff,Object.values(DIFF).map(d=>d.n))}</div><div class="prow"><span class="lbl">Manches</span>${segHtml('ln',ROUNDS_OPT[S.game],opt().n)}</div>`;
 }
 $('#lbChange').addEventListener('click',()=>{const el=$('#lbChg');if(el.classList.toggle('hide'))return;renderLbChg()});
