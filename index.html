@@ -42,6 +42,16 @@ h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .plh{margin:4px 0 10px;font-size:15px;text-transform:uppercase;letter-spacing:.06em;opacity:.8}#pls+.plh{margin-top:18px}
 .chip small{opacity:.7;font-weight:600;margin-left:4px}
 .searchbox{position:relative}
+/* lien de playlist */
+.lkrow{display:flex;gap:8px;flex-wrap:wrap}.lkrow input{flex:1 1 220px;width:auto}
+.lkres{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.lkres button{display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);color:var(--cardInk);border-radius:12px;padding:6px;font:inherit;border:1px solid var(--line);cursor:pointer}
+.lkres img{width:52px;height:52px;border-radius:8px;object-fit:cover;background:#0003}
+.lkres b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lkres small{opacity:.7}
+.lkok{margin-top:10px;background:var(--card);color:var(--cardInk);border-radius:12px;padding:12px;display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:center;box-shadow:inset 0 0 0 2px var(--acc)}
+.lkok img{width:64px;height:64px;border-radius:8px;object-fit:cover;background:#0003}
+.lkmsg{margin:10px 0 0;font-size:15px;opacity:.9}
+.lkok b,.lkok small,.lkres small{display:block}.lkok b{overflow:hidden;text-overflow:ellipsis}
 .searchbox input{width:100%;font:inherit;font-size:16px;padding:13px 16px;border-radius:12px;border:0;background:var(--card);color:var(--cardInk);min-height:50px}
 .list{list-style:none;margin:8px 0 0;padding:6px;background:var(--card);color:var(--cardInk);border-radius:12px;max-height:290px;overflow-y:auto}
 .list li button{width:100%;display:flex;justify-content:space-between;gap:10px;align-items:center;text-align:left;padding:10px 12px;border-radius:8px;min-height:44px;background:transparent;color:var(--cardInk)}
@@ -564,6 +574,12 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
     <div class="tabs" role="tablist">
       <button class="tab" role="tab" id="tabStyle" aria-selected="true">Par style</button>
       <button class="tab" role="tab" id="tabPick" aria-selected="false">Je choisis mes artistes</button>
+      <button class="tab" role="tab" id="tabLink" aria-selected="false">🔗 Ma playlist</button>
+    </div>
+    <div class="panel hide" id="pLink">
+      <p class="hint">Colle le lien d'une playlist ou d'un album Deezer, Spotify ou Apple Music. Tu peux aussi taper le nom d'une playlist.</p>
+      <div class="searchbox lkrow"><input id="lkIn" type="search" autocomplete="off" placeholder="https://www.deezer.com/playlist/… ou un nom" aria-label="Lien ou nom de la playlist"><button class="btn y" id="lkGo">Charger</button></div>
+      <div id="lkOut" aria-live="polite"></div>
     </div>
     <div class="panel" id="pStyle"><div id="plsWrap" class="hide"><h3 class="plh">Playlists à thème</h3><div class="chips" id="pls"></div><h3 class="plh">Styles</h3></div><div class="chips" id="cats"></div></div>
     <div class="panel hide" id="pPick">
@@ -825,6 +841,7 @@ S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.on
 S.teams=store.get('teams',false);S.hostTm=0;S.tmOn=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
 if(S.valid.length)S.mode='pick';
+S.link=store.get('link',null);if(S.link&&store.get('mode','')==='link')S.mode='link';
 const audio=$('#audio');
 for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedmetadata','ended','error'])audio.addEventListener(ev,()=>alog('audio '+ev+(ev==='error'&&audio.error?' code '+audio.error.code+' '+(audio.error.message||''):'')+' rs'+audio.readyState+' t'+audio.currentTime.toFixed(1)));
 
@@ -848,7 +865,61 @@ function themeKey(){
 }
 
 /* ---------- accueil ---------- */
-function setMode(m){S.mode=m;$('#tabStyle').setAttribute('aria-selected',m==='style');$('#tabPick').setAttribute('aria-selected',m==='pick');$('#pStyle').classList.toggle('hide',m!=='style');$('#pPick').classList.toggle('hide',m!=='pick');summary()}
+function setMode(m){S.mode=m;store.set('mode',m);$('#tabStyle').setAttribute('aria-selected',m==='style');$('#tabPick').setAttribute('aria-selected',m==='pick');$('#tabLink').setAttribute('aria-selected',m==='link');$('#pStyle').classList.toggle('hide',m!=='style');$('#pPick').classList.toggle('hide',m!=='pick');$('#pLink').classList.toggle('hide',m!=='link');if(m==='link')lkShow();summary()}
+$('#tabLink').addEventListener('click',()=>{setMode('link');if(!S.link)$('#lkIn').focus()});
+/* ---------- jouer avec sa propre playlist (lien Deezer, Spotify ou Apple Music) ----------
+   Deezer : on lit la playlist directement. Spotify et Apple Music ne laissent pas lire leurs playlists depuis un site :
+   on récupère leur nom et on propose les playlists Deezer qui portent le même nom. */
+const lkTrack=([an,title,id,md5,album])=>({ai:-1,an,pl:true,title,artist:an,id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0});
+let LK=null; /* la playlist chargée, avec ses morceaux prêts à jouer */
+function lkReady(){if(!S.link)return LK=null;if(!LK||LK.id!==S.link.id)LK={...S.link,tracks:S.link.t.map(lkTrack)};return LK}
+const lkMsg=(h,cls)=>{$('#lkOut').innerHTML=`<p class="lkmsg${cls?' '+cls:''}">${h}</p>`};
+function lkShow(extra){
+  const L=lkReady();
+  $('#lkOut').innerHTML=(L?`<div class="lkok"><img src="${esc(L.pic||'')}" alt=""><span><b>${esc(L.name)}</b><small>${plural(L.tracks.length,'titre')} · prête à jouer ✓</small></span></div>`:'')+(extra||'');
+}
+async function lkFetch(kind,id){
+  lkMsg('Chargement de la playlist…');
+  let info;try{info=await jsonp(`https://api.deezer.com/${kind}/${id}?output=jsonp`)}catch(e){return lkMsg('Deezer ne répond pas. Vérifie ta connexion internet puis réessaie.','err')}
+  if(!info||info.error)return lkMsg('Playlist introuvable. Vérifie qu\'elle est bien publique sur Deezer.','err');
+  const all=[];
+  for(let idx=0;all.length<600;idx+=100){let d;try{d=await jsonp(`https://api.deezer.com/${kind}/${id}/tracks?output=jsonp&limit=100&index=${idx}`)}catch(e){break}
+    const got=(d&&d.data)||[];for(const x of got)if(x&&x.readable!==false&&x.artist)all.push([x.artist.name,x.title_short||x.title,x.id,x.md5_image||(x.album&&x.album.md5_image)||info.md5_image||'',(x.album&&x.album.title)||(kind==='album'?info.title:'')]);
+    if(!d||!d.next||!got.length)break}
+  const seen=new Set(),t=all.filter(x=>{const k=x[2];if(seen.has(k))return false;seen.add(k);return true});
+  if(t.length<5)return lkMsg(`Cette playlist n'a que ${plural(t.length,'titre')} jouable${t.length>1?'s':''}. Il en faut au moins 5.`,'err');
+  S.link={id:kind+':'+id,name:info.title||'Ma playlist',pic:info.picture_medium||info.cover_medium||'',t};
+  try{store.set('link',S.link)}catch(e){}
+  lkReady();lkShow();summary();
+}
+async function lkSearch(q,kind,why){
+  lkMsg('Recherche sur Deezer…');
+  let d;try{d=await jsonp(`https://api.deezer.com/search/${kind}?output=jsonp&limit=8&q=${encodeURIComponent(q)}`)}catch(e){return lkMsg('Deezer ne répond pas. Vérifie ta connexion internet puis réessaie.','err')}
+  const r=((d&&d.data)||[]).filter(x=>x&&x.id);
+  if(!r.length)return lkMsg(`${why?why+' ':''}Je n'ai trouvé aucune playlist « ${esc(q)} » sur Deezer. Essaie un autre nom.`,'err');
+  lkShow(`<p class="lkmsg">${why?esc(why)+' ':''}Choisis la bonne :</p><ul class="lkres">${r.map(x=>`<li><button data-lk="${kind}:${x.id}"><img src="${esc(x.picture_medium||x.cover_medium||'')}" alt=""><span><b>${esc(x.title)}</b><small>${kind==='album'?esc(x.artist?x.artist.name:''):plural(x.nb_tracks||0,'titre')+(x.user&&x.user.name?' · par '+esc(x.user.name):'')}</small></span></button></li>`).join('')}</ul>`);
+}
+async function lkGo(){
+  const v=$('#lkIn').value.trim();if(!v)return lkMsg('Colle un lien ou tape le nom d\'une playlist.','err');
+  let m=/deezer\.com\/(?:[a-z]{2}(?:-[a-z]{2})?\/)?(playlist|album)\/(\d+)/i.exec(v);
+  if(m)return lkFetch(m[1].toLowerCase(),m[2]);
+  if(/link\.deezer\.com|deezer\.page\.link|dzr\.page\.link/i.test(v))return lkMsg('Ce lien court ne peut pas être lu ici. Ouvre-le dans ton navigateur, puis copie l\'adresse complète (elle commence par www.deezer.com/…/playlist/). Ou tape simplement le nom de la playlist.','err');
+  const SP='Spotify ne laisse pas lire ses playlists depuis un autre site. Voici les playlists Deezer qui portent le même nom.';
+  const AP='Apple Music ne laisse pas lire ses playlists depuis un autre site. Voici les playlists Deezer qui portent le même nom.';
+  m=/open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album)\/[A-Za-z0-9]+/i.exec(v);
+  if(m){lkMsg('Je lis le nom de la playlist Spotify…');let t='';try{const r=await fetch('https://open.spotify.com/oembed?url='+encodeURIComponent(m[0].startsWith('http')?m[0]:'https://'+m[0]));t=(await r.json()).title||''}catch(e){}
+    if(!t)return lkMsg('Je n\'arrive pas à lire ce lien Spotify. Tape le nom de la playlist à la place.','err');
+    return lkSearch(t,m[1].toLowerCase()==='album'?'album':'playlist',SP)}
+  m=/music\.apple\.com\/[a-z]{2}\/(playlist|album)\/([^/?#]+)/i.exec(v);
+  if(m){let t=m[2];try{t=decodeURIComponent(t)}catch(e){}t=t.replace(/-/g,' ').trim();
+    if(!t||/^(pl\.|id)\w+$/.test(t))return lkMsg('Je n\'arrive pas à lire ce lien Apple Music. Tape le nom de la playlist à la place.','err');
+    return lkSearch(t,m[1].toLowerCase()==='album'?'album':'playlist',AP)}
+  if(/^https?:\/\/|www\./i.test(v))return lkMsg('Je ne reconnais pas ce lien. Il faut un lien de playlist ou d\'album Deezer, Spotify ou Apple Music.','err');
+  return lkSearch(v,'playlist');
+}
+$('#lkGo').addEventListener('click',lkGo);
+$('#lkIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();lkGo()}});
+$('#lkOut').addEventListener('click',e=>{const b=e.target.closest('[data-lk]');if(!b)return;const [k,id]=b.dataset.lk.split(':');lkFetch(k,id)});
 $('#tabStyle').addEventListener('click',()=>setMode('style'));
 $('#tabPick').addEventListener('click',()=>{setMode('pick');$('#q').focus()});
 function renderCats(){
@@ -887,6 +958,7 @@ $('#validate').addEventListener('click',()=>{
   hideErr();S.valid=[...S.pick];store.set('valid',S.valid);renderSel();summary();$('#goBtn').focus();
 });
 function playlist(){
+  if(S.mode==='link'){const L=lkReady();return L?{list:L.tracks,name:L.name}:null}
   if(S.mode==='pick')return S.valid.length?{ids:S.valid,name:S.valid.length<=3?S.valid.map(i=>ARTISTS[i].n).join(', '):`Ta sélection (${S.valid.length} artistes)`}:null;
   const l=PLS.find(p=>p.k===S.cat);if(l)return {list:l.tracks,name:l.n};
   const c=CATS.find(c=>c[0]===S.cat)||CATS[0];return {ids:c[2],name:c[1]};
@@ -894,7 +966,8 @@ function playlist(){
 function summary(){
   applyTheme(themeKey());const lh=document.getElementById("lbHome");if(lh)lh.classList.add("hide");
   const p=playlist(),el=$('#summary');
-  if(!p){el.innerHTML='Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
+  if(!p){el.innerHTML=S.mode==='link'?'Charge d\'abord ta playlist.<small>Ou repasse sur « Par style ».</small>':'Valide d\'abord ta sélection d\'artistes.<small>Ou repasse sur « Par style ».</small>';return}
+
   el.innerHTML=`${esc(GAMES[S.game].n)}${online()||netPref()?' en ligne':''} · ${esc(p.name)} · ${DIFF[S.diff].n}<small>${plural(p.list?p.list.length:p.ids.reduce((s,i)=>s+ARTISTS[i].tracks.length,0),'titre')} possibles</small>`;
 }
 function showErr(m){const e=$('#err');e.textContent=m;e.classList.remove('hide')}
@@ -1159,7 +1232,7 @@ function show(id){for(const s of ['home','lobby','game','results','ctl'])$('#'+s
 function start(){
   hideErr();
   const p=playlist();
-  if(!p){setMode('pick');return showErr('Choisis tes artistes puis clique sur « Valider la sélection » (ou passe sur « Par style »).')}
+  if(!p){if(S.mode==='link')return showErr('Colle le lien de ta playlist puis appuie sur « Charger » (ou passe sur « Par style »).');setMode('pick');return showErr('Choisis tes artistes puis clique sur « Valider la sélection » (ou passe sur « Par style »).')}
   if(online())return openLobby();
   let names=['Toi'];
   if(S.game==='duel')names=[S.duel[0]||'Rouge',S.duel[1]||'Bleu'];
@@ -1612,6 +1685,7 @@ addEventListener('pagehide',()=>{if(NET.peer)closeNet()});
 const UID=(()=>{let u=store.get('uid','');if(!u){u=Math.random().toString(36).slice(2,12);store.set('uid',u)}return u})();
 function lbKey(){ // un classement par playlist / style ou par artiste choisi, et par nombre de manches
   const n=opt().n,cl=x=>String(x).replace(/[^a-z0-9]/gi,'_').slice(0,40);
+  if(S.mode==='link'){const L=lkReady();return L?{k:'d-'+cl(L.id)+'-'+n,name:L.name,n}:null}
   if(S.mode==='pick'){if(!S.valid.length||S.valid.length>3)return null;return {k:'a-'+S.valid.map(i=>cl(ARTISTS[i].k)).sort().join('_')+'-'+n,name:S.valid.map(i=>ARTISTS[i].n).join(', '),n}}
   const p=playlist();return p?{k:'c-'+cl(S.cat)+'-'+n,name:p.name,n}:null;
 }
@@ -1697,8 +1771,7 @@ function results(){
   $('#recap').innerHTML=S.rounds.map((r,i)=>{
     let side='';
     if(S.game==='solo'){const x=r.res&&r.res[0];side=`<span class="p">${x&&x.ok?'+'+x.pts:'0'}<small>${x&&x.t!=null?fmtT(x.t):'temps écoulé'}</small></span>`}
-    if(S.game==='duel'&&(S.pl.length!==2||S.tmOn)){const b=(r.res||[])
-.filter(x=>x.ok).sort((a,c)=>a.t-c.t)[0];side=`<span class="p small">${b?esc(S.pl[b.p].name)+' +'+fmt(b.pts):'—'}<small>${b?'le plus rapide':'personne'}</small></span>`}
+    if(S.game==='duel'&&(S.pl.length!==2||S.tmOn)){const b=(r.res||[]).filter(x=>x.ok).sort((a,c)=>a.t-c.t)[0];side=`<span class="p small">${b?esc(S.pl[b.p].name)+' +'+fmt(b.pts):'—'}<small>${b?'le plus rapide':'personne'}</small></span>`}
     else if(S.game==='duel')side=`<span class="p duo">${(r.res||[]).map((x,k)=>`<i class="pc${k}">${x.pts>0?'+':''}${x.pts}</i>`).join('')}</span>`;
     if(S.game==='party')side=`<span class="p small">${r.pen?esc(S.gm?r.pen.filter(e=>e.ok).map(e=>S.pl[e.p].name).join(' · ')||'—':r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
     const ok=r.res&&r.res.some(x=>x.ok);
@@ -1734,8 +1807,7 @@ function renderGages(){
   if(S.tmOn&&S.game==='duel'&&list.length){const p=list[0][1];$('#gagebox').innerHTML=`<h2>🎭 Le gage de l'équipe ${TN[p.tm]}</h2><div class="gage"><b>${list.map(([,q])=>esc(q.name)).join(', ')}</b><p>${esc(p.gage)}</p><button class="btn ghost sm" data-regage="${list[0][0]}">🎲 Autre gage</button></div>`;return}
   $('#gagebox').innerHTML=list.length?`<h2>🎭 ${list.length>1?'Les gages':'Le gage du dernier'}</h2>${list.map(([k,p])=>`<div class="gage"><b>${esc(p.name)}</b><p>${esc(p.gage)}</p><button class="btn ghost sm" data-regage="${k}">🎲 Autre gage</button></div>`).join('')}`:'';
 }
-$('#gagebox').addEventListener('click',e=>{const b=e.target.closest('[data-regage]');if(!b)return;const p=S.pl[+b.dataset.regage],lv=GAGES.findIndex(l=>l.includes(p.gage));const old=p.gage;p.gage=drawGage(lv<0?1:lv,[p.gage]);if(S.tmOn)S.pl.forEach(q=>{if(q.gage===old)q.gage=p.gage});renderGages();
-if(S.online)sendEnd($('#final').textContent)});
+$('#gagebox').addEventListener('click',e=>{const b=e.target.closest('[data-regage]');if(!b)return;const p=S.pl[+b.dataset.regage],lv=GAGES.findIndex(l=>l.includes(p.gage));const old=p.gage;p.gage=drawGage(lv<0?1:lv,[p.gage]);if(S.tmOn)S.pl.forEach(q=>{if(q.gage===old)q.gage=p.gage});renderGages();if(S.online)sendEnd($('#final').textContent)});
 $('#againBtn').addEventListener('click',()=>{S.wantNet=!!NET.peer;start();S.wantNet=false}); /* en ligne : retour à la salle d'attente */
 $('#menuBtn').addEventListener('click',async()=>{if(NET.peer&&!NET.peer.destroyed){await openLobby();$('#lbChg').classList.remove('hide');renderLbChg();return}show('home');view('setup');wShow(0)}); /* en ligne : on garde le salon et ses joueurs */
 $('#goBtn').addEventListener('click',()=>{S.wantNet=netPref();start();S.wantNet=false});
@@ -1757,7 +1829,7 @@ function wShow(i){
 }
 $('#wNext').addEventListener('click',()=>{
   const cur=wSteps()[W.i];
-  if(cur.includes('pl')&&!playlist())return showErr('Choisis tes artistes puis appuie sur « Valider la sélection », ou passe sur « Par style ».')
+  if(cur.includes('pl')&&!playlist())return showErr(S.mode==='link'?'Colle le lien de ta playlist puis appuie sur « Charger », ou passe sur « Par style ».':'Choisis tes artistes puis appuie sur « Valider la sélection », ou passe sur « Par style ».')
   if(cur.includes('opts')&&S.game==='party'&&!netPref()&&S.party.length<2)return showErr('Ajoute au moins 2 joueurs pour le mode Babinski.')
   wShow(W.i+1);
 });
@@ -1963,8 +2035,7 @@ function wheelPhone(m){
 }
 function end(m){
   if(m.soft!=null)C.soft=m.soft;
-  screen(top('Partie '+esc(C.code),esc(C.name))+`${(m.teams?m.teams[0]!==m.teams[1]&&(m.teams[0]>m.teams[1]?0:1)===m.tm:m.rank===1)?confetti():''}<p class="kicker"
- style="text-align:center">${esc(m.title)}</p><p class="ctl-big">${m.teams?(m.teams[0]===m.teams[1]?'Égalité !':(m.teams[0]>m.teams[1]?0:1)===m.tm?'Ton équipe gagne !':'Ton équipe a perdu'):m.rank===1?'Victoire !':`${ord(m.rank)} sur ${m.of}`}</p>${m.teams?tmBarC(m.teams,m.tm)+`<p class="ctl-sub"><small>Toi : ${ord(m.rank)} sur ${m.of}</small></p>`:''}
+  screen(top('Partie '+esc(C.code),esc(C.name))+`${(m.teams?m.teams[0]!==m.teams[1]&&(m.teams[0]>m.teams[1]?0:1)===m.tm:m.rank===1)?confetti():''}<p class="kicker" style="text-align:center">${esc(m.title)}</p><p class="ctl-big">${m.teams?(m.teams[0]===m.teams[1]?'Égalité !':(m.teams[0]>m.teams[1]?0:1)===m.tm?'Ton équipe gagne !':'Ton équipe a perdu'):m.rank===1?'Victoire !':`${ord(m.rank)} sur ${m.of}`}</p>${m.teams?tmBarC(m.teams,m.tm)+`<p class="ctl-sub"><small>Toi : ${ord(m.rank)} sur ${m.of}</small></p>`:''}
 
   <p class="ctl-sub">${`${m.good} bonne${m.good>1?'s':''} réponse${m.good>1?'s':''}`} sur ${m.n}<small>Attends que l'hôte relance une partie.</small></p>
   ${m.game==='party'&&!m.gm?`${m.fin?glass(false):''}<p class="ctl-big">${m.fin?`Tu bois ${unit(m.fin)}`:'Tu ne bois rien !'}</p><p class="ctl-sub"><small>Fin de partie : le 1er rien, puis ${unit(1)} de plus à chaque place.</small></p>`:''}
