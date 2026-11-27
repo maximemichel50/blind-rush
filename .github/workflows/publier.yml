@@ -77,6 +77,12 @@ jobs:
           git commit -m "Ajoute des artistes" || echo "Rien de nouveau"
           for i in 1 2 3; do git pull --rebase origin main && git push && break; sleep 5; done
 
+      - name: Numéro de version (pour que les téléphones chargent toujours la dernière version)
+        run: |
+          V="${GITHUB_SHA::10}-${GITHUB_RUN_NUMBER}"
+          echo "$V" > version.txt
+          sed -i "s/__BR_BUILD__/$V/" index.html
+
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

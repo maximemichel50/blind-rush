@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache">
 <meta name="theme-color" content="#0c0a0c">
 <title>Blind Rush</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -678,6 +679,16 @@ body[data-deco=vinyl] .mode{background:rgba(10,10,10,.6)!important;backdrop-filt
 body[data-deco=vinyl] .dhalo{display:block!important}
 .btn:not(.y),.joinlink{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
 .mood{color:var(--acc2)!important}
+
+/* cases Solo / Multijoueur (et Duel, Babinski, Feat) : lignes compactes façon sommaire de magazine */
+.bigchoice{grid-template-columns:minmax(0,1fr)!important;gap:8px!important;max-width:640px;margin:22px 0 16px!important}
+.mode.big{min-height:0!important;display:grid!important;grid-template-columns:30px minmax(0,1fr) auto;grid-template-areas:"i b a" "i s a";column-gap:16px;row-gap:2px;align-items:center;padding:14px 18px!important}
+.mode.big .gi{grid-area:i;margin:0!important;padding:0!important;font-size:22px;line-height:1}
+.mode.big .gi svg{width:24px!important;height:24px!important}
+.mode.big b{grid-area:b;font-size:clamp(24px,4.6vw,30px)!important;line-height:1}
+.mode.big span{grid-area:s;font-size:13.5px!important;line-height:1.35!important;max-width:none!important}
+.mode.big::before{content:"→";grid-area:a;font:500 20px var(--fb);color:var(--ca);transition:transform .2s}
+.mode.big:hover::before{transform:translateX(4px)}
 </style>
 </head>
 <body>
@@ -983,6 +994,7 @@ window.brJoin=(code,rid)=>{
 if(new URLSearchParams(location.search).get('join'))return; /* un joueur qui arrive par un lien n'a pas besoin de la base */
 let DB;
 try{DB=await fetch('db.json').then(r=>{if(!r.ok)throw 0;return r.json()})}catch(e){document.querySelector('#dbinfo').textContent='Impossible de charger la base de musiques (db.json). Recharge la page.';return}
+window.BR_DB=DB; /* lu par le disque du menu (pochettes des artistes connus) */
 const $=s=>document.querySelector(s);
 const ROUNDS=10;
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -2450,17 +2462,35 @@ if(j){C.code=j.toUpperCase().replace(/[^A-Z]/g,'').slice(0,4);joinScreen();if(C.
   if(B.dataset.deco!==d)B.dataset.deco=d};
  new MutationObserver(up).observe(B,{attributes:true,attributeFilter:['data-screen','data-view','data-game']});up()})();
 
-/* disque du menu (comme la vidéo de Max) : fixe, sa surface est la pochette d'album d'un artiste connu (tops Deezer), qui change toutes les 2,5 s */
+/* disque du menu (comme la vidéo de Max) : fixe, sa surface est la pochette d'un album d'un artiste très connu
+   (stars mondiales et rap FR, prises dans la base du jeu), qui change toutes les 2,5 s */
 (()=>{const im=[...document.querySelectorAll('.dpic img')],nm=document.getElementById('dname'),B=document.body;if(!im.length)return;
-  const jp=u=>new Promise((res,rej)=>{const cb='brs'+Math.random().toString(36).slice(2),sc=document.createElement('script'),end=()=>{clearTimeout(to);delete window[cb];sc.remove()},to=setTimeout(()=>{end();rej()},8000);window[cb]=d=>{end();res(d)};sc.onerror=()=>{end();rej()};sc.src=u+'&callback='+cb;document.head.appendChild(sc)});
+  const MONDE=['Drake','Taylor Swift','The Weeknd','Rihanna','Beyoncé','Eminem','Kanye West','Michael Jackson','Ed Sheeran','Billie Eilish','Bad Bunny','Dua Lipa','Bruno Mars','Ariana Grande','Travis Scott','Kendrick Lamar','Justin Bieber','Adele','Daft Punk','Queen','The Beatles','Coldplay','Lady Gaga','Post Malone','Harry Styles','SZA','Doja Cat','JAY-Z','50 Cent','Nirvana','Madonna','Shakira','Lana Del Rey','Frank Ocean','Tyler, The Creator','Stromae','David Guetta','Calvin Harris','Imagine Dragons','Arctic Monkeys'];
+  const RAPFR=['Ninho','Jul','PNL','Booba','SCH','Nekfeu','Damso','Orelsan','Gazo','Tiakola','Werenoi','Aya Nakamura','Niska','Hamza','Freeze Corleone','Laylow','Lomepal','Vald','Soolking','Naps','Koba LaD','Alonzo','Dadju','GIMS','Kaaris','IAM','Tayc','Heuss L\'enfoiré','Sofiane','Lacrim','Rohff','Kery James','Bigflo & Oli','Djadja & Dinaz','Maes','Leto','Zola','Josman','Green Montana','Kalash Criminel'];
+  const nz=x=>String(x).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const cv=m=>`https://cdn-images.dzcdn.net/images/cover/${m}/500x500-000000-80-0-0.jpg`;
   let L=[],i=0,f=0;
+  const build=D=>{const ix=new Map(D.a.map((n,k)=>[nz(n),k])),al=new Map();
+    for(const t of D.t){if(!t[4])continue;let m=al.get(t[0]);if(!m)al.set(t[0],m=new Map());m.set(t[4],(m.get(t[4])||0)+1)}
+    const pick=names=>{const o=[];for(const n of names){const k=ix.get(nz(n));if(k==null||!al.has(k))continue;
+      [...al.get(k)].sort((x,y)=>y[1]-x[1]).slice(0,2).forEach(([m])=>o.push({n:D.a[k],p:cv(m)}))}
+      for(let k=o.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[o[k],o[j]]=[o[j],o[k]]}return o};
+    const W=pick(MONDE),F=pick(RAPFR);for(let k=0;k<Math.max(W.length,F.length);k++){if(W[k])L.push(W[k]);if(F[k])L.push(F[k])}};
   const next=()=>{if(!L.length||document.hidden||B.dataset.deco!=='vinyl')return;const a=L[i++%L.length],n=im[f^1],pre=new Image();
     pre.onload=()=>{n.src=a.p;n.classList.add('on');im[f].classList.remove('on');f^=1;nm.textContent=a.n.toUpperCase()};pre.src=a.p};
-  const get=u=>jp(u).then(d=>(d&&d.data)||[]).catch(()=>[]);
-  setTimeout(()=>Promise.all([get('https://api.deezer.com/chart/0/albums?limit=100&output=jsonp'),get('https://api.deezer.com/editorial/0/releases?limit=50&output=jsonp')]).then(([A,R])=>{
-    const seen=new Set();L=[...A,...R].filter(a=>(a.cover_xl||a.cover_big)&&a.artist&&!seen.has(a.artist.name)&&seen.add(a.artist.name)).map(a=>({n:a.artist.name,p:a.cover_big||a.cover_xl}));
-    for(let k=L.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[L[k],L[j]]=[L[j],L[k]]}
-    next();setInterval(next,matchMedia('(prefers-reduced-motion: reduce)').matches?6000:2500)}).catch(()=>{}),600)})();
+  const go=()=>{if(!window.BR_DB)return setTimeout(go,400);try{build(window.BR_DB)}catch(e){}if(!L.length)return;
+    next();setInterval(next,matchMedia('(prefers-reduced-motion: reduce)').matches?6000:2500)};
+  go()})();
+
+/* mise à jour automatique : le site publié contient son numéro de version (mis par la publication, voir publier.yml).
+   Au démarrage et à chaque retour sur l'appli, on lit version.txt sans cache ; si une version plus récente existe,
+   on recharge la page une fois (jamais pendant une partie). Règle le cas de l'icône sur l'écran d'accueil. */
+(()=>{const BUILD='__BR_BUILD__';if(BUILD.startsWith('__'))return;
+  const chk=()=>fetch('version.txt?t='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(v=>{v=v.trim();
+    if(!v||v===BUILD)return;const sc=document.body.dataset.screen;if(sc&&sc!=='home')return;
+    let done='';try{done=sessionStorage.getItem('brUpd')||''}catch(e){}if(done===v)return;try{sessionStorage.setItem('brUpd',v)}catch(e){}
+    const u=new URL(location.href);u.searchParams.set('v',v);location.replace(u.toString())}).catch(()=>{});
+  chk();document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk()})})();
 </script>
 <!-- barre des modes de jeu, fixée en bas de l'écran (accueil seulement) -->
 <div class="clubfx" id="clubfx" aria-hidden="true"><canvas></canvas><div class="clubtxt">Là pour se détruire</div></div>
