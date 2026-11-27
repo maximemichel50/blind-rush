@@ -689,6 +689,21 @@ body[data-deco=vinyl] .dhalo{display:block!important}
 .mode.big span{grid-area:s;font-size:13.5px!important;line-height:1.35!important;max-width:none!important}
 .mode.big::before{content:"→";grid-area:a;font:500 20px var(--fb);color:var(--ca);transition:transform .2s}
 .mode.big:hover::before{transform:translateX(4px)}
+
+/* cases cliquables de l'accueil (inspiration « Jacket Masters ») : pilules sombres translucides, arrondies,
+   flèche dans une pastille ronde, bouton principal blanc plein */
+.mode.big{border-radius:26px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.08)!important;backdrop-filter:blur(14px)!important;-webkit-backdrop-filter:blur(14px)!important;box-shadow:0 10px 30px rgba(0,0,0,.35)!important;padding:14px 14px 14px 20px!important;transition:background .2s,transform .2s}
+body[data-deco=vinyl] .mode.big{background:rgba(20,20,20,.55)!important}
+.mode.big:hover,.mode.big[aria-pressed=true]{background:rgba(255,255,255,.11)!important;border-color:rgba(255,255,255,.18)!important}
+.mode.big .gi{width:40px;height:40px;border-radius:50%;display:grid!important;place-items:center;background:rgba(255,255,255,.08)}
+.mode.big{grid-template-columns:40px minmax(0,1fr) auto!important}
+.mode.big::before{content:"›"!important;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:#fff;color:#0a0a0a!important;font:600 24px/1 var(--fb)!important;padding-bottom:3px;box-sizing:border-box}
+.mode.big:hover::before{transform:translateX(3px)}
+.btn.lbmenu{border-radius:999px!important;background:#fff!important;color:#0a0a0a!important;border:0!important;text-decoration:none!important;font:600 15px/1 var(--fb)!important;letter-spacing:0!important;text-transform:none!important;padding:16px 22px!important;max-width:640px}
+.btn.lbmenu:hover{filter:brightness(.92)!important}
+.joinbar{border-radius:26px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.08)!important;backdrop-filter:blur(14px)!important;-webkit-backdrop-filter:blur(14px)!important}
+.joinbar .btn.y{border-radius:999px!important;background:#fff!important;color:#0a0a0a!important;border:0!important;text-decoration:none!important;font:600 15px/1 var(--fb)!important;letter-spacing:0!important;text-transform:none!important;padding:15px 22px!important}
+.btn.joinlink{border-radius:999px!important;background:rgba(255,255,255,.06)!important;border:1px solid rgba(255,255,255,.12)!important;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);text-decoration:none!important;font:500 14px/1 var(--fb)!important;letter-spacing:0!important;padding:14px 20px!important}
 </style>
 </head>
 <body>
