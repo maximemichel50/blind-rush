@@ -1197,7 +1197,10 @@ function buildRounds(ids,n){
   // par style : seulement les artistes connus s'il y en a assez
   if(arts.length>=8){const star=arts.filter(a=>a.w>=8),known=arts.filter(a=>a.w>=4);if(star.length>=30)arts=star;else if(known.length>=25)arts=known}
   // Hardcore : pas les 4 plus gros tubes, mais les sons suivants (jusqu'au 30e) des mêmes artistes
-  const hard=S.diff==='hardcore',groups=arts.map(a=>hard&&a.tracks.length>TOPN+2?a.tracks.slice(TOPN,30):a.tracks);
+  // peu d'artistes (mode artiste) : ses 30 titres les plus écoutés, pour varier sans tomber dans les sons trop niches
+  // Hardcore : pas les plus gros tubes, mais les suivants (jusqu'au 20e, ou 45e en mode artiste), pas du trop niche non plus
+  const hard=S.diff==='hardcore',few=arts.length<8;
+  let groups=arts.map(a=>{const T=a.tracks;if(hard)return T.length>TOPN+2?T.slice(TOPN,few?45:20):T;return few?T.slice(0,30):T});
   const pool=groups.flat();
   const pickPass=(fresh,cap,newArt)=>{const answers=[],used=new Set(),per=new Map();
     const queues=groups.map((g,j)=>newArt&&HART.has(arts[j].k)?[]:shuffle(g.slice(0,cap)));
@@ -1206,11 +1209,12 @@ function buildRounds(ids,n){
     }
     return answers};
   // peu d'artistes (mode artiste) : on pioche dans toute leur discographie, sinon ce sont toujours les mêmes sons
-  const cap=arts.length<8||hard?1e9:TOPN;
+  const cap=few||hard?1e9:TOPN;
   let answers=pickPass(true,cap,true);
   if(answers.length<n)answers=pickPass(true,cap,false);
   if(answers.length<n)answers=pickPass(false,cap);
   if(answers.length<n)answers=pickPass(false,1e9);
+  if(answers.length<n){groups=arts.map(a=>a.tracks);answers=pickPass(false,1e9)}
   answers=spread(answers);
   return {pool,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,pool)}))};
 }
@@ -1241,11 +1245,11 @@ function makeChoices(ans,pool){
   if(ans.pl){ // playlist à thème : à partir de Moyen, d'abord les titres du même artiste dans la playlist
     const an=norm(ans.an),same=shuffle(pool.filter(t=>norm(t.an)===an)),other=shuffle(pool.filter(t=>norm(t.an)!==an));
     // Moyen et Difficile : on complète avec la discographie de l'artiste dans la grande base (4 titres du même artiste)
-    const da=ARTIDX.get(an),disc=da?(S.diff==='difficile'||S.diff==='hardcore'?shuffle(da.tracks.slice()):[...shuffle(da.tracks.slice(0,15)),...shuffle(da.tracks.slice(15))]):[];
-    for(const t of S.diff!=='facile'?[...freshFirst(same),...freshFirst(disc),...freshFirst(other)]:[...freshFirst(other),...freshFirst(same)])if(pick.length<3&&ok(t))pick.push(t);
+    const da=ARTIDX.get(an),dn=S.diff==='hardcore'?40:15,disc=da?[...freshFirst(shuffle(da.tracks.slice(0,dn))),...shuffle(da.tracks.slice(dn))]:[];
+    for(const t of S.diff!=='facile'?[...freshFirst(same),...disc,...freshFirst(other)]:[...freshFirst(other),...freshFirst(same)])if(pick.length<3&&ok(t))pick.push(t);
     return shuffle([ans,...pick]);
   }
-  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,top=shuffle(mine.slice(0,12)),rest=shuffle(mine.slice(12));for(const t of freshFirst([...top,...rest]))if(pick.length<3&&ok(t))pick.push(t)}
+  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,tn=S.diff==='hardcore'?30:12,top=shuffle(mine.slice(0,tn)),rest=shuffle(mine.slice(tn));for(const t of [...freshFirst(top),...rest])if(pick.length<3&&ok(t))pick.push(t)}
   const wmax=Math.max(...pool.slice(0,400).map(t=>ARTISTS[t.ai].w),1);
   for(let tries=0;pick.length<3&&tries<3000;tries++){
     const t=pool[Math.random()*pool.length|0];
