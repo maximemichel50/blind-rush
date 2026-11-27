@@ -40,7 +40,7 @@ Sur l'accueil, toucher **Multijoueur**, choisir Duel ou Babinski, puis suivre le
 Technique : les appareils ne se connectent pas directement entre eux (ça bloquait souvent en 4G ou entre deux box). Les messages passent par trois serveurs relais publics MQTT (EMQX, HiveMQ, Mosquitto), utilisés en même temps : si l'un est en panne, les autres suffisent. Code : `brHost()` et `brJoin()` dans le premier `<script>`. Aucun compte, rien n'est stocké. Pour tester sans internet : lancer deux relais MQTT locaux en WebSocket sur les ports 8883 et 8884, et ouvrir la page avec `?peer=local`.
 
 ## Icône
-`apple-touch-icon.png` (iPhone), `icon-192.png`, `icon-512.png` et `manifest.json`. Pour voir la nouvelle icône, supprimer l'appli de l'écran d'accueil puis la rajouter depuis Safari.
+Barres orange du logo dans le halo du menu (choix de Max). `apple-touch-icon.png` (iPhone), `icon-192.png`, `icon-512.png` et `manifest.json`. Pour voir la nouvelle icône, supprimer l'appli de l'écran d'accueil puis la rajouter depuis Safari.
 
 ## Repères dans `index.html`
 
