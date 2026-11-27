@@ -556,6 +556,7 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
 
 /* annonce des manches spéciales */
 .cardfx{position:fixed;inset:0;z-index:70;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;background:radial-gradient(circle at 50% 45%,color-mix(in srgb,var(--acc) 35%,#0b0414),rgba(5,3,10,.94) 70%);pointer-events:none}
+.cardfx .cfx-skip{font:600 14px var(--mono);font-style:normal;color:#fff;opacity:.75;margin-top:6px}
 .cardfx small{font:700 14px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:#fff;opacity:.85}
 .cardfx b{font:var(--fdw) clamp(48px,13vw,120px)/.95 var(--fd);text-transform:uppercase;background:linear-gradient(100deg,#ff3d9a,#ffd23f 50%,#27e0ff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 24px rgba(255,61,154,.6))}
 .cardfx span{font-size:20px;max-width:26em;color:#fff}
@@ -868,6 +869,8 @@ body[data-deco=feat] h1{color:#ffd23f!important}
       <div class="bigchoice cards">
         <button class="mode big" data-go="solo" style="--ca:#ff4a1c;--g1:#ff7a1a;--g2:#e0125e;--ff:Anton,sans-serif;--fs:30"><i class="emo" aria-hidden="true">⏱️</i><b>Solo</b><span>Toi contre le chrono. Ton score entre au classement mondial.</span><i class="np" aria-hidden="true">👤 1</i></button>
         <button class="mode big" data-go="multi" style="--ca:#2f6bff;--g1:#3d7bff;--g2:#8a2cff;--ff:'Archivo Black',sans-serif;--fs:14"><i class="emo" aria-hidden="true">🎧</i><b>Multi<br>joueur</b><span>Duel ou Babinski, chacun sur son téléphone.</span><i class="np" aria-hidden="true">👤 2+</i></button>
+        <button class="mode big" data-go="cres" style="--ca:#ffd23f;--g1:#ffb31a;--g2:#ff2fb0;--ff:'Archivo Black',sans-serif;--fs:13"><i class="emo" aria-hidden="true">🎚️</i><b>Cres<br>cendo</b><span>2 secondes de son, puis 4, 6… jusqu'à 10. Seul ou à plusieurs.</span><i class="np" aria-hidden="true">👤 1+</i></button>
+        <button class="mode big" data-go="frise" style="--ca:#3dff9a;--g1:#12b886;--g2:#1c5f8a;--ff:Anton,sans-serif;--fs:28"><i class="emo" aria-hidden="true">📅</i><b>Frise</b><span>Devine l'année de sortie du son. Seul ou à plusieurs.</span><i class="np" aria-hidden="true">👤 1+</i></button>
       </div>
       <button class="btn alt lbmenu" data-go="lb">🏆 Classement mondial</button>
       <button class="btn ghost joinlink" data-join="1">Un ami t'a donné un code ? Rejoindre sa partie</button>
@@ -893,6 +896,7 @@ body[data-deco=feat] h1{color:#ffd23f!important}
       <div class="lbbox hide" id="lbView"></div>
     </div>
     <div class="view hide" id="vAcc"></div>
+    <div class="view hide" id="vWho"></div>
     <div class="view hide" id="vSetup">
     <button class="btn ghost back" id="backSetup" data-back="menu">← Retour</button>
     <div class="wtop0"><h1 id="hero">Devine le son. Avant les autres.</h1>
@@ -941,7 +945,7 @@ body[data-deco=feat] h1{color:#ffd23f!important}
     </div>
     <div class="wstep" data-w="diff">
     <h2 class="step s3"><i>03</i>Difficulté</h2>
-    <div class="prow askrow"><span class="lbl">On devine</span><span id="askSeg"></span></div>
+    <div class="prow askrow hide"><span class="lbl">On devine</span><span id="askSeg"></span></div>
     <p class="hint" id="askHint"></p>
     <div class="diffs" id="diffs"></div>
 
@@ -1252,7 +1256,8 @@ const plural=(n,w)=>`${n} ${w}${n>1?'s':''}`;
 
 /* ---------- base de données intégrée ---------- */
 const POP=DB.p||[];
-const ARTISTS=DB.a.map((n,i)=>({i,n,k:norm(n),tracks:[],w:[1,2,4,8][POP[i]??3]}));
+const FANS=DB.f||[]; /* fans Deezer de chaque artiste, en milliers (tools/fans.py) */
+const ARTISTS=DB.a.map((n,i)=>({i,n,k:norm(n),tracks:[],w:[1,2,4,8][POP[i]??3],f:FANS[i]??-1}));
 const base=s=>norm(String(s).replace(/\s*[([][^)\]]*[)\]]/g,''))||norm(s);
 const TRACKS=DB.t.map(([ai,title,disp,id,md5,album])=>{
   const t={ai,title,artist:disp||DB.a[ai],id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0};
@@ -1388,10 +1393,13 @@ $('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');i
 const ASK={titre:'🎵 Le titre',annee:'📅 L\'année (Frise)',cres:'⏱️ 2 s, 4 s… (Crescendo)'};
 /* Crescendo (idée de Max) : 2 s de musique ; pas trouvé ou mauvaise réponse, on réécoute 4 s, puis 6, 8, jusqu'à 10 s. Moins tu écoutes, plus tu marques. */
 const CRES=[2,4,6,8,10],CRES_P=[1000,800,600,400,250],CRES_W={facile:6,moyen:5,difficile:4,hardcore:8};
-const cresOn=()=>S.ask==='cres'&&S.game==='solo';
+const cresOn=()=>S.ask==='cres'&&(S.game==='solo'||S.game==='duel');
+/* Crescendo à plusieurs : une seule frise de temps pour tout le monde (2 s de son, pause, 4 s, pause…) */
+const CRES_NW=3,cresSeg=j=>{let t=0;for(let i=0;i<j;i++)t+=CRES[i]+CRES_NW;return t},CRES_T=cresSeg(CRES.length);
+const cresStepAt=t=>{let j=0;while(j<CRES.length-1&&cresSeg(j+1)<=t)j++;return j};
 const frise=()=>S.ask==='annee';
 const RA=r=>r.yc||r.wc||r.ans; /* la bonne réponse de la manche (l'année en mode Frise) */
-function renderAsk(){if(S.ask==='cres'&&S.game!=='solo')S.ask='titre';const ks=Object.keys(ASK).filter(k=>k!=='cres'||S.game==='solo');
+function renderAsk(){if(S.ask==='cres'&&S.game==='party')S.ask='titre';const ks=Object.keys(ASK);
   $('#askSeg').innerHTML=segHtml('ask',ks,S.ask,ks.map(k=>ASK[k]));
   $('#askHint').textContent=frise()?'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.':S.ask==='cres'?'Crescendo : tu n\'entends que 2 secondes. Pas trouvé, ou mauvaise réponse ? Le son repart pour 4 s, puis 6, 8, jusqu\'à 10 s. Moins tu as écouté, plus tu marques.':''}
 $('#askSeg').addEventListener('click',e=>{const b=e.target.closest('[data-ask]');if(!b)return;S.ask=b.dataset.ask;store.set('ask',S.ask);renderAsk();summary()});
@@ -1485,7 +1493,14 @@ function buildRounds(ids,n){
   // les artistes les plus connus sortent beaucoup plus souvent (poids au carré)
   let arts=wshuffle(ids.map(i=>ARTISTS[i]).filter(a=>a.tracks.length),a=>a.w*a.w);
   // par style : seulement les artistes connus s'il y en a assez
-  if(arts.length>=8){const star=arts.filter(a=>a.w>=8),known=arts.filter(a=>a.w>=4),e=EASY();if(star.length>=(e?12:30))arts=star;else if(known.length>=(e?12:25))arts=known}
+  if(arts.length>=8&&FANS.length){
+    /* d'après le nombre de fans Deezer : Facile et Moyen = les artistes les plus populaires du style ; Difficile et Hardcore = les moins connus (sans les inconnus) */
+    const by=[...arts].sort((a,b)=>b.f-a.f),N=by.length;
+    if(S.diff==='facile')arts=by.slice(0,Math.min(40,Math.max(12,Math.round(N*.2))));
+    else if(S.diff==='moyen')arts=by.slice(0,Math.min(60,Math.max(15,Math.round(N*.3))));
+    else{const a0=Math.min(Math.round(N*.12),30),sl=by.slice(a0,a0+Math.min(200,Math.max(25,Math.round(N*.55))));arts=sl.length>=12?sl:by}
+    arts=wshuffle(arts,a=>a.w);
+  }else if(arts.length>=8){const star=arts.filter(a=>a.w>=8),known=arts.filter(a=>a.w>=4),e=EASY();if(star.length>=(e?12:30))arts=star;else if(known.length>=(e?12:25))arts=known}
   // Hardcore : pas les 4 plus gros tubes, mais les sons suivants (jusqu'au 30e) des mêmes artistes
   // peu d'artistes (mode artiste) : ses 30 titres les plus écoutés, pour varier sans tomber dans les sons trop niches
   // Hardcore : pas les plus gros tubes, mais les suivants (jusqu'au 20e, ou 45e en mode artiste), pas du trop niche non plus
@@ -1516,7 +1531,7 @@ function buildList(list,n){
     return answers};
   // d'abord les sons d'artistes connus (si la playlist en a assez) ; en Facile et Moyen, d'abord les plus grandes stars
   GSH=new Set();
-  const wOf=t=>(ARTIDX.get(norm(t.an))||{}).w||0,known=list.filter(t=>wOf(t)>=4),star=list.filter(t=>wOf(t)>=8);
+  const wOf=t=>(ARTIDX.get(norm(t.an))||{}).w||0,fOf=t=>(ARTIDX.get(norm(t.an))||{}).f??-1,known=list.filter(t=>wOf(t)>=4),star=FANS.length?list.filter(t=>fOf(t)>=1000):list.filter(t=>wOf(t)>=8);
   const srcs=known.length>=list.length*.4&&known.length>=n*4?[known,list]:[list];
   if(EASY()&&star.length>=n*2)srcs.unshift(star);
   /* d'abord les sons à la bonne place dans le classement Deezer de leur artiste (s'il y en a assez dans la playlist) */
@@ -1581,6 +1596,13 @@ const GAMES={
   solo:{n:'Solo',d:'Toi contre le chrono. Record à battre.',h:'Devine le son. Avant les autres.',lead:'4 réponses par manche. Plus tu réponds vite, plus tu marques.'},
   duel:{n:'Duel',d:'À 2 ou plus, chacun sur son téléphone. Le plus rapide et le plus juste gagne.',h:'Chacun pour soi. Le plus rapide gagne.',lead:'Face-à-face ou mêlée générale jusqu\'à 12 en ligne. Chaque seconde compte, chaque erreur coûte.'},
   party:{n:'Babinski',d:'Là pour se détruire. Chacun sur son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps. À la fin, plus tu es mal classé, plus tu bois.'}
+};
+/* modes à part (choisis par une carte de l'accueil) : Crescendo et Frise, seul ou à plusieurs */
+const MODEX={
+  cres:{n:'Crescendo',h:'Crescendo. 2 secondes pour trouver.',lead:'Tu n\'entends que 2 secondes. Pas trouvé ? Le son repart pour 4 s, puis 6, 8, jusqu\'à 10 s. Moins tu as écouté, plus tu marques.',
+    tag:'2 s, 4 s… 10 s',pts:[['🎚️','2 secondes pour commencer','Le son s\'arrête après 2 secondes. Si personne ne trouve, il repart du début pour 4 s, puis 6, 8 et 10 s.'],['🏅','Moins tu écoutes, plus tu marques','Trouvé à 2 s : 1000 points. À 4 s : 800. À 6 s : 600. À 8 s : 400. À 10 s : 250 (× la difficulté).'],['❌','Seul : une erreur relance le son','Ta mauvaise réponse se grise et le son repart plus longtemps. À plusieurs : une seule réponse par manche, le plus tôt possible.'],['📱','Seul ou à plusieurs','Seul avec le classement mondial, ou jusqu\'à 12 chacun sur son téléphone.']],uniq:'Le mode pour les vraies oreilles : tout se joue dans les premières notes.'},
+  annee:{n:'Frise',h:'Frise. De quelle année est ce son ?',lead:'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.',
+    tag:'Devine l\'année',pts:[['📅','L\'année de sortie','Pas le titre : tu choisis l\'année du son parmi 4.'],['🎯','De plus en plus serré','Facile : années très éloignées. Difficile : à 1 ou 2 ans près.'],['⚡','La vitesse rapporte','Comme en Solo et en Duel : plus tu réponds vite, plus tu marques.'],['📱','Seul ou à plusieurs','Seul avec son classement à part, ou jusqu\'à 12 chacun sur son téléphone.']],uniq:'Pour ceux qui savent dater un tube à l\'oreille.'}
 };
 /* icônes de la barre des modes */
 const GICON={
@@ -1650,8 +1672,8 @@ const GUIDE={
     uniq:'Pas de points à gagner : le but, c\'est de ne pas finir dernier.'}
 };
 function renderGuide(){
-  const g=GUIDE[S.game];if(!g||!$('#guide'))return;
-  $('#guide').innerHTML=`<p class="gtag">${esc(GAMES[S.game].n)} · ${esc(g.tag)}</p><ul class="gpts">${g.pts.map(([i,t,d])=>`<li><span class="gic">${i}</span><span><b>${esc(t)}</b>${esc(d)}</span></li>`).join('')}</ul><p class="guniq">${esc(g.uniq)}</p>`;
+  const X=MODEX[S.ask],g=X||GUIDE[S.game];if(!g||!$('#guide'))return;
+  $('#guide').innerHTML=`<p class="gtag">${esc(X?X.n+(S.game==='solo'?' · seul':' · à plusieurs'):GAMES[S.game].n)} · ${esc(g.tag)}</p><ul class="gpts">${g.pts.map(([i,t,d])=>`<li><span class="gic">${i}</span><span><b>${esc(t)}</b>${esc(d)}</span></li>`).join('')}</ul><p class="guniq">${esc(g.uniq)}</p>`;
 }
 /* playlist mise en avant : « Conseillé » affiché sous son bouton */
 const RECO='pl:top50';
@@ -1707,7 +1729,7 @@ function renderGames(){
   renderGuide();
   $('#gameDesc').innerHTML=`<b>${esc(GAMES[S.game].n)}</b> · ${esc(GAMES[S.game].d)}<small>Change de mode avec la barre en bas de l'écran.</small>`;
   const g=GAMES[S.game],o=opt();
-  $('#hero').textContent=g.h;$('#lead').textContent=g.lead;
+  {const X=MODEX[S.ask];$('#hero').textContent=X?X.h:g.h;$('#lead').textContent=X?X.lead:g.lead}
   document.body.dataset.game=S.game;
   let h=`<div class="prow"><span class="lbl">Manches</span>${segHtml('nr',ROUNDS_OPT[S.game],o.n)}</div>`;
   const net=online()||netPref();
@@ -1772,7 +1794,7 @@ function begin(p,list){
   S.n=opt().n;
   const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
-  S.frise=frise();S.cres=cresOn()&&!S.online;
+  S.frise=frise();S.cres=cresOn();
   if(S.frise){for(const r of b.rounds){delete r.yc;delete r.wc}(async()=>{for(const r of b.rounds)await yearOf(r.ans)})()}
   S.pool=b.pool;S.rounds=b.rounds;S.name=p.name+(S.frise?' (Frise)':'');histAdd(b.rounds);S.i=0;S.fails=0;S.lastCard=null;
   S.miN=0;S.lastMi=null;S.accSaved=false;S.lbSent=false;S.lbk=null;
@@ -1807,7 +1829,7 @@ function drawCard(){
 }
 function round(){
   const r=S.rounds[S.i],D=DIFF[S.diff];
-  r.limit=S.cres?10:D.limit;r.stake=1;r.card=null;r.step=0;
+  r.limit=S.cres?(S.online?CRES_T:10):D.limit;r.stake=1;r.card=null;r.step=0;
   if(S.frise&&!r.yc){if(r.ans.yr)setYear(r);else r.choices=[]}
   if(S.game==='solo')r.pads=[0];
   if(S.game==='duel')r.pads=[0,1];
@@ -1822,7 +1844,7 @@ function round(){
   setRing(0);$('#timer').textContent='';
   const nx=S.rounds[S.i+1];if(nx)resolveUrl(nx.ans).then(u=>{if(u){const p=new Audio();p.preload='auto';p.src=u}});
   $('#status').innerHTML='Chargement de l\'extrait…';
-  if(r.card||r.mi){S.phase='intro';r.card?cardFx(r.card):cardFx(null,MI[r.mi],'⚡ Défi surprise',DEFI_MS);const i0=S.i;setTimeout(()=>{if(S.i===i0&&S.rounds[S.i]===r)playClip(r)},r.card?2800:DEFI_MS+100)}else playClip(r);
+  if(r.card||r.mi){S.phase='intro';const i0=S.i,go=()=>{if(S.i===i0&&S.rounds[S.i]===r&&S.phase==='intro')playClip(r)};r.card?cardFx(r.card):cardFx(null,MI[r.mi],'⚡ Défi surprise',DEFI_MS,go);setTimeout(go,r.card?2800:DEFI_MS+100)}else playClip(r);
 }
 /* ---------- missions : un défi tiré au hasard, annoncé au début de sa manche (option « Missions » des réglages) ---------- */
 const MI=window.BR_MISSIONS;
@@ -1904,10 +1926,11 @@ function miReveal(r){
   if(won&&S.game!=='party')setTimeout(()=>bonusFx(M.e+' Défi réussi',solo?M.n:r.mw.slice(0,2).map(p=>S.pl[p].name).join(' · ')),300);
 }
 /* annonce en grand d'une manche spéciale */
-function cardFx(k,C0,lab,ms){ms=ms||2700;const el=$('#cardfx'),C=C0||CARDS[k];el.style.animationDuration=ms+'ms';let sp='';for(let i=0;i<14;i++){const a=i/14*Math.PI*2,d=110+Math.random()*90;sp+=`<i class="cfx-spark" style="--dx:${(Math.cos(a)*d).toFixed(0)}px;--dy:${(Math.sin(a)*d).toFixed(0)}px;background:${['#ffd23f','#ff3ad6','#fff','#9b3dff'][i%4]}"></i>`}
-  el.innerHTML=`<div class="cfx-rays"></div>${sp}<div class="cfx-card"><div class="cfx-front">${C.e||'🃏'}</div><div class="cfx-back"></div></div><small>${esc(lab||'🃏 Manche spéciale')}</small><b>${esc(C.n)}</b><span>${esc(C.d)}</span>`;el.classList.remove('hide','on');void el.offsetWidth;el.classList.add('on');clearTimeout(cardFx.t);cardFx.t=setTimeout(()=>el.classList.add('hide'),ms)}
+function cardFx(k,C0,lab,ms,onSkip){ms=ms||2700;const el=$('#cardfx'),C=C0||CARDS[k];el.style.animationDuration=ms+'ms';
+  el.style.pointerEvents=onSkip?'auto':'';el.onclick=onSkip?()=>{clearTimeout(cardFx.t);el.classList.add('hide');el.onclick=null;el.style.pointerEvents='';onSkip()}:null;let sp='';for(let i=0;i<14;i++){const a=i/14*Math.PI*2,d=110+Math.random()*90;sp+=`<i class="cfx-spark" style="--dx:${(Math.cos(a)*d).toFixed(0)}px;--dy:${(Math.sin(a)*d).toFixed(0)}px;background:${['#ffd23f','#ff3ad6','#fff','#9b3dff'][i%4]}"></i>`}
+  el.innerHTML=`<div class="cfx-rays"></div>${sp}<div class="cfx-card"><div class="cfx-front">${C.e||'🃏'}</div><div class="cfx-back"></div></div><small>${esc(lab||'🃏 Manche spéciale')}</small><b>${esc(C.n)}</b><span>${esc(C.d)}</span>${onSkip?'<em class="cfx-skip">Touche l\'écran pour commencer</em>':''}`;el.classList.remove('hide','on');void el.offsetWidth;el.classList.add('on');clearTimeout(cardFx.t);cardFx.t=setTimeout(()=>el.classList.add('hide'),ms)}
 /* petit éclat au centre quand une série fait passer les points à ×2 ou ×3 */
-function ansFx(ok,sub){const el=document.createElement('div');el.className='ansfx '+(ok?'ok':'ko');el.setAttribute('aria-hidden','true');el.innerHTML=`<i>${ok?'✓':'✗'}</i><b>${ok?'Bonne réponse !':'Raté !'}</b>${sub?`<span>${esc(sub)}</span>`:''}`;document.body.appendChild(el);try{navigator.vibrate&&navigator.vibrate(ok?40:[60,60,60])}catch(e){}setTimeout(()=>el.remove(),1650)}
+function ansFx(ok,sub){const el=document.createElement('div'),ms=ok?1500:800;el.className='ansfx '+(ok?'ok':'ko');el.style.animationDuration=ms+'ms';el.setAttribute('aria-hidden','true');el.innerHTML=`<i>${ok?'✓':'✗'}</i><b>${ok?'Bonne réponse !':'Raté !'}</b>${sub?`<span>${esc(sub)}</span>`:''}`;document.body.appendChild(el);try{navigator.vibrate&&navigator.vibrate(ok?40:[60,60,60])}catch(e){}setTimeout(()=>el.remove(),ms+50)}
 function bonusFx(t,sub){const el=document.createElement('div');el.className='bonusfx';el.setAttribute('aria-hidden','true');el.innerHTML=`${sub?`<small>${esc(sub)}</small>`:''}${esc(t)}`;document.body.appendChild(el);setTimeout(()=>el.remove(),1500)}
 function renderTurn(r){
   const el=$('#turn');el.className='turn';
@@ -1984,14 +2007,14 @@ async function playClip(r){
   }
   // la musique tourne pendant tout le chrono : on choisit un départ qui laisse assez de morceau
   const dur=isFinite(audio.duration)&&audio.duration>0?audio.duration:30;
-  r.off=Math.max(0,Math.min(rand(...DIFF[S.diff].off),dur-r.limit-.5));
+  r.off=Math.max(0,Math.min(rand(...DIFF[S.diff].off),dur-(S.cres?10:r.limit)-.5));
   try{audio.currentTime=r.off}catch(e){r.off=0}
   try{await audio.play();alog('lecture ok muted='+audio.muted+' vol='+audio.volume)}catch(e){alog('lecture refusée '+e.name+' '+e.message);
     S.phase='blocked';$('#status').innerHTML='Ton navigateur attend un clic pour jouer le son.<small>Appuie sur « Lancer l\'extrait ».</small>';$('#playBtn').classList.remove('hide');return;
   }
   $('#playBtn').classList.add('hide');
   S.phase='guess';S.t0=performance.now();
-  if(S.cres){r.st0=S.t0;r.paused=false;cresInfo(r,'Écoute bien… 2 secondes !')}
+  if(S.cres){r.st0=S.t0;r.paused=false;r.seg=0;cresInfo(r,S.online?'Écoutez bien… 2 secondes !':'Écoute bien… 2 secondes !')}
   for(const b of document.querySelectorAll('.ans,.tybox input,.tybox button'))b.disabled=false;
   {const ti=document.querySelector('.tybox input');if(ti)try{ti.focus({preventScroll:true})}catch(e){}}
   $('#vinyl').classList.add('spin');
@@ -2023,6 +2046,15 @@ function cresTick(){
   if(el>=L+W)return cresMore(r,'Pas trouvé ?');
   S.raf=requestAnimationFrame(tick);
 }
+function cresTickNet(){
+  const r=S.rounds[S.i],el=(performance.now()-S.t0)/1000,j=cresStepAt(el),on=el<cresSeg(j)+CRES[j];
+  setRing(el/CRES_T);$('#timer').textContent=on?'🎧':Math.max(0,Math.ceil(cresSeg(j+1>=CRES.length?CRES.length:j+1)-el));
+  if(j!==r.step){r.step=j}
+  if(on&&r.seg!==j+1){r.seg=j+1;try{audio.currentTime=r.off||0}catch(e){}audio.play().catch(()=>{});cresInfo(r,j?`Personne ? On réécoute : ${CRES[j]} secondes !`:'Écoutez bien… 2 secondes !')}
+  if(!on&&!audio.paused){audio.pause();cresInfo(r,'À vos téléphones !')}
+  if(el>=CRES_T)return reveal();
+  S.raf=requestAnimationFrame(tick);
+}
 function cresMore(r,why){
   cancelAnimationFrame(S.raf);r.step++;
   if(r.step>=CRES.length){S.phase='guess';return reveal()}
@@ -2040,7 +2072,7 @@ function cresWrong(r,i){
 function setRing(p){const fg=$('#ringFg');fg.setAttribute('stroke-dashoffset',String(Math.min(100,p*100)));fg.style.stroke=p>.75?'#c81e1e':''}
 function tick(){
   if(S.phase!=='guess')return;
-  if(S.cres)return cresTick();
+  if(S.cres)return S.online?cresTickNet():cresTick();
   const r=S.rounds[S.i],el=(performance.now()-S.t0)/1000;
   setRing(el/r.limit);$('#timer').textContent=Math.max(0,Math.ceil(r.limit-el));
   if(audio.paused&&!audio.ended)audio.play().catch(()=>{});
@@ -2050,11 +2082,11 @@ function tick(){
 function pick(k,i,te){
   if(S.phase!=='guess')return;
   const pad=S.pad[k];if(!pad||pad.choice!==null||!(i>=0&&i<4))return;
-  if(S.cres){const r=S.rounds[S.i];if(r.choices[i]!==RA(r))return cresWrong(r,i);pick.cr=CRES[r.step]}
+  if(S.cres&&!S.online){const r=S.rounds[S.i];if(r.choices[i]!==RA(r))return cresWrong(r,i);pick.cr=CRES[r.step]}
   const meas=(performance.now()-S.t0)/1000;
   // en ligne : temps mesuré sur le téléphone (sans le délai du réseau), jamais plus que le temps vu par l'hôte
   pad.choice=i;pad.t=te!=null&&isFinite(te)?Math.min(meas,Math.max(0,te)):meas;
-  if(S.cres)pad.t=pick.cr; /* Crescendo : le temps compté = les secondes de musique écoutées */
+  if(S.cres&&!S.online)pad.t=pick.cr; /* Crescendo : le temps compté = les secondes de musique écoutées */
   document.querySelectorAll(`.ans[data-pad="${k}"]`).forEach((b,j)=>{b.disabled=true;if(j===i)b.classList.add('locked')});
   document.querySelectorAll(`.tybox[data-pad="${k}"] input,.tybox[data-pad="${k}"] button`).forEach(b=>b.disabled=true);
   if(S.online){const c=$('#np'+k),d=$('#ds'+k);if(c)c.classList.add('in');if(d)d.textContent='a répondu'}
@@ -2100,7 +2132,7 @@ function reveal(){
     const firsts=r.res.filter(x=>x.ok).sort((a,b)=>a.t-b.t);
     for(const x of r.res){
       const pl=S.pl[x.p];
-      if(x.ok){pl.good++;pl.streak++;x.mult=MULT(pl.streak);if(pl.streak===3||pl.streak===5)S.bonusWho=(S.bonusWho||[]).concat(`${pl.name} ×${x.mult}`);x.pts=Math.round(((300+700*Math.max(0,1-x.t/r.limit))*D.mult+(firsts[0]===x?150:0))*x.mult)}
+      if(x.ok){pl.good++;pl.streak++;x.mult=MULT(pl.streak);if(pl.streak===3||pl.streak===5)S.bonusWho=(S.bonusWho||[]).concat(`${pl.name} ×${x.mult}`);x.pts=Math.round(((S.cres?CRES_P[cresStepAt(x.t)]:300+700*Math.max(0,1-x.t/r.limit))*D.mult+(firsts[0]===x?150:0))*x.mult)}
       else{pl.streak=0;if(x.t!=null&&opt().malus)x.pts=-Math.round(150*D.mult)}
       pl.score+=x.pts;
     }
@@ -2261,7 +2293,7 @@ $('#lbCopy').addEventListener('click',async()=>{
 });
 $('#lbCancel').addEventListener('click',()=>{closeNet();show('home')});
 /* salon : changer de playlist, de difficulté ou de manches sans quitter la partie */
-function lbModeText(){const p=playlist();$('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n}${frise()?' · Frise':''} · ${opt().n} manches`}
+function lbModeText(){const p=playlist();$('#lbMode').textContent=`${GAMES[S.game].n} en ligne · ${p?p.name:''} · ${DIFF[S.diff].n}${frise()?' · Frise':''}${cresOn()?' · Crescendo':''} · ${opt().n} manches`}
 function renderLbChg(){
   const chip=(k,n,e)=>{const t=THEMES[k]||THEMES.mix;return `<button class="chip" data-lc="${k}" style="--ca:${t.acc};--cb2:${t.acc2}" aria-pressed="${S.mode!=='pick'&&S.cat===k}">${e?e+' ':''}${esc(n)}</button>`};
   $('#lbChg').innerHTML=`<h3 class="plh">Playlists à thème</h3><div class="chips">${PLS.map(p=>reco(p.k,chip(p.k,p.n,p.e))).join('')}</div><h3 class="plh">Styles</h3><div class="chips">${CATS.map(([k,n])=>chip(k,n)).join('')}</div>`+
@@ -2328,7 +2360,7 @@ function resync(e){
   if(m.t==='q'){const r=S.rounds[S.i],k=S.pl.findIndex(p=>p.net===e);if(S.phase!=='guess'||!r)return;nsend(e,{...m,lim:Math.max(.5,r.limit-(performance.now()-S.t0)/1000),done:S.pad[k]?S.pad[k].choice:null});return}
   nsend(e,m);
 }
-function sendQ(r){const ch=r.typed?[]:r.choices.map(c=>[c.title,c.artist]);const u=r.ans.url||'',off=+(r.off||0).toFixed(2);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,ty:r.typed?r.ans.artist:'',card:r.card?CARDS[r.card].n:r.mi?MI[r.mi].e+' '+MI[r.mi].n:'',wk:!!r.wc,u,off}))}
+function sendQ(r){const ch=r.typed?[]:r.choices.map(c=>[c.title,c.artist]);const u=S.cres?'':r.ans.url||'',off=+(r.off||0).toFixed(2);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,ty:r.typed?r.ans.artist:'',card:r.card?CARDS[r.card].n:r.mi?MI[r.mi].e+' '+MI[r.mi].n:S.cres?'🎚️ Crescendo':'',wk:!!r.wc,u,off}))}
 function standing(){
   if(S.game==='duel')return [...S.pl.keys()].sort((a,b)=>S.pl[b].score-S.pl[a].score);
   return [...S.pl.keys()].sort((a,b)=>pbetter(S.pl[a],S.pl[b]));
@@ -2539,11 +2571,15 @@ function lbPage(){
 }
 $('#vLb').addEventListener('click',e=>{const c=e.target.closest('[data-lbc]'),n=e.target.closest('[data-lbn]');if(c){LBP.cat=c.dataset.lbc;lbPage()}else if(n){LBP.n=+n.dataset.lbn;lbPage()}});
 /* accueil : menu Solo / Multijoueur, puis l'écran de réglages */
-function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['lb','vLb'],['setup','vSetup'],['acc','vAcc']])$('#'+id).classList.toggle('hide',k!==v);document.body.dataset.view=v;window.scrollTo(0,0);if(v!=='setup')hideErr()}
+function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['lb','vLb'],['setup','vSetup'],['acc','vAcc'],['who','vWho']])$('#'+id).classList.toggle('hide',k!==v);document.body.dataset.view=v;window.scrollTo(0,0);if(v!=='setup')hideErr()}
 document.querySelectorAll('.gi[data-icon]').forEach(i=>{i.innerHTML=i.dataset.icon==='multi'?GICON.duel:GICON[i.dataset.icon]});
 $('#home').addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');
-  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();renderAsk();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
+  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');
+    if(k==='cres'||k==='frise'){const M=MODEX[k==='cres'?'cres':'annee'];$('#vWho').innerHTML=`<div class="mhead"><button class="mback" data-back="menu" aria-label="Retour">‹</button><h1 class="menuh">${esc(M.n)}</h1></div><p class="lead">${esc(M.lead)}</p><div class="bigchoice cards">
+      <button class="mode big" data-go="solo" data-ask="${k==='cres'?'cres':'annee'}" style="--ca:#ff4a1c;--g1:#ff7a1a;--g2:#e0125e;--ff:Anton,sans-serif;--fs:30"><i class="emo" aria-hidden="true">👤</i><b>Seul</b><span>Toi contre le chrono, avec le classement mondial.</span><i class="np" aria-hidden="true">👤 1</i></button>
+      <button class="mode big" data-go="duel" data-ask="${k==='cres'?'cres':'annee'}" style="--ca:#2f6bff;--g1:#3d7bff;--g2:#8a2cff;--ff:'Archivo Black',sans-serif;--fs:14"><i class="emo" aria-hidden="true">📱</i><b>À plu<br>sieurs</b><span>Chacun sur son téléphone, jusqu'à 12.</span><i class="np" aria-hidden="true">👤 2+</i></button></div>`;return view('who')}
+    S.ask=g.dataset.ask||'titre';store.set('ask',S.ask);renderAsk();if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();renderAsk();summary();$('#backSetup').dataset.back=g.dataset.ask?'who':k==='solo'?'menu':'multi';view('setup');return wShow(0)}
   const b=e.target.closest('[data-back]');if(b)return view(b.dataset.back);
   if(e.target.closest('[data-join]'))$('#joinOpen').click();
 });
@@ -2699,7 +2735,7 @@ function ftTurn(newRound){
   const p=F.pl[F.cur],pat=F.mode==='patate';
   /* mission : tirée au hasard au début d'un tour (pas au tout premier), 3 au plus par partie ; annoncée en grand, le chrono attend l'annonce */
   F.turns++;F.mi=F.miOn&&F.turns>2&&F.miN<3&&Math.random()<.2;
-  if(F.mi){F.miN++;cardFx(null,{...MI.feat,d:`${p.name} : ${MI.feat.d.replace('À ton tour, t','T')}`},'⚡ Défi surprise',DEFI_MS);F.t0+=DEFI_MS;if(F.bomb)F.bomb+=DEFI_MS}
+  if(F.mi){F.miN++;cardFx(null,{...MI.feat,d:`${p.name} : ${MI.feat.d.replace('À ton tour, t','T')}`},'⚡ Défi surprise',DEFI_MS,()=>{const left=Math.max(0,DEFI_MS-(performance.now()-F.miT));F.t0-=left;if(F.bomb)F.bomb-=left});F.miT=performance.now();F.t0+=DEFI_MS;if(F.bomb)F.bomb+=DEFI_MS}
   ftScreen(`<p class="kicker">Feat · ${pat?`Patate chaude · manche ${F.round}`:'Normal'}</p>
   <p class="ftbig">${esc(F.art.n)}</p>
   <ul class="ftpl">${F.pl.map((q,k)=>`<li class="${k===F.cur?'cur':''}${q.out?' out':''}">${esc(q.name)}${pat?'':` · ${q.pts}`}</li>`).join('')}</ul>
@@ -2908,7 +2944,7 @@ function glass(cs){return `<svg class="glass${cs?' gcs':''}" viewBox="0 0 120 16
 function confetti(){let h='';const c=['#ff3d9a','#27e0ff','#ffd23f','#9b5cff','#3dff9a'];for(let i=0;i<36;i++)h+=`<i style="left:${Math.random()*100}%;background:${c[i%5]};animation-delay:${(Math.random()*.6).toFixed(2)}s;animation-duration:${(1.4+Math.random()*1.2).toFixed(2)}s"></i>`;return `<div class="confetti">${h}</div>`}
 function result(m){
   const again=C.lastR===m.i;C.lastR=m.i;
-  if(!again){const B=document.body;B.classList.remove('flash-ok','flash-ko');void B.offsetWidth;B.classList.add(m.ok?'flash-ok':'flash-ko');clearTimeout(result.t);result.t=setTimeout(()=>B.classList.remove('flash-ok','flash-ko'),1800);try{navigator.vibrate&&navigator.vibrate(m.ok?40:[60,60,60])}catch(e){}}
+  if(!again){const B=document.body;B.classList.remove('flash-ok','flash-ko');void B.offsetWidth;B.classList.add(m.ok?'flash-ok':'flash-ko');clearTimeout(result.t);result.t=setTimeout(()=>B.classList.remove('flash-ok','flash-ko'),m.ok?1800:900);try{navigator.vibrate&&navigator.vibrate(m.ok?40:[60,60,60])}catch(e){}}
   const how=m.ok?'Bonne réponse en '+fmtT(m.tm):m.c!=null?'Mauvaise réponse':'Pas de réponse';
   const was=`<div class="ctl-card"><span>C'était</span><b>${esc(m.ans[0])}</b><span>${esc(m.ans[1])}</span></div>`;
   const list=`<ol class="rank">${m.top.map(([n,v],i)=>`<li class="${n===C.name?'win':''}"><span class="rk">${i+1}</span><span class="nm"><b>${esc(n)}</b></span><span class="pn">${esc(v)}</span><span></span></li>`).join('')}</ol>`;

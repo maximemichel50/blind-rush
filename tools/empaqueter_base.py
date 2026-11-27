@@ -9,10 +9,10 @@ def tier(a,r):
     if a in MAIN and not r.get('auto'): return 3
     f=r.get('fans',0)
     return 2 if f>=1000000 else 1 if f>=300000 else 0
-artists=[];pop=[];idx={};seenid={}
+artists=[];pop=[];fans=[];idx={};seenid={}
 for a,r in raw.items():
-    if r['id'] in seenid: idx[a]=seenid[r['id']]; pop[idx[a]]=max(pop[idx[a]],tier(a,r)); continue
-    idx[a]=seenid[r['id']]=len(artists); artists.append(a); pop.append(tier(a,r))
+    if r['id'] in seenid: idx[a]=seenid[r['id']]; pop[idx[a]]=max(pop[idx[a]],tier(a,r)); fans[idx[a]]=max(fans[idx[a]],round(r.get('fans',0)/1000)); continue
+    idx[a]=seenid[r['id']]=len(artists); artists.append(a); pop.append(tier(a,r)); fans.append(round(r.get('fans',0)/1000))
 cats=[[k,n,list(dict.fromkeys(idx[x] for x in CM[k] if x in idx))] for k,(n,a) in CATS.items()]
 tracks=[];seen=set();done=set()
 # un même morceau (featuring) n'est gardé qu'une fois : chez son artiste principal d'abord
@@ -28,7 +28,7 @@ for main in (True,False):
             parts=t['a'].split(' & ')
             if len(parts)>3: t['a']=' & '.join(parts[:3])+' & co.'
             tracks.append([i,t['t'],'' if t['a']==a else t['a'],t['id'],t['c'],t['al']])
-js=json.dumps({'a':artists,'p':pop,'c':cats,'t':tracks},ensure_ascii=False,separators=(',',':'))
+js=json.dumps({'a':artists,'p':pop,'f':fans,'c':cats,'t':tracks},ensure_ascii=False,separators=(',',':'))
 print(len(artists),'artistes',len(tracks),'morceaux',round(len(js)/1024),'Ko','| connus :',sum(1 for p in pop if p>=2))
 if len(artists)<int(os.environ.get('MIN_ARTISTES','1800')) or len(tracks)<int(os.environ.get('MIN_TITRES','30000')):
     sys.exit('Base trop petite : Deezer a sans doute mal répondu. db.json n\'est pas modifiée.')

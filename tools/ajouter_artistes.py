@@ -17,6 +17,9 @@ for line in open('ajouts.txt',encoding='utf-8'):
     aid=art['id']
     if name in db['a']: i=db['a'].index(name)
     else: i=len(db['a']); db['a'].append(name); db['p'].append(3)
+    if 'f' in db:
+        while len(db['f'])<len(db['a']): db['f'].append(0)
+        db['f'][i]=round(art.get('nb_fan',0)/1000)
     if style in cats and i not in cats[style][2]: cats[style][2].append(i)
     seen={base(t[1]) for t in db['t'] if t[0]==i}; out=[]
     def add(x,alb,cov):
