@@ -1133,7 +1133,7 @@ const TRACKS=DB.t.map(([ai,title,disp,id,md5,album])=>{
 const ARTIDX=new Map();ARTISTS.forEach(a=>{if(!ARTIDX.has(a.k)||a.tracks.length>ARTIDX.get(a.k).tracks.length)ARTIDX.set(a.k,a)});
 const CATS=[['mix','Mix monde',ARTISTS.map(a=>a.i)],...DB.c];
 /* playlists à thème (clé "l" de db.json, faite par tools/playlists_theme.py) : une liste de morceaux, pas d'artistes */
-const PLS=(DB.l||[]).map(([k,n,e,ts])=>({k:'pl:'+k,n,e,tracks:ts.map(([an,title,id,md5,album])=>({ai:-1,an,pl:true,title,artist:an,id,album,b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0}))}));
+const PLS=(DB.l||[]).map(([k,n,e,ts])=>({k:'pl:'+k,n,e,tracks:ts.map(([an,title,id,md5,album,w])=>({ai:-1,an,pl:true,title,artist:an,id,album,w:w||'',b:base(title),cover:md5?`https://e-cdns-images.dzcdn.net/images/cover/${md5}/500x500-000000-80-0-0.jpg`:'',link:`https://www.deezer.com/track/${id}`,key:norm(title),url:'',exp:0}))}));
 $('#dbinfo').textContent=`Base intégrée : ${fmt(TRACKS.length)} morceaux de ${fmt(ARTISTS.length)} artistes, du monde entier.`;
 
 const DIFF={
@@ -1145,7 +1145,7 @@ const DIFF={
 /* les sons : Facile et Moyen = les gros tubes des artistes connus ; Hardcore = exactement les sons du Difficile */
 const EASY=()=>S.diff==='facile'||S.diff==='moyen';
 /* Hardcore : on tape le titre (sauf en Frise, où l'on choisit l'année) */
-const TYPED=r=>!!DIFF[S.diff].typed&&!r.yc&&(S.game==='solo'||!!S.online);
+const TYPED=r=>!!DIFF[S.diff].typed&&!r.yc&&!r.wc&&(S.game==='solo'||!!S.online);
 /* titre tapé : on compare sans accents, espaces ni ponctuation, et on tolère quelques fautes */
 function tlev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let p=[...Array(n+1).keys()],pp=p.slice(),c=new Array(n+1);
   for(let i=1;i<=m;i++){c[0]=i;for(let j=1;j<=n;j++){c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])c[j]=Math.min(c[j],pp[j-2]+1)}[pp,p,c]=[p,c,pp]}return p[n]}
@@ -1170,7 +1170,7 @@ for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedm
 
 /* ---------- ambiances par style ---------- */
 const THEMES=window.BR_THEMES;
-for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['series','rock','Ambiance série télé','SÉRIES'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB'],['probleme','rapus','Ambiance problématique','PROBLÈME'],['youtube','kpop','Ambiance YouTube','YOUTUBE']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
+for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['series','rock','Ambiance série télé','SÉRIES'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB'],['probleme','rapus','Ambiance problématique','PROBLÈME'],['youtube','kpop','Ambiance YouTube','YOUTUBE'],['manga','kpop','Ambiance manga','MANGA']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
 function applyTheme(k){
   const t=THEMES[k]||THEMES.mix,r=document.documentElement.style;
   for(const v of ['bg','ink','card','cardInk','acc','acc2','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
@@ -1252,7 +1252,7 @@ $('#pStyle').addEventListener('click',e=>{const b=e.target.closest('[data-c]');i
 /* ---------- mode Frise : on devine l'année de sortie du son ---------- */
 const ASK={titre:'🎵 Le titre',annee:'📅 L\'année (Frise)'};
 const frise=()=>S.ask==='annee';
-const RA=r=>r.yc||r.ans; /* la bonne réponse de la manche (l'année en mode Frise) */
+const RA=r=>r.yc||r.wc||r.ans; /* la bonne réponse de la manche (l'année en mode Frise) */
 function renderAsk(){$('#askSeg').innerHTML=segHtml('ask',Object.keys(ASK),S.ask,Object.values(ASK));$('#askHint').textContent=frise()?'Le son passe, et tu choisis son année de sortie parmi 4. Plus la difficulté monte, plus les années proposées sont proches.':''}
 $('#askSeg').addEventListener('click',e=>{const b=e.target.closest('[data-ask]');if(!b)return;S.ask=b.dataset.ask;store.set('ask',S.ask);renderAsk();summary()});
 /* année de première sortie : la plus ancienne date trouvée au moins 2 fois sur Apple Music (les compilations sont plus récentes),
@@ -1335,7 +1335,7 @@ const keepLast=(set,add,max,k)=>{const h=[...set,...add].slice(-max);set.clear()
 function histAdd(rounds){
   keepLast(HIST,rounds.map(r=>r.ans.id),600,'hist');
   keepLast(HART,rounds.map(r=>r.ans.ai>=0?ARTISTS[r.ans.ai].k:norm(r.ans.artist)),40,'hart');
-  keepLast(HDEC,rounds.flatMap(r=>r.choices.filter(c=>c!==r.ans).map(c=>c.id)),300,'hdec');
+  keepLast(HDEC,rounds.flatMap(r=>r.choices.filter(c=>c!==RA(r)).map(c=>c.id)),300,'hdec');
 }
 const freshFirst=a=>[...a.filter(t=>!HDEC.has(t.id)),...a.filter(t=>HDEC.has(t.id))];
 /* jamais deux fois le même artiste à la suite */
@@ -1387,7 +1387,19 @@ function buildList(list,n){
   if(answers.length<n)answers=pass(list,false,2,false);
   if(answers.length<n)answers=pass(list,false,1e9,false);
   answers=spread(answers);
-  return {pool:list,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,list)}))};
+  return {pool:list,rounds:answers.map(ans=>roundOf(ans,list))};
+}
+/* playlists « œuvres » (Films et séries, Dessins animés, Manga, Disney) : on devine le film / la série d'où vient le son,
+   parmi 4 œuvres de la même playlist (jamais deux fois la même saga : « Toy Story » et « Toy Story 2 ») */
+const wkey=w=>norm(String(w).replace(/\d+/g,''));
+function workChoices(ans,pool){
+  const mk=w=>({title:w,artist:'',w:1,id:'w'+norm(w)}),me=wkey(ans.w),seen=new Set([me]),out=[mk(ans.w)];
+  for(const t of freshFirst(shuffle(pool.filter(t=>t.w)))){if(out.length>=4)break;const k=wkey(t.w);if(seen.has(k))continue;seen.add(k);out.push(mk(t.w))}
+  return out;
+}
+function roundOf(ans,pool){
+  if(ans.w){const ch=workChoices(ans,pool);if(ch.length>=4)return {ans,wc:ch[0],choices:shuffle(ch)}}
+  return {ans,choices:makeChoices(ans,pool)};
 }
 /* 3 mauvaises réponses, jamais un titre qui ressemble à la bonne réponse.
    À partir de Moyen : d'autres titres du même artiste (il faut trouver le bon titre).
@@ -1609,7 +1621,7 @@ function begin(p,list){
   const b=p.list?buildList(p.list,S.n):buildRounds(p.ids,S.n);
   if(b.rounds.length<S.n)return `Pas assez de titres dans cette playlist pour ${S.n} manches. Ajoute des artistes.`;
   S.frise=frise();
-  if(S.frise){for(const r of b.rounds){delete r.yc}(async()=>{for(const r of b.rounds)await yearOf(r.ans)})()}
+  if(S.frise){for(const r of b.rounds){delete r.yc;delete r.wc}(async()=>{for(const r of b.rounds)await yearOf(r.ans)})()}
   S.pool=b.pool;S.rounds=b.rounds;S.name=p.name+(S.frise?' (Frise)':'');histAdd(b.rounds);S.i=0;S.fails=0;S.lastCard=null;
   S.tmOn=!!(S.online&&tmOn());
   S.pl=list.map(({name,net,tm})=>({name,net,tm:tm|0,score:0,streak:0,drunk:0,cs:0,given:0,joker:true,good:0,wins:0,tt:0,fin:0,gage:'',x2:S.game==='party'&&!!(S.x2next||[]).includes(norm(name))}));
@@ -1733,7 +1745,7 @@ async function playClip(r){
     S.fails++;
     if(S.fails>=3&&S.fails>=S.i+3){S.phase='dead';$('#status').innerHTML='Le son ne passe pas.<small>Vérifie ta connexion internet, puis recharge la page.</small>';netEach(()=>({t:'note',h:'Le son ne passe pas',m:'L\'écran de l\'hôte n\'arrive plus à jouer la musique. Attends qu\'il relance la partie.'}));return}
     const used=new Set(S.rounds.map(x=>x.ans));const alt=shuffle(S.pool).find(t=>!used.has(t));
-    if(alt){r.ans=alt;r.choices=makeChoices(alt,S.pool);$('#cover').src=alt.cover||'';renderPads(r);return playClip(r)}
+    if(alt){delete r.wc;Object.assign(r,S.frise?{ans:alt,choices:makeChoices(alt,S.pool)}:roundOf(alt,S.pool));$('#cover').src=alt.cover||'';renderPads(r);return playClip(r)}
   }
   // la musique tourne pendant tout le chrono : on choisit un départ qui laisse assez de morceau
   const dur=isFinite(audio.duration)&&audio.duration>0?audio.duration:30;
@@ -1748,7 +1760,7 @@ async function playClip(r){
   {const ti=document.querySelector('.tybox input');if(ti)try{ti.focus({preventScroll:true})}catch(e){}}
   $('#vinyl').classList.add('spin');
   if(S.online)sendQ(r);
-  $('#status').innerHTML=S.online?'À vos téléphones !<small>Répondez sur votre écran, le plus vite possible.</small>':S.game==='party'?'Tout le monde répond !<small>Chacun tape sa lettre sur sa ligne.</small>':r.pads.length>1?'Écoutez bien…<small>Chacun répond sur son côté.</small>':'Écoute bien…<small>Qui chante ? Quel titre ?</small>';
+  $('#status').innerHTML=S.online?'À vos téléphones !<small>Répondez sur votre écran, le plus vite possible.</small>':S.game==='party'?'Tout le monde répond !<small>Chacun tape sa lettre sur sa ligne.</small>':r.pads.length>1?'Écoutez bien…<small>Chacun répond sur son côté.</small>':(r.wc?'Écoute bien…<small>De quel film ou quelle série vient ce son ?</small>':'Écoute bien…<small>Qui chante ? Quel titre ?</small>');
   cancelAnimationFrame(S.raf);S.raf=requestAnimationFrame(tick);
 }
 $('#sndBtn').addEventListener('click',async()=>{
@@ -1807,7 +1819,7 @@ function reveal(){
   S.pad.forEach((p,k)=>{const bx=document.querySelector(`.tybox[data-pad="${p.p}"]`)||(S.game==='solo'&&document.querySelector('.tybox'));if(!bx)return;bx.classList.add(ok[k]?'ok':'ko');const me=bx.querySelector('.tyme');if(me)me.innerHTML=p.tx?`Tu as tapé « ${esc(p.tx)} » ${ok[k]?'✓':'✗'}`:'Pas de réponse'});
   if(S.game==='party'||S.online)document.querySelectorAll('.roc').forEach((c,i)=>c.classList.add(r.choices[i]===RA(r)?'right':'dim'));
   $('#label').classList.add('show');
-  const what=`${esc(r.ans.title)} — ${esc(r.ans.artist)}${r.yc?` (${r.yc.yr})`:''}`;
+  const what=`${r.wc?`${esc(r.wc.title)} · `:''}${esc(r.ans.title)} — ${esc(r.ans.artist)}${r.yc?` (${r.yc.yr})`:''}`;
   r.res=S.pad.map((p,k)=>({p:p.p,ok:ok[k],t:p.t,choice:p.choice,pts:0}));
   let html='';
   if(S.game==='solo'){
@@ -2049,7 +2061,7 @@ function resync(e){
   if(m.t==='q'){const r=S.rounds[S.i],k=S.pl.findIndex(p=>p.net===e);if(S.phase!=='guess'||!r)return;nsend(e,{...m,lim:Math.max(.5,r.limit-(performance.now()-S.t0)/1000),done:S.pad[k]?S.pad[k].choice:null});return}
   nsend(e,m);
 }
-function sendQ(r){const ch=r.typed?[]:r.choices.map(c=>[c.title,c.artist]);const u=r.ans.url||'',off=+(r.off||0).toFixed(2);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,ty:r.typed?r.ans.artist:'',card:r.card?CARDS[r.card].n:'',u,off}))}
+function sendQ(r){const ch=r.typed?[]:r.choices.map(c=>[c.title,c.artist]);const u=r.ans.url||'',off=+(r.off||0).toFixed(2);netEach(()=>({t:'q',i:S.i,n:S.n,lim:r.limit,ch,ty:r.typed?r.ans.artist:'',card:r.card?CARDS[r.card].n:'',wk:!!r.wc,u,off}))}
 function standing(){
   if(S.game==='duel')return [...S.pl.keys()].sort((a,b)=>S.pl[b].score-S.pl[a].score);
   return [...S.pl.keys()].sort((a,b)=>pbetter(S.pl[a],S.pl[b]));
@@ -2060,7 +2072,7 @@ function sendResults(r){
   const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>{
     const x=r.res.find(z=>z.p===k)||{};
-    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist+(r.yc?` · ${r.yc.yr}`:''),r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:RG(),last:S.i>=S.n-1,of:S.pl.length};
+    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.wc?r.wc.title:r.ans.title,(r.wc?r.ans.title+' — ':'')+r.ans.artist+(r.yc?` · ${r.yc.yr}`:''),r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:RG(),last:S.i>=S.n-1,of:S.pl.length};
     if(S.game==='duel'){m.pts=x.pts||0;m.mult=x.mult||1;m.streak=pl.streak;m.score=pl.score;m.rank=ord.indexOf(k)+1;if(S.tmOn){m.teams=tmSc();m.tm=pl.tm}}
     else{const en=r.pen.find(z=>z.p===k);Object.assign(m,{rank:en.rank,sips:en.sips,cs:en.cs,joker:en.joker,canJoker:!!(en.sips||en.cs)&&!en.joker&&pl.joker,anyOk:r.log.anyOk,first:S.pl[r.pen[0].p].name,give:S.giver===k&&S.toGive>0?S.toGive:0,sing:S.giver===k&&S.vote})}
     return m;
@@ -2178,7 +2190,7 @@ function results(){
     else if(S.game==='duel')side=`<span class="p duo">${(r.res||[]).map((x,k)=>`<i class="pc${k}">${x.pts>0?'+':''}${x.pts}</i>`).join('')}</span>`;
     if(S.game==='party')side=`<span class="p small">${r.pen?esc(RG()?r.pen.filter(e=>e.ok).map(e=>S.pl[e.p].name).join(' · ')||'—':r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
     const ok=r.res&&r.res.some(x=>x.ok);
-    return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${esc(r.ans.title)}${r.yc?` · ${r.yc.yr}`:''}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
+    return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${r.wc?esc(r.wc.title)+' · ':''}${esc(r.ans.title)}${r.yc?` · ${r.yc.yr}`:''}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
   }).join('');
   if(S.game!=='party'){S.wheel=null;renderWheel();renderGages()}
   if(S.online)sendEnd(fin.textContent);
@@ -2527,7 +2539,7 @@ function question(m){
   try{navigator.vibrate&&navigator.vibrate(40)}catch(e){}
   screen(top(`Manche ${m.i+1}/${m.n}${m.card?' · '+esc(m.card):''}`,`<b id="cT">${Math.ceil(m.lim)}</b>`)+`<div class="tbar"><i style="animation-duration:${m.lim}s"></i></div>
   ${m.ty?`<div class="tybox cty"><p class="tyhint">✍️ Tape le titre · artiste : <b>${esc(m.ty)}</b></p><div class="tyrow"><input class="tyin" id="cTy" maxlength="80" placeholder="Le titre du son…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="send" aria-label="Tape le titre"><button class="btn y" id="cTyGo">Valider</button></div><p class="tyme" id="cTyMe"></p></div>`:`<div class="kq">${m.ch.map(([t,a],i)=>`<button class="q${i}" data-c="${i}"><span class="sh" aria-hidden="true">${KQ[i]}</span><b>${esc(t)}</b><span>${esc(a)}</span></button>`).join('')}</div>`}
-  <p class="ctl-sub" id="cSt">Qui chante ? Quel titre ?<small>Le plus rapide marque le plus.</small></p>
+  <p class="ctl-sub" id="cSt">${m.wk?'De quel film ou quelle série vient ce son ?':'Qui chante ? Quel titre ?'}<small>Le plus rapide marque le plus.</small></p>
   <p class="ctl-sub hide" id="cSndHelp"><small>Pas de son ? Touche l'écran une fois, ou le bouton ci-dessous.</small></p><button class="btn alt" id="cSnd"></button>`);
   sndBtn();phonePlay(m);
   if(C.pick!=null)answered(null);else if(m.ty){const ti=$('#cTy');if(ti)try{ti.focus({preventScroll:true})}catch(e){}}
