@@ -58,7 +58,7 @@ h2{font:800 17px/1.2 Archivo,sans-serif;margin:24px 0 10px}
 .tags .empty{color:var(--vmuted);font-size:15px;padding:6px 0}
 .selrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center}
 .ok{color:var(--acc);font-weight:800}
-.diffs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.diffs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .diff{background:var(--card);color:var(--cardInk);border-radius:16px;padding:14px;text-align:left;min-height:96px}
 .diff b{display:block;font:400 24px/1.1 Anton,sans-serif}.diff span{font-size:14px;color:var(--cmuted)}
 .diff[aria-pressed=true]{background:var(--vin);color:var(--vinInk);box-shadow:inset 0 0 0 3px var(--acc)}.diff[aria-pressed=true] span{color:var(--vmuted)}
@@ -390,7 +390,7 @@ h2:not(.step){font-family:var(--mono);text-transform:uppercase;letter-spacing:.1
 .givebox .chip,.wheelbox .chip,.ctl .chip{--ca:var(--acc);--cb2:var(--acc2)}
 /* difficultés : vert, orange, rouge */
 .diff{background:#121014;border-radius:18px;position:relative;overflow:hidden}
-.diff[data-d=facile]{--dc:#19e3a0}.diff[data-d=moyen]{--dc:#ffb100}.diff[data-d=difficile]{--dc:#ff2a4a}
+.diff[data-d=facile]{--dc:#19e3a0}.diff[data-d=moyen]{--dc:#ffb100}.diff[data-d=difficile]{--dc:#ff2a4a}.diff[data-d=hardcore]{--dc:#b44dff}
 .diff b{color:var(--dc);text-transform:uppercase}
 .diff[aria-pressed=true]{background:color-mix(in srgb,var(--dc) 12%,#121014);box-shadow:inset 0 0 0 2px var(--dc),0 0 26px color-mix(in srgb,var(--dc) 35%,transparent)}
 .seg{box-shadow:inset 0 0 0 1px var(--line);border-radius:999px}.seg button{color:var(--ink);font-family:var(--mono);font-size:13px}.seg button[aria-pressed=true]{background:var(--grad);color:#fff}
@@ -801,7 +801,8 @@ $('#dbinfo').textContent=`Base intégrée : ${fmt(TRACKS.length)} morceaux de ${
 const DIFF={
   facile:{n:'Facile',d:'20 s pour répondre, début du morceau, artistes différents',limit:20,mult:1,off:[0,4]},
   moyen:{n:'Moyen',d:'14 s pour répondre, 4 titres du même artiste',limit:14,mult:1.5,off:[2,12]},
-  difficile:{n:'Difficile',d:'8 s pour répondre, 4 titres du même artiste, extrait au hasard',limit:8,mult:2,off:[4,20]}
+  difficile:{n:'Difficile',d:'8 s pour répondre, 4 titres du même artiste, extrait au hasard',limit:8,mult:2,off:[4,20]},
+  hardcore:{n:'Hardcore',d:'8 s, pas les plus gros tubes : des sons moins connus d\'artistes connus',limit:8,mult:2.5,off:[4,20]}
 };
 const store={get(k,d){try{const v=localStorage.getItem('br-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,JSON.stringify(v))}catch(e){}}};
 const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
@@ -815,7 +816,7 @@ for(const ev of ['play','playing','pause','waiting','stalled','canplay','loadedm
 
 /* ---------- ambiances par style ---------- */
 const THEMES=window.BR_THEMES;
-for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['series','rock','Ambiance série télé','SÉRIES'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
+for(const [k,b,n,w] of [['dessins','kpop','Ambiance dessin animé','CARTOON'],['ete2010','latino','Ambiance plage','ÉTÉ'],['top50','y80','Ambiance Top 50','TOP 50'],['films','jazz','Ambiance cinéma','CINÉMA'],['series','rock','Ambiance série télé','SÉRIES'],['disney','y2000','Ambiance conte de fées','DISNEY'],['soiree','y70','Ambiance piste de danse','DANCE'],['club','electro','Ambiance boîte de nuit','CLUB'],['probleme','rapus','Ambiance problématique','PROBLÈME'],['youtube','kpop','Ambiance YouTube','YOUTUBE']])THEMES['pl:'+k]=Object.assign({},THEMES[b],{n,w});
 function applyTheme(k){
   const t=THEMES[k]||THEMES.mix,r=document.documentElement.style;
   for(const v of ['bg','ink','card','cardInk','acc','acc2','vin','vinInk','pat'])r.setProperty('--'+v,t[v]);
@@ -889,23 +890,36 @@ function hideErr(){$('#err').classList.add('hide')}
 const wshuffle=(a,w)=>a.map(x=>[Math.random()**(1/w(x)),x]).sort((p,q)=>q[0]-p[0]).map(p=>p[1]);
 /* sons déjà tombés dans les dernières parties (gardés sur l'appareil) : on évite de les reposer tout de suite */
 const HIST=new Set(store.get('hist',[]));
-function histAdd(rounds){const h=[...HIST,...rounds.map(r=>r.ans.id)].slice(-600);HIST.clear();h.forEach(x=>HIST.add(x));store.set('hist',h)}
+/* artistes et mauvaises réponses des dernières parties : on les évite aussi, pour que chaque partie soit différente */
+const HART=new Set(store.get('hart',[])),HDEC=new Set(store.get('hdec',[]));
+const keepLast=(set,add,max,k)=>{const h=[...set,...add].slice(-max);set.clear();h.forEach(x=>set.add(x));store.set(k,h)};
+function histAdd(rounds){
+  keepLast(HIST,rounds.map(r=>r.ans.id),600,'hist');
+  keepLast(HART,rounds.map(r=>r.ans.ai>=0?ARTISTS[r.ans.ai].k:norm(r.ans.artist)),40,'hart');
+  keepLast(HDEC,rounds.flatMap(r=>r.choices.filter(c=>c!==r.ans).map(c=>c.id)),300,'hdec');
+}
+const freshFirst=a=>[...a.filter(t=>!HDEC.has(t.id)),...a.filter(t=>HDEC.has(t.id))];
 /* jamais deux fois le même artiste à la suite */
 function spread(list){const out=[],rest=[...list];while(rest.length){const last=out.length?norm(out[out.length-1].artist):'';let i=rest.findIndex(t=>norm(t.artist)!==last);if(i<0)i=0;out.push(rest.splice(i,1)[0])}return out}
-const TOPN=4; /* les manches viennent des 4 plus gros tubes de chaque artiste ; le reste sert aux mauvaises réponses */
+const TOPN=3; /* les manches viennent des 3 plus gros tubes de chaque artiste ; le reste sert aux mauvaises réponses */
 function buildRounds(ids,n){
   // les artistes les plus connus sortent beaucoup plus souvent (poids au carré)
-  const arts=wshuffle(ids.map(i=>ARTISTS[i]).filter(a=>a.tracks.length),a=>a.w*a.w),groups=arts.map(a=>a.tracks);
+  let arts=wshuffle(ids.map(i=>ARTISTS[i]).filter(a=>a.tracks.length),a=>a.w*a.w);
+  // par style : seulement les artistes connus s'il y en a assez
+  if(arts.length>=8){const star=arts.filter(a=>a.w>=8),known=arts.filter(a=>a.w>=4);if(star.length>=30)arts=star;else if(known.length>=25)arts=known}
+  // Hardcore : pas les 4 plus gros tubes, mais les sons suivants (jusqu'au 30e) des mêmes artistes
+  const hard=S.diff==='hardcore',groups=arts.map(a=>hard&&a.tracks.length>TOPN+2?a.tracks.slice(TOPN,30):a.tracks);
   const pool=groups.flat();
-  const pickPass=(fresh,cap)=>{const answers=[],used=new Set(),per=new Map();
-    const queues=groups.map(g=>shuffle(g.slice(0,cap)));
+  const pickPass=(fresh,cap,newArt)=>{const answers=[],used=new Set(),per=new Map();
+    const queues=groups.map((g,j)=>newArt&&HART.has(arts[j].k)?[]:shuffle(g.slice(0,cap)));
     while(answers.length<n&&queues.some(q=>q.length)){
       for(const q of queues){if(answers.length>=n)break;while(q.length){const t=q.shift();if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id)))continue;used.add(t.id);used.add(t.b);answers.push(t);break}}
     }
     return answers};
   // peu d'artistes (mode artiste) : on pioche dans toute leur discographie, sinon ce sont toujours les mêmes sons
-  const cap=arts.length<8?1e9:TOPN;
-  let answers=pickPass(true,cap);
+  const cap=arts.length<8||hard?1e9:TOPN;
+  let answers=pickPass(true,cap,true);
+  if(answers.length<n)answers=pickPass(true,cap,false);
   if(answers.length<n)answers=pickPass(false,cap);
   if(answers.length<n)answers=pickPass(false,1e9);
   answers=spread(answers);
@@ -913,12 +927,20 @@ function buildRounds(ids,n){
 }
 /* playlist à thème : les manches et les mauvaises réponses viennent de la playlist ; 2 sons maximum par artiste et par partie */
 function buildList(list,n){
-  const pass=(fresh,cap)=>{const answers=[],used=new Set(),per=new Map();
-    for(const t of shuffle(list)){if(answers.length>=n)break;const a=norm(t.artist);if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id))||(per.get(a)||0)>=cap)continue;used.add(t.id);used.add(t.b);per.set(a,(per.get(a)||0)+1);answers.push(t)}
+  const pass=(src,fresh,cap,newArt)=>{const answers=[],used=new Set(),per=new Map();
+    for(const t of shuffle(src)){if(answers.length>=n)break;const a=norm(t.artist);if(used.has(t.id)||used.has(t.b)||(fresh&&HIST.has(t.id))||(newArt&&HART.has(a))||(per.get(a)||0)>=cap)continue;used.add(t.id);used.add(t.b);per.set(a,(per.get(a)||0)+1);answers.push(t)}
     return answers};
-  let answers=pass(true,2);
-  if(answers.length<n)answers=pass(false,2);
-  if(answers.length<n)answers=pass(false,1e9);
+  // d'abord les sons d'artistes connus (si la playlist en a assez), sauf en Hardcore
+  const known=list.filter(t=>((ARTIDX.get(norm(t.an))||{}).w||0)>=4);
+  const srcs=S.diff!=='hardcore'&&known.length>=list.length*.4&&known.length>=n*4?[known,list]:[list];
+  let answers=[];
+  for(const src of srcs){
+    // 1 son par artiste, et des artistes qu'on n'a pas eus aux parties d'avant ; sinon on relâche petit à petit
+    for(const [f,c,a] of [[true,1,true],[true,1,false],[true,2,false]])if(answers.length<n)answers=pass(src,f,c,a);
+    if(answers.length>=n)break;
+  }
+  if(answers.length<n)answers=pass(list,false,2,false);
+  if(answers.length<n)answers=pass(list,false,1e9,false);
   answers=spread(answers);
   return {pool:list,rounds:answers.map(ans=>({ans,choices:makeChoices(ans,list)}))};
 }
@@ -930,16 +952,17 @@ function makeChoices(ans,pool){
   if(ans.pl){ // playlist à thème : à partir de Moyen, d'abord les titres du même artiste dans la playlist
     const an=norm(ans.an),same=shuffle(pool.filter(t=>norm(t.an)===an)),other=shuffle(pool.filter(t=>norm(t.an)!==an));
     // Moyen et Difficile : on complète avec la discographie de l'artiste dans la grande base (4 titres du même artiste)
-    const da=ARTIDX.get(an),disc=da?(S.diff==='difficile'?shuffle(da.tracks.slice()):[...shuffle(da.tracks.slice(0,15)),...shuffle(da.tracks.slice(15))]):[];
-    for(const t of S.diff!=='facile'?[...same,...disc,...other]:[...other,...same])if(pick.length<3&&ok(t))pick.push(t);
+    const da=ARTIDX.get(an),disc=da?(S.diff==='difficile'||S.diff==='hardcore'?shuffle(da.tracks.slice()):[...shuffle(da.tracks.slice(0,15)),...shuffle(da.tracks.slice(15))]):[];
+    for(const t of S.diff!=='facile'?[...freshFirst(same),...freshFirst(disc),...freshFirst(other)]:[...freshFirst(other),...freshFirst(same)])if(pick.length<3&&ok(t))pick.push(t);
     return shuffle([ans,...pick]);
   }
-  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,top=shuffle(mine.slice(0,12)),rest=shuffle(mine.slice(12));for(const t of [...top,...rest])if(pick.length<3&&ok(t))pick.push(t)}
+  if(S.diff!=='facile'){const mine=ARTISTS[ans.ai].tracks,top=shuffle(mine.slice(0,12)),rest=shuffle(mine.slice(12));for(const t of freshFirst([...top,...rest]))if(pick.length<3&&ok(t))pick.push(t)}
   const wmax=Math.max(...pool.slice(0,400).map(t=>ARTISTS[t.ai].w),1);
   for(let tries=0;pick.length<3&&tries<3000;tries++){
     const t=pool[Math.random()*pool.length|0];
     if(tries<1500&&t.ai===ans.ai)continue;
     if(tries<800&&Math.random()*wmax>ARTISTS[t.ai].w)continue;
+    if(tries<1000&&HDEC.has(t.id))continue;
     if(ok(t))pick.push(t);
   }
   if(pick.length<3)for(const t of shuffle(pool))if(pick.length<3&&ok(t))pick.push(t);

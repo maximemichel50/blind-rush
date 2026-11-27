@@ -310,5 +310,8 @@ def merge_films_series(out):
     return rest
 out = merge_films_series(out)
 db['l'] = out
+# playlists faites d'une liste d'artistes (Problématique, YouTube)
+import playlists_artistes
+playlists_artistes.merge(db, playlists_artistes.build())
 open('../db.json', 'w').write(json.dumps(db, ensure_ascii=False, separators=(',', ':')))
 print(len(out), 'playlists écrites dans db.json')
