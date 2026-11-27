@@ -467,6 +467,24 @@ body[data-game=duel] .orb{background:radial-gradient(circle,transparent 50%,rgba
 /* accueil en étapes : menu Solo / Multijoueur, puis réglages */
 #games{display:none!important}#home{padding-bottom:40px}
 .bigchoice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:26px 0 18px}
+/* mode Feat */
+.ft{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.ft h1{margin:0}.ft .lead{margin:0}
+.ft .gi{font-style:normal;font-size:28px}
+.ftart{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.ftbig{font:400 clamp(34px,8vw,64px)/1 Anton,sans-serif;text-transform:uppercase;margin:0;color:var(--acc)}
+.ftturn{background:var(--card);color:var(--cardInk);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line)}
+.ftturn .who{font:400 28px Anton,sans-serif}
+.ftin{display:flex;gap:8px;flex-wrap:wrap}.ftin input{flex:1 1 200px;font:inherit;font-size:18px;padding:13px 16px;border-radius:12px;border:1px solid var(--line);background:var(--bg,#111);color:var(--ink);min-height:52px}
+.ftfb{min-height:24px;font-weight:800}.ftfb.ok{color:var(--ok,#3dff9a)}.ftfb.ko{color:var(--ko,#ff3d5a)}
+.fttime{height:10px;border-radius:99px;background:#fff2;overflow:hidden}.fttime i{display:block;height:100%;background:var(--acc);transition:width .1s linear}
+.ftpl{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.ftpl li{background:var(--card);color:var(--cardInk);border-radius:999px;padding:8px 14px;font-weight:800;border:1px solid var(--line)}
+.ftpl li.cur{box-shadow:inset 0 0 0 3px var(--acc)}.ftpl li.out{opacity:.4;text-decoration:line-through}
+.ftfound{display:flex;flex-wrap:wrap;gap:6px}.ftfound span{background:#fff1;border-radius:999px;padding:5px 10px;font-size:14px}
+.potato{font-size:72px;text-align:center;line-height:1;animation:shake .5s infinite}
+.potato.fast{animation-duration:.18s}.potato.boom{animation:none}
+@keyframes shake{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg) scale(1.06)}}
 .mode.big{min-height:190px;padding:22px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px;text-align:left}
 .mode.big b{font:400 clamp(38px,7vw,56px)/1 Anton,sans-serif;margin:0}.mode.big span{display:block;font-size:15px;line-height:1.45;font-weight:500;font-family:inherit;letter-spacing:0;text-transform:none;background:none;-webkit-text-fill-color:currentColor;color:color-mix(in srgb,var(--ink) 85%,transparent);max-width:26em}
 .menuh{font-size:clamp(44px,11vw,88px)}
@@ -539,6 +557,7 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
       <div class="bigchoice">
         <button class="mode big" data-go="duel" style="--ca:#ff3b30;--cb2:#2f6bff;--cp:linear-gradient(115deg,rgba(255,59,48,.14) 0 50%,rgba(47,107,255,.14) 50% 100%)"><i class="gi" data-icon="duel"></i><b>Duel</b><span>Le plus rapide et le plus juste gagne. À 2 ou plus, chacun sur son téléphone.</span></button>
         <button class="mode big m-party" data-go="party" style="--ca:#ff2fb0;--cb2:#7a3cff;--cp:radial-gradient(circle at 50% 110%,rgba(39,224,255,.2),transparent 50%)"><i class="gi" data-icon="party"></i><b>Babinski</b><span>Le jeu de soirée : ceux qui se trompent boivent (ou font un gage). Chacun sur son téléphone.</span></button>
+        <button class="mode big" data-go="feat" style="--ca:#ffd23f;--cb2:#ff4a1c;--cp:radial-gradient(circle at 90% 10%,rgba(255,210,63,.2),transparent 55%)"><i class="gi">🎤</i><b>Feat</b><span>Un artiste, et chacun à son tour cite quelqu'un avec qui il a fait un feat. Normal ou patate chaude, sur un seul téléphone.</span></button>
       </div>
       <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
     </div>
@@ -641,6 +660,8 @@ body[data-view=menu] .gdesc small,body[data-view] .gdesc small{display:none}
   <!-- RÉSULTATS -->
 
   <!-- PARTIE EN LIGNE : salle d'attente de l'hôte -->
+  <section id="feat" class="hide"><div class="ft" id="ftBody"></div></section>
+
   <section id="lobby" class="hide">
     <p class="kicker" id="lbMode">Partie en ligne</p>
     <button class="btn ghost sm" id="lbChange">🎵 Changer la playlist, la difficulté ou les manches</button>
@@ -1260,7 +1281,7 @@ function renderParty(){
 function addPlayer(){const v=$('#pName').value.trim().slice(0,18);if(!v)return;if(S.party.length>=8)return showErr('8 joueurs maximum.');if(S.party.some(n=>norm(n)===norm(v)))return showErr('Ce prénom est déjà dans la liste.');hideErr();S.party.push(v);store.set('party',S.party);$('#pName').value='';renderParty();$('#pName').focus()}
 
 /* ---------- partie ---------- */
-function show(id){for(const s of ['home','lobby','game','results','ctl'])$('#'+s).classList.toggle('hide',s!==id);$('#hud').classList.toggle('hide',id!=='game');document.body.dataset.screen=id;window.scrollTo(0,0)}
+function show(id){for(const s of ['home','lobby','game','results','ctl','feat'])$('#'+s).classList.toggle('hide',s!==id);$('#hud').classList.toggle('hide',id!=='game');document.body.dataset.screen=id;window.scrollTo(0,0)}
 function start(){
   hideErr();
   const p=playlist();
@@ -1898,11 +1919,153 @@ function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['lb',
 document.querySelectorAll('.gi[data-icon]').forEach(i=>{i.innerHTML=i.dataset.icon==='multi'?GICON.duel:GICON[i.dataset.icon]});
 $('#home').addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');
-  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
+  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='feat')return ftSetup();if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
   const b=e.target.closest('[data-back]');if(b)return view(b.dataset.back);
   if(e.target.closest('[data-join]'))$('#joinOpen').click();
 });
 view('menu');window.brView=view;
+/* ---------- mode Feat : chacun à son tour cite un artiste qui a fait un feat avec l'artiste choisi ----------
+   Normal : 20 s par tour, bonne réponse = 1 point ; la partie s'arrête quand un tour complet passe sans bonne réponse.
+   Patate chaude : une bombe cachée (20 à 45 s) ; une bonne réponse passe la patate au suivant ; celui qui l'a quand elle explose est éliminé. */
+const F=window.F={players:store.get('ftp',[]),mode:store.get('ftm','normal'),art:null,col:new Map(),said:[],cur:0,t:null};
+const FTN=20; /* secondes par tour en mode normal */
+const ftSplit=s=>String(s).split(/,|&|\s+et\s+|\s+and\s+|\s+feat\.?\s+|\s+ft\.?\s+/i).map(x=>x.trim()).filter(Boolean);
+const FTRX=/[([](?:feat\.?|ft\.?|featuring|avec|with)\s+([^)\]]+)[)\]]/ig;
+function ftScreen(h){$('#ftBody').innerHTML=h;show('feat')}
+function ftSetup(){
+  clearInterval(F.t);F.t=null;
+  const pop=ARTISTS.filter(a=>a.w>=8&&a.tracks.length>=10);
+  ftScreen(`<button class="btn ghost back" id="ftBack">← Retour</button>
+  <h1 class="menuh">Feat</h1>
+  <p class="lead">On choisit un artiste. Chacun à son tour tape le nom d'un artiste qui a déjà fait un feat avec lui. Un seul téléphone, qu'on se passe.</p>
+  <div class="setup">
+    <h3 class="plh">Les joueurs</h3>
+    <div class="prow"><input id="ftName" maxlength="18" placeholder="Prénom d'un joueur" autocomplete="off" aria-label="Prénom d'un joueur"><button class="btn" id="ftAdd">Ajouter</button></div>
+    <div class="tags" id="ftTags"></div>
+    <h3 class="plh">Le mode</h3>
+    <div class="prow">${segHtml('ftm',['normal','patate'],F.mode,['🎤 Normal','🥔 Patate chaude'])}</div>
+    <p class="hint" id="ftHint"></p>
+    <h3 class="plh">L'artiste</h3>
+    <div class="searchbox lkrow"><input id="ftQ" type="search" autocomplete="off" placeholder="Cherche un artiste : Jul, Gims, Drake…" aria-label="Chercher un artiste"><button class="btn y" id="ftRnd">🎲 Au hasard</button></div>
+    <div class="chips" id="ftArts"></div>
+    <div class="err hide" id="ftErr" role="alert"></div>
+  </div>`);
+  const tags=()=>{$('#ftTags').innerHTML=F.players.length?F.players.map((n,i)=>`<span class="tag">${esc(n)}<button data-ftrm="${i}" aria-label="Retirer ${esc(n)}">×</button></span>`).join(''):'<span class="empty">Ajoute au moins 2 joueurs.</span>'};
+  const hint=()=>{$('#ftHint').textContent=F.mode==='patate'?'Une bombe cachée tourne. Bonne réponse : tu passes la patate au suivant. Si elle explose dans tes mains, tu es éliminé. Le dernier en jeu gagne.':`${FTN} secondes par tour. Bonne réponse : 1 point. Si personne ne trouve pendant un tour complet, la partie s'arrête. Le plus de points gagne.`};
+  const arts=()=>{const q=norm($('#ftQ').value);const l=q?ARTISTS.filter(a=>a.k.includes(q)).sort((a,b)=>(b.k.startsWith(q)-a.k.startsWith(q))||(b.w-a.w)||(b.tracks.length-a.tracks.length)).slice(0,12):shuffle(pop).slice(0,12);
+    $('#ftArts').innerHTML=l.map(a=>`<button class="chip" data-fta="${a.i}" style="--ca:#ffd23f;--cb2:#ff4a1c">${esc(a.n)}</button>`).join('')||'<span class="empty">Aucun artiste trouvé.</span>'};
+  tags();hint();arts();
+  const err=m=>{const e=$('#ftErr');e.textContent=m;e.classList.remove('hide')};
+  const add=()=>{const v=$('#ftName').value.trim().slice(0,18);if(!v)return;if(F.players.length>=12)return err('12 joueurs maximum.');if(F.players.some(n=>norm(n)===norm(v)))return err('Ce prénom est déjà dans la liste.');F.players.push(v);store.set('ftp',F.players);$('#ftName').value='';$('#ftErr').classList.add('hide');tags();$('#ftName').focus()};
+  const go=a=>{if(F.players.length<2)return err('Ajoute au moins 2 joueurs.');ftLoad(a)};
+  $('#ftBack').onclick=()=>{show('home');view('multi')};
+  $('#ftAdd').onclick=add;$('#ftName').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();add()}};
+  $('#ftTags').onclick=e=>{const b=e.target.closest('[data-ftrm]');if(!b)return;F.players.splice(+b.dataset.ftrm,1);store.set('ftp',F.players);tags()};
+  const ftSetupSeg=()=>{$('#ftBody').querySelector('.seg').onclick=e=>{const b=e.target.closest('[data-ftm]');if(!b)return;F.mode=b.dataset.ftm;store.set('ftm',F.mode);b.parentNode.outerHTML=segHtml('ftm',['normal','patate'],F.mode,['🎤 Normal','🥔 Patate chaude']);ftSetupSeg();hint()}};
+  ftSetupSeg();
+  $('#ftQ').oninput=arts;
+  $('#ftRnd').onclick=()=>go(pop[Math.random()*pop.length|0]);
+  $('#ftArts').onclick=e=>{const b=e.target.closest('[data-fta]');if(b)go(ARTISTS[+b.dataset.fta])};
+}
+/* les feats : la base (titres « feat. ») + Deezer (contributeurs des 100 plus gros titres, albums, et sons des autres où il est invité) */
+async function ftCollect(a){
+  const me=a.k,col=new Map(),add=n=>{n=String(n||'').trim();const k=norm(n);if(k&&k!==me&&k.length>1&&!col.has(k))col.set(k,n)};
+  for(const t of TRACKS){
+    const names=[...t.title.matchAll(FTRX)].flatMap(m=>ftSplit(m[1]));
+    if(ARTISTS[t.ai].k===me){names.forEach(add);if(norm(t.artist)!==me)ftSplit(t.artist).forEach(add)}
+    else if(names.some(n=>norm(n)===me))add(ARTISTS[t.ai].n);
+  }
+  const J=u=>jsonp(u+(u.includes('?')?'&':'?')+'output=jsonp',9000).catch(()=>null);
+  const s=await J(`https://api.deezer.com/search/artist?q=${encodeURIComponent(a.n)}&limit=5`);
+  const da=s&&s.data&&(s.data.find(x=>norm(x.name)===me)||null);
+  if(da){
+    const top=await J(`https://api.deezer.com/artist/${da.id}/top?limit=100`);
+    for(const t of (top&&top.data)||[]){(t.contributors||[]).forEach(c=>add(c.name));for(const m of String(t.title).matchAll(FTRX))ftSplit(m[1]).forEach(add)}
+    const al=await J(`https://api.deezer.com/artist/${da.id}/albums?limit=100`);
+    const albs=((al&&al.data)||[]).slice(0,40);
+    for(let i=0;i<albs.length;i+=8)await Promise.all(albs.slice(i,i+8).map(async x=>{const d=await J(`https://api.deezer.com/album/${x.id}/tracks?limit=100`);for(const t of (d&&d.data)||[]){for(const m of String(t.title).matchAll(FTRX))ftSplit(m[1]).forEach(add);if(t.artist&&norm(t.artist.name)!==me)add(t.artist.name)}}));
+    for(let idx=0;idx<300;idx+=100){const d=await J(`https://api.deezer.com/search/track?q=${encodeURIComponent('feat '+a.n)}&limit=100&index=${idx}`);
+      for(const t of (d&&d.data)||[]){const names=[...String(t.title).matchAll(FTRX)].flatMap(m=>ftSplit(m[1]));if(names.some(n=>norm(n)===me)&&t.artist)add(t.artist.name)}
+      if(!d||!d.next)break}
+  }
+  return col;
+}
+async function ftLoad(a){
+  ftScreen(`<p class="kicker">Feat · ${F.mode==='patate'?'Patate chaude':'Normal'}</p><p class="ftbig">${esc(a.n)}</p><p class="lead">Je cherche tous ses feats…</p>`);
+  const col=await ftCollect(a);
+  if(col.size<5){ftSetup();const e=$('#ftErr');e.textContent=`Je n'ai trouvé que ${plural(col.size,'feat')} pour ${a.n}. Choisis un autre artiste.`;e.classList.remove('hide');return}
+  F.art=a;F.col=col;F.said=[];F.cur=0;F.miss=0;F.out=[];
+  F.pl=F.players.map(name=>({name,pts:0,out:false}));
+  F.round=1;ftTurn(true);
+}
+const lev=(a,b)=>{if(a===b)return 0;const m=a.length,n=b.length;if(!m||!n)return m||n;let p=[...Array(n+1).keys()];for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]};
+const ftStrip=k=>k.replace(/^(lil|the|dj|mc|le|la|les)/,'');
+function ftMatch(v){
+  const n=norm(v);if(n.length<2)return null;
+  if(F.col.has(n))return n;
+  let best=null,bd=99;
+  for(const k of F.col.keys()){
+    if(ftStrip(k)===ftStrip(n)&&ftStrip(n).length>=3)return k;
+    const tol=k.length>=9?2:k.length>=5?1:0,d=lev(n,k);if(d<=tol&&d<bd){bd=d;best=k}
+  }
+  return best;
+}
+const ftAlive=()=>F.pl.filter(p=>!p.out);
+function ftNext(){const n=F.pl.length;for(let s=1;s<=n;s++){const k=(F.cur+s)%n;if(!F.pl[k].out){F.cur=k;return}}}
+function ftTurn(newRound){
+  clearInterval(F.t);
+  if(F.mode==='patate'&&newRound){F.bomb=performance.now()+(20+Math.random()*25)*1000}
+  F.t0=performance.now();F.last='';
+  const p=F.pl[F.cur],pat=F.mode==='patate';
+  ftScreen(`<p class="kicker">Feat · ${pat?`Patate chaude · manche ${F.round}`:'Normal'}</p>
+  <p class="ftbig">${esc(F.art.n)}</p>
+  <ul class="ftpl">${F.pl.map((q,k)=>`<li class="${k===F.cur?'cur':''}${q.out?' out':''}">${esc(q.name)}${pat?'':` · ${q.pts}`}</li>`).join('')}</ul>
+  <div class="ftturn">
+    ${pat?'<div class="potato" id="ftPot">🥔</div>':'<div class="fttime"><i id="ftBar" style="width:100%"></i></div>'}
+    <span class="who">À toi, ${esc(p.name)} !</span>
+    <span>Un artiste qui a fait un feat avec ${esc(F.art.n)} :</span>
+    <div class="ftin"><input id="ftIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Tape un nom…" aria-label="Nom d'un artiste"><button class="btn y" id="ftOk">Valider</button></div>
+    <div class="ftfb" id="ftFb" aria-live="polite"></div>
+    <div class="prow"><button class="btn ghost sm hide" id="ftForce">✓ Il a raison, on accepte</button>${pat?'':'<button class="btn ghost sm" id="ftPass">Je passe</button>'}<button class="btn ghost sm" id="ftStop">Terminer la partie</button></div>
+  </div>
+  <p class="hint">${F.said.length} feat${F.said.length>1?'s':''} trouvé${F.said.length>1?'s':''} sur ${F.col.size} que je connais.</p>
+  <div class="ftfound">${F.said.map(k=>`<span>${esc(F.col.get(k))}</span>`).join('')}</div>`);
+  const inp=$('#ftIn');inp.focus();
+  const fb=(m,c)=>{const e=$('#ftFb');e.textContent=m;e.className='ftfb '+(c||'')};
+  const good=k=>{F.said.push(k);p.pts++;F.miss=0;fb(`✓ ${F.col.get(k)} !`,'ok');clearInterval(F.t);setTimeout(()=>{if(F.mode==='normal'&&F.said.length>=F.col.size)return ftEnd('Tous les feats ont été trouvés !');ftNext();ftTurn(false)},700)};
+  const submit=()=>{const v=inp.value.trim();if(!v)return;const k=ftMatch(v);inp.value='';inp.focus();
+    if(k&&F.said.includes(k))return fb(`${F.col.get(k)} a déjà été dit !`,'ko');
+    if(k)return good(k);
+    F.last=v;fb(`${v} : je ne connais pas ce feat. Réessaie !`,'ko');$('#ftForce').classList.remove('hide')};
+  $('#ftOk').onclick=submit;inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();submit()}};
+  $('#ftForce').onclick=()=>{if(!F.last)return;const k=norm(F.last);if(F.said.includes(k))return;F.col.set(k,F.last);good(k)};
+  $('#ftStop').onclick=()=>ftEnd('Partie terminée.');
+  const miss=()=>{clearInterval(F.t);F.miss++;if(F.miss>=ftAlive().length)return ftEnd('Personne n\'a trouvé pendant un tour complet.');fb('Temps écoulé !','ko');setTimeout(()=>{ftNext();ftTurn(false)},900)};
+  if(!pat)$('#ftPass').onclick=miss;
+  F.t=setInterval(()=>{
+    const now=performance.now();
+    if(pat){const left=F.bomb-now,pot=$('#ftPot');if(pot)pot.classList.toggle('fast',left<6000);
+      if(left<=0){clearInterval(F.t);p.out=true;F.out.push(p.name);if(pot){pot.textContent='💥';pot.classList.add('boom')}
+        $('#ftBody').querySelector('.ftin').remove();fb(`BOUM ! ${p.name} avait la patate, éliminé !`,'ko');
+        const al=ftAlive();if(al.length<=1)return setTimeout(()=>ftEnd(`${al[0]?al[0].name:'Personne'} gagne la patate chaude !`),1600);
+        $('#ftBody').querySelector('.ftturn .prow').innerHTML='<button class="go" id="ftNextR">MANCHE SUIVANTE</button>';
+        $('#ftNextR').onclick=()=>{F.round++;ftNext();ftTurn(true)}}}
+    else{const el=(now-F.t0)/1000,b=$('#ftBar');if(b)b.style.width=Math.max(0,100-el/FTN*100)+'%';if(el>=FTN)miss()}
+  },100);
+}
+function ftEnd(why){
+  clearInterval(F.t);F.t=null;
+  const pat=F.mode==='patate',rk=pat?[...ftAlive(),...[...F.out].reverse().map(n=>F.pl.find(p=>p.name===n))]:[...F.pl].sort((a,b)=>b.pts-a.pts);
+  const tie=!pat&&rk[1]&&rk[0].pts===rk[1].pts;
+  const left=[...F.col.keys()].filter(k=>!F.said.includes(k)).map(k=>F.col.get(k));
+  ftScreen(`<p class="kicker">Feat · ${esc(F.art.n)} · ${pat?'Patate chaude':'Normal'}</p>
+  <p class="big">${tie?'Égalité !':esc(rk[0].name)+' gagne'}</p><p class="lead">${esc(why)}</p>
+  <ol class="board">${rk.map((p,i)=>`<li><b>${esc(p.name)}</b><span>${pat?(i===0?'dernier en jeu':'éliminé'):plural(p.pts,'feat')}</span><em>${pat?(i+1)+'e':p.pts+' pt'+(p.pts>1?'s':'')}</em></li>`).join('')}</ol>
+  <h3 class="plh">Trouvés (${F.said.length})</h3><div class="ftfound">${F.said.map(k=>`<span>${esc(F.col.get(k))}</span>`).join('')||'<span>aucun</span>'}</div>
+  ${left.length?`<h3 class="plh">Pas trouvés (${left.length})</h3><div class="ftfound">${shuffle(left).slice(0,40).map(n=>`<span>${esc(n)}</span>`).join('')}${left.length>40?`<span>… et ${left.length-40} autres</span>`:''}</div>`:''}
+  <div class="launch"><button class="go" id="ftAgain">REJOUER</button><button class="btn alt" id="ftHome">Changer d'artiste</button></div>`);
+  $('#ftAgain').onclick=()=>ftLoad(F.art);$('#ftHome').onclick=ftSetup;
+}
 $('#createOpen').addEventListener('click',()=>{
   if(S.game==='solo'){S.game='duel';store.set('game',S.game);renderGames();summary()}
   S.wantNet=true;start();S.wantNet=false;
