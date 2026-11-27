@@ -1089,7 +1089,7 @@ function renderGames(){
     :S.game==='party'?(net?'Chaque manche, tout le monde répond en même temps sur son téléphone.':'Chaque manche, tout le monde répond en même temps sur sa ligne de boutons.')+(S.gm?' Bonne réponse : 1 point. À la fin, classement par points (égalité : le plus rapide au total passe devant). Le 1er n\'a rien, les autres ont un gage de plus en plus fort selon leur place.':' Bonne réponse : rien. Mauvaise réponse ou pas de réponse : tu bois. À la fin, classement par bonnes réponses (égalité : le plus rapide au total passe devant). Le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.')
     :'Bonne réponse : entre 300 et 1000 points selon ta vitesse, multipliés par la difficulté (×1, ×1,5, ×2). Série : 3 bonnes réponses d\'affilée = points ×2, 5 d\'affilée = points ×3 (une erreur remet à zéro). La musique tourne pendant tout le chrono. Clavier : 1 à 4.';
 }
-$('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;if(b.dataset.g==='party'&&S.game!=='party')clubFx();S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
+$('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;if(b.dataset.g==='party')clubFx();S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
 function saveOpt(){store.set('opt',S.opt)}
 $('#setup').addEventListener('click',e=>{
   const wh=e.target.closest('[data-where]');if(wh){S.where=wh.dataset.where;store.set('where',S.where);renderGames();summary();return}
@@ -1709,7 +1709,7 @@ function view(v){for(const [k,id] of [['menu','vMenu'],['multi','vMulti'],['lb',
 document.querySelectorAll('.gi[data-icon]').forEach(i=>{i.innerHTML=i.dataset.icon==='multi'?GICON.duel:GICON[i.dataset.icon]});
 $('#home').addEventListener('click',e=>{
   const g=e.target.closest('[data-go]');
-  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='lb'){view('lb');return lbPage()}if(k==='party'&&S.game!=='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
+  if(g){const k=g.dataset.go;if(k==='multi')return view('multi');if(k==='lb'){view('lb');return lbPage()}if(k==='party')clubFx();S.game=k;store.set('game',k);hideErr();renderGames();summary();$('#backSetup').dataset.back=k==='solo'?'menu':'multi';view('setup');return wShow(0)}
   const b=e.target.closest('[data-back]');if(b)return view(b.dataset.back);
   if(e.target.closest('[data-join]'))$('#joinOpen').click();
 });
