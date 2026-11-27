@@ -98,3 +98,7 @@ Barres orange du logo dans le halo du menu (choix de Max). `apple-touch-icon.png
 ## Réglages sur un seul écran (2026-11-27)
 
 Après le choix du mode, un seul écran : Playlist et Difficulté (on touche pour changer, une sous-page s'ouvre et revient toute seule), les manches et options, puis le gros bouton Lancer. « Comment on joue ? » est replié (ouvert la première fois pour chaque mode) et contient aussi « Tester le son ». La dernière playlist choisie est gardée. Solo = 2 touches pour lancer.
+
+## Amis (2026-11-27)
+
+Page Mon compte, « Mes amis » : on ajoute le pseudo d'un ami (il doit avoir un compte). Touche un ami pour voir son compte : parties, missions et défis réussis, record, stickers (bientôt). « Inviter à jouer » ouvre une partie en ligne (ou utilise celle déjà ouverte). L'ami reçoit un bandeau « X t'invite » s'il a l'appli ouverte, ou s'il l'ouvre dans les 15 minutes. « Rejoindre » le fait entrer directement. Dans la salle d'attente, « Inviter un ami » liste aussi les amis. Le compte garde la liste dans `fr`. L'invitation est un message gardé sur `inv/<pseudo>`.
