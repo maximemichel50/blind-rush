@@ -93,3 +93,8 @@ Barres orange du logo dans le halo du menu (choix de Max). `apple-touch-icon.png
 - Un classement par playlist / style, ou par artiste choisi (1 à 3 artistes), et par nombre de manches. Bouton « Classement mondial de cette playlist » sur l'accueil.
 - Pas de Duel ni de Babinski dans le classement.
 - Stockage : messages gardés sur les 3 relais publics déjà utilisés pour le jeu en ligne, plus une copie sur chaque appareil qui remet les scores si un relais les perd.
+
+
+## Réglages sur un seul écran (2026-11-27)
+
+Après le choix du mode, un seul écran : Playlist et Difficulté (on touche pour changer, une sous-page s'ouvre et revient toute seule), les manches et options, puis le gros bouton Lancer. « Comment on joue ? » est replié (ouvert la première fois pour chaque mode) et contient aussi « Tester le son ». La dernière playlist choisie est gardée. Solo = 2 touches pour lancer.
