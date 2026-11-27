@@ -19,6 +19,8 @@ La musique tourne pendant tout le chrono, dans tous les modes. La difficulté r�
 La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont des titres du même artiste ; en Facile, ce sont des artistes différents. Facile et Moyen ne passent que les gros tubes des artistes les plus connus. Hardcore reprend les sons du Difficile, mais on tape le titre soi-même (15 s, fautes tolérées : `titleOk()`, `typeIn()`, sur le téléphone `tapTxt()`).
 
 - **Solo** : 5 à 20 manches contre le chrono, record par difficulté et par nombre de manches.
+- **Crescendo** (Solo, étape Difficulté « On devine ») : 2 s de musique ; pas trouvé ou mauvaise réponse (elle se grise), le son repart pour 4 s, puis 6, 8, 10 s. Points : 1000 / 800 / 600 / 400 / 250 × difficulté (`CRES`, `cresTick()`, `cresMore()`). Classement à part (`-c`).
+- **Quels sons selon la difficulté** : d'après la place du son dans le classement Deezer de son artiste (`t.rk`, `rkOf()`, `BAND`). Facile et Moyen : ses sons les plus écoutés ; Difficile et Hardcore : du 5e au 30e environ. Les playlists à thème suivent la même règle quand leurs artistes sont dans la base. Les mauvaises réponses ne reviennent jamais deux fois dans une partie (`GSH`, `fresh2()`).
 - **Séries** (Solo et Duel) : 3 bonnes réponses d'affilée = points ×2, 5 d'affilée = ×3, une erreur remet à zéro (`MULT`).
 - **Duel** (ambiance ring) : deux joueurs sur le même écran (touches 1-4 pour le rouge, 7 8 9 0 pour le bleu), ou 2 à 12 joueurs en ligne. Bonne réponse 300 à 1000 pts selon la vitesse × difficulté, +150 au premier qui trouve. Option : malus de −150 × difficulté en cas d'erreur.
 - **Duel** : le dernier reçoit un gage à la fin (bouton « Autre gage » pour en tirer un autre). Liste : `GAGES` (3 niveaux).
@@ -36,6 +38,9 @@ Sur l'accueil, toucher **Multijoueur**, choisir Duel ou Babinski, puis suivre le
 5. Un joueur qui perd la connexion (écran verrouillé, réseau) est reconnecté automatiquement et retrouve la partie. « Rejouer » ramène tout le monde dans la salle d'attente.
 
 Technique : les appareils ne se connectent pas directement entre eux (ça bloquait souvent en 4G ou entre deux box). Les messages passent par trois serveurs relais publics MQTT (EMQX, HiveMQ, Mosquitto), utilisés en même temps : si l'un est en panne, les autres suffisent. Code : `brHost()` et `brJoin()` dans le premier `<script>`. Aucun compte, rien n'est stocké. Pour tester sans internet : lancer deux relais MQTT locaux en WebSocket sur les ports 8883 et 8884, et ouvrir la page avec `?peer=local`.
+
+## Icône
+`apple-touch-icon.png` (iPhone), `icon-192.png`, `icon-512.png` et `manifest.json`. Pour voir la nouvelle icône, supprimer l'appli de l'écran d'accueil puis la rajouter depuis Safari.
 
 ## Repères dans `index.html`
 
