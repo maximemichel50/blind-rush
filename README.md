@@ -16,7 +16,7 @@ Blind test musical : 10 manches, 4 réponses, plus tu réponds vite plus tu marq
 
 La musique tourne pendant tout le chrono, dans tous les modes. La difficulté règle le temps pour répondre (20 s, 14 s, 8 s) et l'endroit du morceau où l'extrait démarre.
 
-La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont des titres du même artiste ; en Facile, ce sont des artistes différents.
+La difficulté par défaut est Moyen. À partir de Moyen, les 4 réponses sont des titres du même artiste ; en Facile, ce sont des artistes différents. Facile et Moyen ne passent que les gros tubes des artistes les plus connus. Hardcore reprend les sons du Difficile, mais on tape le titre soi-même (15 s, fautes tolérées : `titleOk()`, `typeIn()`, sur le téléphone `tapTxt()`).
 
 - **Solo** : 5 à 20 manches contre le chrono, record par difficulté et par nombre de manches.
 - **Séries** (Solo et Duel) : 3 bonnes réponses d'affilée = points ×2, 5 d'affilée = ×3, une erreur remet à zéro (`MULT`).
@@ -47,6 +47,8 @@ Technique : les appareils ne se connectent pas directement entre eux (ça bloqua
 - **Modes** : barre d'onglets en bas de l'accueil (`<nav id="games">`, icônes dans `GICON`, styles `.tabbar` / `.tb`), objets `GAMES`, `INT` (intensités Babinski) et `CARDS`, fonctions `round()`, `reveal()` et `partyRound()` (classement et peines du mode Babinski), `playFx()` (animation de fin de manche), `clubFx()` (animation boîte de nuit quand on choisit Babinski).
 
 - **Ambiances** : objet `THEMES` (un thème par style, plus `duel` et `party` pour les modes) (couleurs `bg`, `ink`, `card`, `acc`, motif de fond `pat`, mot en filigrane `w`).
+- **Animation d'ouverture** : `#splash` en haut du `<body>`, retirée par `brReady()` dès que la base est chargée (jamais d'attente en plus).
+- **Manches spéciales (Babinski)** : `cardFx()` (carte qui se retourne, emoji `CARDS[k].e`) ; éclat de série ×2 / ×3 : `bonusFx()`.
 - **Difficultés** : objet `DIFF` (durée de l'extrait `clip`, temps pour répondre `limit`, multiplicateur `mult`, point de départ de l'extrait `off`).
 - **Points** : fonction `answer()` — 300 à 1000 pts selon la vitesse × multiplicateur, + bonus de série.
 - **Tirage des manches** : `buildRounds()` et `makeChoices()`.
