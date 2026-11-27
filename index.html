@@ -741,7 +741,7 @@ body[data-deco=feat] h1{color:#ffd23f!important}
       <p class="lead">À quoi vous jouez ?</p>
       <div class="bigchoice">
         <button class="mode big" data-go="duel" style="--ca:#ff3b30;--cb2:#2f6bff;--cp:linear-gradient(115deg,rgba(255,59,48,.14) 0 50%,rgba(47,107,255,.14) 50% 100%)"><i class="gi" data-icon="duel"></i><b>Duel</b><span>Le plus rapide et le plus juste gagne. À 2 ou plus, chacun sur son téléphone.</span></button>
-        <button class="mode big m-party" data-go="party" style="--ca:#ff2fb0;--cb2:#7a3cff;--cp:radial-gradient(circle at 50% 110%,rgba(39,224,255,.2),transparent 50%)"><i class="gi" data-icon="party"></i><b>Babinski</b><span>Le jeu de soirée : ceux qui se trompent boivent (ou font un gage). Chacun sur son téléphone.</span></button>
+        <button class="mode big m-party" data-go="party" style="--ca:#ff2fb0;--cb2:#7a3cff;--cp:radial-gradient(circle at 50% 110%,rgba(39,224,255,.2),transparent 50%)"><i class="gi" data-icon="party"></i><b>Babinski</b><span>Le jeu de soirée : les derniers boivent (ou font un gage). Chacun sur son téléphone.</span></button>
         <button class="mode big" data-go="feat" style="--ca:#ffd23f;--cb2:#ff4a1c;--cp:radial-gradient(circle at 90% 10%,rgba(255,210,63,.2),transparent 55%)"><i class="gi">🎤</i><b>Feat</b><span>Un artiste, et chacun à son tour cite quelqu'un avec qui il a fait un feat. Normal ou patate chaude, sur un seul téléphone.</span></button>
       </div>
       <div class="joinbar"><div><b>Un ami a créé une partie ?</b><span>Rejoins-la depuis ton téléphone avec son code.</span></div><button class="btn y" id="joinOpen">Rejoindre une partie</button></div>
@@ -1048,7 +1048,7 @@ const DIFF={
 };
 const store={get(k,d){try{const v=localStorage.getItem('br-'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('br-'+k,JSON.stringify(v))}catch(e){}}};
 const S=window.S={game:store.get('game','solo'),duel:store.get('duel',['','']),party:store.get('party',[]),soft:store.get('soft',false),opt:Object.assign({solo:{n:10},duel:{n:10,malus:true},party:{n:10,int:'destroy',cards:true}},store.get('opt',{})),mode:'style',cat:'mix',diff:'moyen',pick:store.get('pick',[]),valid:store.get('valid',[]),rounds:[],i:0,score:0,streak:0,phase:'idle',t0:0,raf:0,fails:0};
-S.where=store.get('where','net');S.drink=store.get('drink',S.soft?'pompes':'alcool');S.soft=S.drink==='pompes';S.gm=S.drink==='gages';
+S.where=store.get('where','net');S.drink=store.get('drink','alcool');if(S.drink==='pompes')S.drink='gages';S.soft=false;S.gm=S.drink!=='alcool';S.nog=S.drink==='rien';
 S.hostPlays=store.get('hostPlays',true);S.hostName=store.get('hostName','');S.online=false;
 S.teams=store.get('teams',false);S.hostTm=0;S.tmOn=false;
 S.pick=S.pick.filter(i=>ARTISTS[i]);S.valid=S.valid.filter(i=>ARTISTS[i]);
@@ -1307,7 +1307,7 @@ function makeChoices(ans,pool){
 const GAMES={
   solo:{n:'Solo',d:'Toi contre le chrono. Record à battre.',h:'Devine le son. Avant les autres.',lead:'4 réponses par manche. Plus tu réponds vite, plus tu marques.'},
   duel:{n:'Duel',d:'À 2 ou plus, chacun sur son téléphone. Le plus rapide et le plus juste gagne.',h:'Chacun pour soi. Le plus rapide gagne.',lead:'Face-à-face ou mêlée générale jusqu\'à 12 en ligne. Chaque seconde compte, chaque erreur coûte.'},
-  party:{n:'Babinski',d:'Là pour se détruire. Chacun sur son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps : ceux qui se trompent boivent. À la fin, plus tu es mal classé, plus tu bois.'}
+  party:{n:'Babinski',d:'Là pour se détruire. Chacun sur son téléphone.',h:'Babinski',lead:'Là pour se détruire. Tout le monde répond en même temps. À la fin, plus tu es mal classé, plus tu bois.'}
 };
 /* icônes de la barre des modes */
 const GICON={
@@ -1371,9 +1371,9 @@ const GUIDE={
     uniq:'Le mode compétition : tu ne bats pas un chrono, tu bats tes amis.'},
   party:{tag:'Là pour se détruire',pts:[
     ['🍻','Le mode soirée','De 2 à 12 joueurs, chacun sur son téléphone.'],
-    ['❌','Une erreur, ça se boit','Tout le monde répond en même temps. Mauvaise réponse ou pas de réponse : tu bois, selon l\'intensité choisie.'],
-    ['📉','Plus tu es mal classé, plus tu bois','À la fin, le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.'],
-    ['🃏','Cartes spéciales et versions sans alcool','Cartes en option (Réflexe éclair, Double ou rien, Karaoké…). Version gages ou pompes pour jouer sans alcool.']],
+    ['❌','Une erreur, ça se paie à la fin','Tout le monde répond en même temps. Bonne réponse : 1 point. En option, les erreurs se boivent aussi à chaque manche.'],
+    ['📉','Plus tu es mal classé, plus tu bois','À la fin, le 1er ne boit rien, le 2e boit 2, le 3e boit 3, et ainsi de suite. Version Soft : aucun malus.'],
+    ['🃏','Cartes spéciales et versions sans alcool','Cartes en option (Réflexe éclair, Double ou rien, Karaoké…). Version gages sans alcool, ou Soft sans aucun malus.']],
     uniq:'Pas de points à gagner : le but, c\'est de ne pas finir dernier.'}
 };
 function renderGuide(){
@@ -1397,11 +1397,14 @@ const CARDS={
   karaoke:{n:'Karaoké',d:'Le premier chante le refrain. Réussi : il distribue 2. Raté : il boit 2.'}
 };
 const unit=n=>S.soft?plural(n,'pompe'):plural(n,'gorgée');
-const total=p=>`${p.good} ✓`+(S.gm?'':` · ${p.drunk?unit(p.drunk):'rien bu'}`);
+const total=p=>`${p.good} ✓`+(RG()?'':` · ${p.drunk?unit(p.drunk):'rien bu'}`);
 /* classement Babinski : bonnes réponses, puis temps total de réponse (le plus rapide devant) */
 const pbetter=(a,b)=>b.good-a.good||a.tt-b.tt;
 /* fin de partie : le 1er rien, puis 1 gorgée de plus à chaque place */
-const finSips=rank=>Math.min(rank-1,10);
+/* gorgées à chaque manche ratée : seulement si l'option est cochée (sinon, tout se joue à la fin) */
+const RG=()=>S.gm||!opt().pr;
+/* fin de partie : le 1er rien ; sans gorgées pendant la partie, un peu plus à la fin (le 2e 2, le 3e 3…) */
+const finSips=rank=>rank<2?0:S.gm||opt().pr?Math.min(rank-1,10):Math.min(rank,12);
 const CS=()=>S.soft?'20 pompes':'cul sec';
 const KEYS2=['Digit7','Digit8','Digit9','Digit0'];
 const LET='ABCD';
@@ -1439,16 +1442,17 @@ function renderGames(){
   const netHint=`<p class="hint">Tu crées la partie et tu obtiens un code. Tes amis la rejoignent depuis leur téléphone (jusqu'à ${MAXP} joueurs) et répondent dessus, façon Kahoot. Le son sort de cet appareil.</p>`;
   if(S.game==='duel')h=where+(net?netHint:`<div class="duo"><label class="red">Joueur rouge<input id="p1" maxlength="18" placeholder="Rouge" autocomplete="off" value="${esc(S.duel[0])}"></label><span class="vs">VS</span><label class="blue">Joueur bleu<input id="p2" maxlength="18" placeholder="Bleu" autocomplete="off" value="${esc(S.duel[1])}"></label></div>`)+h+`<label class="tog"><input type="checkbox" id="malus" ${o.malus?'checked':''}><span>Malus en cas d'erreur (−150 points × difficulté)</span></label>`;
   if(S.game==='party')h=where+(net?netHint:`<div class="prow"><input id="pName" maxlength="18" placeholder="Prénom d'un joueur" autocomplete="off" aria-label="Prénom d'un joueur"><button class="btn" id="pAdd">Ajouter</button><span class="pcount" id="pCount"></span></div><div class="tags" id="pTags"></div>`)+h+
-    `<div class="prow"><span class="lbl">Version</span>${segHtml('drink',['alcool','gages','pompes'],S.drink,['🍺 Avec alcool','🎭 Sans alcool : gages','💪 Sans alcool : pompes'])}</div>`+
-    (S.gm?`<p class="hint">Personne ne boit. Bonne réponse : 1 point (départage au temps de réponse). À la fin, le 1er n'a rien et chacun des autres a un gage, de plus en plus fort selon sa place (chanter, mimer, danser…).</p>`
-      :`<div class="prow"><span class="lbl">Intensité</span>${segHtml('int',Object.keys(INT),o.int,Object.values(INT).map(x=>x.n))}</div><p class="hint" id="intHint">Bonne réponse : tu ne ${S.soft?'fais rien':'bois rien'}. ${esc(S.soft?INT[o.int].d.replace(/gorgées?/,m=>m.replace('gorgée','pompe')):INT[o.int].d)} À la fin de la partie : le 1er rien, le 2e ${unit(1)}, le 3e ${unit(2)}… (égalité départagée au temps de réponse).</p>`)+
-    `<label class="tog"><input type="checkbox" id="cards" ${o.cards?'checked':''}><span>Cartes spéciales (Réflexe éclair${S.gm?'':', Double ou rien, Karaoké…'})</span></label>`+
+    `<div class="prow"><span class="lbl">Version</span>${segHtml('drink',['alcool','gages','rien'],S.drink,['🍺 Avec alcool','🎭 Sans alcool : gages','😇 Soft : aucun malus'])}</div>`+
+    (S.nog?`<p class="hint">Aucun malus : ni gorgée, ni gage. Bonne réponse : 1 point (départage au temps de réponse). À la fin, juste le classement.</p>`
+      :S.gm?`<p class="hint">Personne ne boit. Bonne réponse : 1 point (départage au temps de réponse). À la fin, le 1er n'a rien et chacun des autres a un gage, de plus en plus fort selon sa place (chanter, mimer, danser…).</p>`
+      :`<label class="tog"><input type="checkbox" id="perRound" ${o.pr?'checked':''}><span>Gorgées à chaque manche ratée (sinon, seulement à la fin)</span></label>`+(!o.pr?`<p class="hint">Personne ne boit pendant la partie. Bonne réponse : 1 point. À la fin : le 1er rien, le 2e 2 gorgées, le 3e 3, et ainsi de suite (égalité départagée au temps de réponse).</p>`:`<div class="prow"><span class="lbl">Intensité</span>${segHtml('int',Object.keys(INT),o.int,Object.values(INT).map(x=>x.n))}</div><p class="hint" id="intHint">Bonne réponse : tu ne ${S.soft?'fais rien':'bois rien'}. ${esc(S.soft?INT[o.int].d.replace(/gorgées?/,m=>m.replace('gorgée','pompe')):INT[o.int].d)} À la fin de la partie : le 1er rien, le 2e ${unit(1)}, le 3e ${unit(2)}… (égalité départagée au temps de réponse).</p>`))+
+    `<label class="tog"><input type="checkbox" id="cards" ${o.cards?'checked':''}><span>Cartes spéciales (Réflexe éclair${RG()?'':', Double ou rien, Karaoké…'})</span></label>`+
     (S.drink==='alcool'?`<p class="warn">Jeu réservé aux adultes. Buvez avec modération, gardez de l'eau sur la table et personne ne prend le volant. Chaque joueur a un joker eau par partie pour échapper à une peine.</p>`:'');
   $('#setup').innerHTML=h;
   if(S.game==='party'&&!net)renderParty();
   $('#goBtn').textContent=net?'CRÉER LA PARTIE':'LANCER LA PARTIE';
   $('#rules').innerHTML=S.game==='duel'?`Bonne réponse : 300 à 1000 points selon la vitesse (× difficulté), +150 au premier qui trouve. Série : 3 bonnes d\'affilée = ×2, 5 d\'affilée = ×3. Le dernier a un gage à la fin.${o.malus?' Mauvaise réponse : −150 (× difficulté).':''} Pas de réponse : 0. La musique tourne pendant tout le chrono. ${net?'En ligne : chacun répond sur son téléphone, le classement s\'affiche après chaque manche.':'Clavier : rouge 1 à 4, bleu 7 8 9 0.'}`
-    :S.game==='party'?(net?'Chaque manche, tout le monde répond en même temps sur son téléphone.':'Chaque manche, tout le monde répond en même temps sur sa ligne de boutons.')+(S.gm?' Bonne réponse : 1 point. À la fin, classement par points (égalité : le plus rapide au total passe devant). Le 1er n\'a rien, les autres ont un gage de plus en plus fort selon leur place.':' Bonne réponse : rien. Mauvaise réponse ou pas de réponse : tu bois. À la fin, classement par bonnes réponses (égalité : le plus rapide au total passe devant). Le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.')
+    :S.game==='party'?(net?'Chaque manche, tout le monde répond en même temps sur son téléphone.':'Chaque manche, tout le monde répond en même temps sur sa ligne de boutons.')+(S.nog?' Bonne réponse : 1 point. Aucun malus : à la fin, juste le classement (égalité : le plus rapide au total passe devant).':S.gm?' Bonne réponse : 1 point. À la fin, classement par points (égalité : le plus rapide au total passe devant). Le 1er n\'a rien, les autres ont un gage de plus en plus fort selon leur place.':!o.pr?' Bonne réponse : 1 point. Personne ne boit pendant la partie. À la fin, classement par bonnes réponses (égalité : le plus rapide au total passe devant). Le 1er ne boit rien, le 2e boit 2, le 3e boit 3, et ainsi de suite.':' Bonne réponse : rien. Mauvaise réponse ou pas de réponse : tu bois. À la fin, classement par bonnes réponses (égalité : le plus rapide au total passe devant). Le 1er ne boit rien, le 2e boit 1, le 3e boit 2, et ainsi de suite.')
     :'Bonne réponse : entre 300 et 1000 points selon ta vitesse, multipliés par la difficulté (×1, ×1,5, ×2). Série : 3 bonnes réponses d\'affilée = points ×2, 5 d\'affilée = points ×3 (une erreur remet à zéro). La musique tourne pendant tout le chrono. Clavier : 1 à 4.';
 }
 $('#games').addEventListener('click',e=>{const b=e.target.closest('[data-g]');if(!b)return;if(b.dataset.g==='party')clubFx();S.game=b.dataset.g;store.set('game',S.game);hideErr();renderGames();summary()});
@@ -1457,7 +1461,7 @@ $('#setup').addEventListener('click',e=>{
   const wh=e.target.closest('[data-where]');if(wh){S.where=wh.dataset.where;store.set('where',S.where);renderGames();summary();return}
   const nr=e.target.closest('[data-nr]');if(nr){opt().n=+nr.dataset.nr;saveOpt();renderGames();summary();return}
   const it=e.target.closest('[data-int]');if(it){opt().int=it.dataset.int;saveOpt();renderGames();return}
-  const dk=e.target.closest('[data-drink]');if(dk){S.drink=dk.dataset.drink;S.soft=S.drink==='pompes';S.gm=S.drink==='gages';store.set('drink',S.drink);renderGames();return}
+  const dk=e.target.closest('[data-drink]');if(dk){S.drink=dk.dataset.drink;S.soft=false;S.gm=S.drink!=='alcool';S.nog=S.drink==='rien';store.set('drink',S.drink);renderGames();return}
   const rp=e.target.closest('[data-rp]');if(rp){S.party.splice(+rp.dataset.rp,1);store.set('party',S.party);renderParty();return}
   if(e.target.closest('#pAdd'))addPlayer();
 });
@@ -1465,6 +1469,7 @@ $('#setup').addEventListener('input',e=>{if(e.target.id==='p1'||e.target.id==='p
 $('#setup').addEventListener('change',e=>{
   if(e.target.id==='malus'){opt().malus=e.target.checked;saveOpt();renderGames()}
   if(e.target.id==='cards'){opt().cards=e.target.checked;saveOpt()}
+  if(e.target.id==='perRound'){opt().pr=e.target.checked;saveOpt();renderGames();return}
 });
 $('#setup').addEventListener('keydown',e=>{if(e.target.id==='pName'&&e.key==='Enter'){e.preventDefault();addPlayer()}});
 function renderParty(){
@@ -1517,12 +1522,12 @@ function hud(){
   if(S.game==='duel'&&S.tmOn){const sc=tmSc();h+=[0,1].map(t=>`<span class="pc${t}"><small>Équipe ${TN[t]}</small>${fmt(sc[t])}</span>`).join('')}
   else if(S.game==='duel'&&S.pl.length===2)h+=S.pl.map((p,i)=>`<span class="pc${i}"><small>${esc(p.name)}</small>${fmt(p.score)} ${multTag(p.streak)}</span>`).join('');
   else if(S.game==='duel'&&S.pl.length!==2){const top=[...S.pl].sort((a,b)=>b.score-a.score)[0];h+=`<span><small>En tête : ${esc(top.name)}</small>${fmt(top.score)}</span><span><small>Joueurs</small>${S.pl.length}</span>`}
-  if(S.game==='party'){const top=[...S.pl].sort(pbetter)[0];h+=`<span><small>En tête : ${esc(top.name)}</small>${top.good} ✓</span>`+(S.gm?'':`<span><small>${S.soft?'Pompes':'Gorgées'}</small>${S.pl.reduce((s,p)=>s+p.drunk,0)}</span>`)}
+  if(S.game==='party'){const top=[...S.pl].sort(pbetter)[0];h+=`<span><small>En tête : ${esc(top.name)}</small>${top.good} ✓</span>`+(RG()?'':`<span><small>${S.soft?'Pompes':'Gorgées'}</small>${S.pl.reduce((s,p)=>s+p.drunk,0)}</span>`)}
   $('#hud').innerHTML=h;
 }
 function drawCard(){
   if(!opt().cards||S.i===0||Math.random()>.35)return null;
-  const ks=S.gm?['eclair']:Object.keys(CARDS).filter(k=>k!==S.lastCard);return ks[Math.random()*ks.length|0];
+  const ks=RG()?['eclair']:Object.keys(CARDS).filter(k=>k!==S.lastCard);return ks[Math.random()*ks.length|0];
 }
 function round(){
   const r=S.rounds[S.i],D=DIFF[S.diff];
@@ -1705,19 +1710,19 @@ function partyRound(r,what){
   const anyOk=order.some(x=>x.ok);
   r.pen=order.map((x,i)=>{
     let sips=0;
-    if(!x.ok&&!S.gm)sips=Math.min((!anyOk&&r.card==='tournee'?3:I.wrong)*st,10)*(S.pl[x.p].x2?2:1);
+    if(!x.ok&&!RG())sips=Math.min((!anyOk&&r.card==='tournee'?3:I.wrong)*st,10)*(S.pl[x.p].x2?2:1);
     return {p:x.p,rank:i+1,ok:x.ok,t:x.t,choice:x.choice,sips,cs:false,joker:false};
   });
   for(const e of r.pen){const pl=S.pl[e.p];pl.drunk+=e.sips;if(e.ok){pl.good++;pl.tt+=e.t}}
   S.toGive=0;S.vote=false;S.giver=r.pen[0].p;
-  if(anyOk){S.pl[S.giver].wins++;if(!S.gm&&r.card==='roi')S.toGive=3;if(!S.gm&&r.card==='karaoke')S.vote=true}
+  if(anyOk){S.pl[S.giver].wins++;if(!RG()&&r.card==='roi')S.toGive=3;if(!RG()&&r.card==='karaoke')S.vote=true}
   r.log={anyOk};
   sendResults(r);
   $('#status').innerHTML=(anyOk?`${esc(S.pl[S.giver].name)} est le plus rapide !`:'Personne n\'a trouvé.')+`<small>C'était ${what}</small>`;
   hud();
   playFx(r,()=>{renderExtra(r);const nb=$('#nextBtn');nb.classList.remove('hide');if(!S.toGive&&!S.vote)nb.focus()});
 }
-function penText(e){return S.gm?(e.ok?'+1 point':'raté'):e.cs?CS():e.sips?unit(e.sips):'rien'}
+function penText(e){return RG()?(e.ok?'+1 point':'raté'):e.cs?CS():e.sips?unit(e.sips):'rien'}
 function renderExtra(r){
   const rows=r.pen.map(e=>{const pl=S.pl[e.p];const how=e.ok?fmtT(e.t):e.choice!=null?`faux (${LET[e.choice]})`:'pas répondu';
     return `<li class="${e.rank===1&&r.log.anyOk?'win':''} ${e.cs?'cs':''}"><span class="rk">${e.rank}</span><span class="nm"><b>${esc(pl.name)}${x2Tag(pl)}</b><small>${how}</small></span><span class="pn">${e.joker?'verre d\'eau':esc(penText(e))}</span>${(e.sips||e.cs)&&!e.joker&&pl.joker?`<button class="btn ghost sm" data-joker="${e.p}">Joker eau</button>`:'<span></span>'}</li>`}).join('');
@@ -1742,9 +1747,9 @@ function confetti(){let h='';const c=['#ff3d9a','#27e0ff','#ffd23f','#9b5cff','#
 function playFx(r,done){
   const fx=$('#fx'),steps=[];
   const first=r.pen[0];
-  if(r.log.anyOk)steps.push({cls:'fx-win',html:`${confetti()}<p class="fx-k">Premier en ${fmtT(first.t)}</p><p class="fx-n">${esc(S.pl[first.p].name)}</p><p class="fx-t">${S.gm?'+1 point':'ne boit rien'}</p>`});
-  else steps.push({cls:'fx-none',html:`<p class="fx-k">Personne n'a trouvé</p><p class="fx-n">${S.gm?'Aucun point':'Tout le monde boit'}</p><p class="fx-t">${S.gm?'cette manche':esc(unit(r.pen[0].sips))}</p>`});
-  if(r.log.anyOk&&!S.gm)for(const e of [...r.pen].filter(e=>e.sips||e.cs).sort((a,b)=>(a.cs-b.cs)||(a.sips-b.sips)))
+  if(r.log.anyOk)steps.push({cls:'fx-win',html:`${confetti()}<p class="fx-k">Premier en ${fmtT(first.t)}</p><p class="fx-n">${esc(S.pl[first.p].name)}</p><p class="fx-t">${RG()?'+1 point':'ne boit rien'}</p>`});
+  else steps.push({cls:'fx-none',html:`<p class="fx-k">Personne n'a trouvé</p><p class="fx-n">${RG()?'Aucun point':'Tout le monde boit'}</p><p class="fx-t">${RG()?'cette manche':esc(unit(r.pen[0].sips))}</p>`});
+  if(r.log.anyOk&&!RG())for(const e of [...r.pen].filter(e=>e.sips||e.cs).sort((a,b)=>(a.cs-b.cs)||(a.sips-b.sips)))
     steps.push({cls:e.cs?'fx-cs':'fx-drink',html:`${glass(e.cs)}<p class="fx-k">${e.rank}<sup>e</sup> · ${e.ok?fmtT(e.t):e.choice!=null?'mauvaise réponse':'pas de réponse'}</p><p class="fx-n">${esc(S.pl[e.p].name)}</p><p class="fx-t">${e.cs?(S.soft?'20 pompes !':'CUL SEC !'):'boit '+esc(unit(e.sips))}</p>`});
   let i=0,timer=0;
   const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1918,7 +1923,7 @@ function sendResults(r){
   const top=ord.slice(0,5).map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':total(S.pl[k])]);
   netEach((pl,k)=>{
     const x=r.res.find(z=>z.p===k)||{};
-    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist+(r.yc?` · ${r.yc.yr}`:''),r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:S.gm,last:S.i>=S.n-1,of:S.pl.length};
+    const m={x2:!!pl.x2,t:'r',i:S.i,n:S.n,ci,ans:[r.ans.title,r.ans.artist+(r.yc?` · ${r.yc.yr}`:''),r.ans.cover||''],ok:!!x.ok,c:x.choice??null,tm:x.t??null,top,game:S.game,soft:S.soft,gm:RG(),last:S.i>=S.n-1,of:S.pl.length};
     if(S.game==='duel'){m.pts=x.pts||0;m.mult=x.mult||1;m.streak=pl.streak;m.score=pl.score;m.rank=ord.indexOf(k)+1;if(S.tmOn){m.teams=tmSc();m.tm=pl.tm}}
     else{const en=r.pen.find(z=>z.p===k);Object.assign(m,{rank:en.rank,sips:en.sips,cs:en.cs,joker:en.joker,canJoker:!!(en.sips||en.cs)&&!en.joker&&pl.joker,anyOk:r.log.anyOk,first:S.pl[r.pen[0].p].name,give:S.giver===k&&S.toGive>0?S.toGive:0,sing:S.giver===k&&S.vote})}
     return m;
@@ -1926,7 +1931,7 @@ function sendResults(r){
 }
 function sendEnd(title){
   const ord=standing();
-  const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':`${S.pl[k].good} ✓ · ${S.gm?(S.pl[k].gage?'gage':'rien'):S.pl[k].fin?unit(S.pl[k].fin):'rien'}`]);
+  const board=ord.map(k=>[S.pl[k].name,S.game==='duel'?fmt(S.pl[k].score)+' pts':`${S.pl[k].good} ✓`+(S.nog?'':` · ${S.gm?(S.pl[k].gage?'gage':'rien'):S.pl[k].fin?unit(S.pl[k].fin):'rien'}`)]);
   netEach((pl,k)=>({t:'end',title,teams:S.tmOn?tmSc():null,tm:pl.tm,rank:ord.indexOf(k)+1,of:S.pl.length,board,game:S.game,good:pl.good,n:S.n,soft:S.soft,gm:S.gm,fin:pl.fin,gage:pl.gage,tt:+pl.tt.toFixed(1),me:k,
     wheel:S.wheel?{w:S.wheel.w,wk:S.wheel.wk,segs:S.wheel.segs,res:S.wheel.res,rot:S.wheel.rot,to:S.wheel.to,busy:S.wheel.busy,toName:S.wheel.to!=null?S.pl[S.wheel.to].name:'',txt:S.wheel.res!=null?wheelText(S.wheel):'',who:S.pl.map((p,i)=>[i,p.name]).filter(([i])=>i!==S.wheel.wk)}:null}));
 }
@@ -2020,12 +2025,12 @@ function results(){
   if(S.game==='party'){
     /* classement final : bonnes réponses, égalité départagée au temps total ; le 1er rien, puis 1 gorgée de plus par place */
     const rk=[...S.pl].sort(pbetter),n=rk.length;
-    rk.forEach((p,i)=>{p.fin=S.gm?0:finSips(i+1)*(p.x2?2:1);p.gage=S.gm&&i>0?drawGage(n<=2?2:Math.round((i-1)/(n-2)*2),rk.map(q=>q.gage)):''});
+    rk.forEach((p,i)=>{p.fin=S.gm?0:finSips(i+1)*(p.x2?2:1);p.gage=S.gm&&!S.nog&&i>0?drawGage(n<=2?2:Math.round((i-1)/(n-2)*2),rk.map(q=>q.gage)):''});
     const fast=[...S.pl].sort((a,b)=>b.wins-a.wins)[0];
     fin.textContent=rk[1]&&!pbetter(rk[0],rk[1])?'Égalité parfaite en tête':`${rk[0].name} gagne`;
-    ver.textContent=`${rk[0].good}/${S.n} bonnes réponses pour ${rk[0].name}. ${fast.wins?`${fast.name} a été le plus rapide ${fast.wins} fois. `:''}`+(S.gm?'Fin de partie : le 1er n\'a rien, les autres font leur gage (de plus en plus fort selon la place).':`Fin de partie : le 1er ne ${S.soft?'fait rien':'boit rien'}, puis ${unit(1)} de plus à chaque place. ${S.soft?'':'Pensez à boire de l\'eau, et personne ne prend le volant ce soir.'}`);
-    board.innerHTML=rk.map((p,i)=>`<li><b>${esc(p.name)}${x2Tag(p)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}${p.good?` · ${fmtT(p.tt)} au total`:''}${S.gm?'':` · ${unit(p.drunk)} pendant la partie`}${p.joker||S.gm?'':' · joker utilisé'}</span><em>${S.gm?(i?'gage':'rien'):i?(S.soft?'':'boit ')+esc(unit(p.fin)):'rien'}</em></li>`).join('');
-    S.wheel=n>1?{w:rk[0].name,wk:S.pl.indexOf(rk[0]),segs:WHEEL[S.drink],res:null,rot:0,to:null,busy:false}:null;
+    ver.textContent=`${rk[0].good}/${S.n} bonnes réponses pour ${rk[0].name}. ${fast.wins?`${fast.name} a été le plus rapide ${fast.wins} fois. `:''}`+(S.nog?'Fin de partie : pas de malus, juste le classement.':S.gm?'Fin de partie : le 1er n\'a rien, les autres font leur gage (de plus en plus fort selon la place).':`Fin de partie : le 1er ne ${S.soft?'fait rien':'boit rien'}, ${RG()?`le 2e ${unit(2)}, puis ${unit(1)}`:`puis ${unit(1)}`} de plus à chaque place. ${S.soft?'':'Pensez à boire de l\'eau, et personne ne prend le volant ce soir.'}`);
+    board.innerHTML=rk.map((p,i)=>`<li><b>${esc(p.name)}${x2Tag(p)}</b><span>${p.good}/${S.n} bonne${p.good>1?'s':''} réponse${p.good>1?'s':''}${p.good?` · ${fmtT(p.tt)} au total`:''}${RG()?'':` · ${unit(p.drunk)} pendant la partie`}${p.joker||RG()?'':' · joker utilisé'}</span><em>${S.nog?(i?'':'🏆'):S.gm?(i?'gage':'rien'):i?(S.soft?'':'boit ')+esc(unit(p.fin)):'rien'}</em></li>`).join('');
+    S.wheel=n>1&&!S.nog?{w:rk[0].name,wk:S.pl.indexOf(rk[0]),segs:WHEEL[S.drink],res:null,rot:0,to:null,busy:false}:null;
     renderWheel();
     renderGages();
   }
@@ -2034,7 +2039,7 @@ function results(){
     if(S.game==='solo'){const x=r.res&&r.res[0];side=`<span class="p">${x&&x.ok?'+'+x.pts:'0'}<small>${x&&x.t!=null?fmtT(x.t):'temps écoulé'}</small></span>`}
     if(S.game==='duel'&&(S.pl.length!==2||S.tmOn)){const b=(r.res||[]).filter(x=>x.ok).sort((a,c)=>a.t-c.t)[0];side=`<span class="p small">${b?esc(S.pl[b.p].name)+' +'+fmt(b.pts):'—'}<small>${b?'le plus rapide':'personne'}</small></span>`}
     else if(S.game==='duel')side=`<span class="p duo">${(r.res||[]).map((x,k)=>`<i class="pc${k}">${x.pts>0?'+':''}${x.pts}</i>`).join('')}</span>`;
-    if(S.game==='party')side=`<span class="p small">${r.pen?esc(S.gm?r.pen.filter(e=>e.ok).map(e=>S.pl[e.p].name).join(' · ')||'—':r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
+    if(S.game==='party')side=`<span class="p small">${r.pen?esc(RG()?r.pen.filter(e=>e.ok).map(e=>S.pl[e.p].name).join(' · ')||'—':r.pen.filter(e=>(e.sips||e.cs)&&!e.joker).map(e=>`${S.pl[e.p].name} ${e.cs?CS():e.sips}`).join(' · ')||'—'):'—'}<small>${r.card?esc(CARDS[r.card].n):r.pen&&r.log.anyOk?'1er : '+esc(S.pl[r.pen[0].p].name):'personne'}</small></span>`;
     const ok=r.res&&r.res.some(x=>x.ok);
     return `<li class="${ok?'':'no'}"><img src="${esc(r.ans.cover)}" alt=""><span><b>${i+1}. ${esc(r.ans.title)}${r.yc?` · ${r.yc.yr}`:''}</b><span>${esc(r.ans.artist)}${r.ans.link?` · <a href="${esc(r.ans.link)}" target="_blank" rel="noopener">Écouter sur Deezer</a>`:''}</span></span>${side}</li>`;
   }).join('');
@@ -2441,7 +2446,7 @@ function end(m){
   screen(top('Partie '+esc(C.code),esc(C.name))+`${(m.teams?m.teams[0]!==m.teams[1]&&(m.teams[0]>m.teams[1]?0:1)===m.tm:m.rank===1)?confetti():''}<p class="kicker" style="text-align:center">${esc(m.title)}</p><p class="ctl-big">${m.teams?(m.teams[0]===m.teams[1]?'Égalité !':(m.teams[0]>m.teams[1]?0:1)===m.tm?'Ton équipe gagne !':'Ton équipe a perdu'):m.rank===1?'Victoire !':`${ord(m.rank)} sur ${m.of}`}</p>${m.teams?tmBarC(m.teams,m.tm)+`<p class="ctl-sub"><small>Toi : ${ord(m.rank)} sur ${m.of}</small></p>`:''}
 
   <p class="ctl-sub">${`${m.good} bonne${m.good>1?'s':''} réponse${m.good>1?'s':''}`} sur ${m.n}<small>Attends que l'hôte relance une partie.</small></p>
-  ${m.game==='party'&&!m.gm?`${m.fin?glass(false):''}<p class="ctl-big">${m.fin?`Tu bois ${unit(m.fin)}`:'Tu ne bois rien !'}</p><p class="ctl-sub"><small>Fin de partie : le 1er rien, puis ${unit(1)} de plus à chaque place.</small></p>`:''}
+  ${m.game==='party'&&!m.gm?`${m.fin?glass(false):''}<p class="ctl-big">${m.fin?`Tu bois ${unit(m.fin)}`:'Tu ne bois rien !'}</p><p class="ctl-sub"><small>Fin de partie : le 1er rien, les autres boivent selon leur place.</small></p>`:''}
   ${m.gage?`<div class="ctl-card"><span>🎭 Ton gage</span><b>${esc(m.gage)}</b></div>`:''}
   ${m.wheel?wheelPhone(m):''}
   <ol class="rank">${m.board.map(([n,v],i)=>`<li class="${n===C.name?'win':''}"><span class="rk">${i+1}</span><span class="nm"><b>${esc(n)}</b></span><span class="pn">${esc(v)}</span><span></span></li>`).join('')}</ol>
